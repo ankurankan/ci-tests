@@ -7,8 +7,8 @@
 //!
 //! These extendr exports are the low-level layer; the user-facing R API
 //! (`dataset()`, the test factories, `run_test()`, `is_independent()`,
-//! `as_pcalg()`) lives in `R/cir.R` and wraps the external-pointer objects
-//! created here.
+//! `as_pcalg()`) lives in `R/dataset.R`, `R/tests.R`, and `R/adapters.R` and
+//! wraps the external-pointer objects created here.
 //!
 //! Discrete columns must already be numeric when they reach Rust: the R side
 //! factor/character → integer coding happens before [`Dataset::new`], so the
@@ -25,7 +25,7 @@
 use std::sync::Arc;
 
 use ci_core::dataset::{ColumnKind, Dataset as CoreDataset};
-use ci_core::strategy::{CITest, CiResult as CoreResult};
+use ci_core::strategy::{CITest, CiResult as CoreResult, IndependenceRule};
 use extendr_api::prelude::*;
 use extendr_api::Result;
 
@@ -127,22 +127,26 @@ impl Dataset {
 
 impl Dataset {
     /// Resolve a single column name to a validated 0-based core index.
-    fn column(&self, name: &str) -> Result<usize> {
+    fn resolve_column(&self, name: &str) -> Result<usize> {
         self.inner
             .index_of(name)
             .ok_or_else(|| Error::Other(format!("unknown column name: {name:?}")))
     }
 
     /// Resolve a conditioning set (a vector of names) to 0-based core indices.
-    fn columns(&self, names: &Strings) -> Result<Vec<usize>> {
+    fn resolve_columns(&self, names: &Strings) -> Result<Vec<usize>> {
         (0..names.len())
-            .map(|i| self.column(names.elt(i).as_ref()))
+            .map(|i| self.resolve_column(names.elt(i).as_ref()))
             .collect()
     }
 
     /// Resolve `x`, `y`, and the conditioning names `z` to 0-based indices.
     fn resolve(&self, x: &str, y: &str, z: &Strings) -> Result<(usize, usize, Vec<usize>)> {
-        Ok((self.column(x)?, self.column(y)?, self.columns(z)?))
+        Ok((
+            self.resolve_column(x)?,
+            self.resolve_column(y)?,
+            self.resolve_columns(z)?,
+        ))
     }
 }
 
@@ -214,6 +218,14 @@ macro_rules! ci_test_handle {
                 significance_level: f64,
             ) -> Result<bool> {
                 is_independent_inner(&self.inner, &self.data, x, y, &z, significance_level)
+            }
+
+            /// Internal decision rule used by the R adapters.
+            fn decision_rule(&self) -> &'static str {
+                match self.inner.meta().rule {
+                    IndependenceRule::PValueGe => "p_value_ge",
+                    IndependenceRule::PValueLt => "p_value_lt",
+                }
             }
         }
     };

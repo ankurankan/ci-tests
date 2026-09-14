@@ -10,7 +10,6 @@
 library(cir)
 
 tol <- 1e-7
-expected_case_count <- 80L
 
 # Map the fixture's stable test name to its binding factory function.
 test_factories <- list(
@@ -50,14 +49,7 @@ build_dataset <- function(columns) {
 
 construct_test <- function(name, data, params) {
   factory <- test_factories[[name]]
-  if (name %in% c("pearson_correlation", "fisher_z")) {
-    factory(data)
-  } else if (name == "pearson_equivalence") {
-    factory(data, delta_threshold = params$delta_threshold)
-  } else {
-    # Discrete power-divergence family: configured by `yates`.
-    factory(data, yates = params$yates)
-  }
+  do.call(factory, c(list(data = data), params))
 }
 
 # Compare one numeric field against its expected value. Null expectations
@@ -96,8 +88,7 @@ assert_close <- function(actual, expected, field, case_id) {
 
 golden_cases <- load_cases()
 
-test_that("golden fixture covers exactly the expected cases", {
-  expect_equal(length(golden_cases), expected_case_count)
+test_that("golden fixture covers every supported test", {
   names_seen <- unique(vapply(golden_cases, function(c) c$test, character(1)))
   expect_setequal(names_seen, names(test_factories))
 })

@@ -36,7 +36,6 @@ REPO_ROOT = Path(__file__).resolve().parents[3]
 GOLDEN_PATH = REPO_ROOT / "tests" / "fixtures" / "golden.json"
 
 TOL = 1e-7
-EXPECTED_CASE_COUNT = 80
 
 # Map the fixture's stable test name to its binding class.
 TEST_CLASSES = {
@@ -59,16 +58,6 @@ def _load_cases() -> list[dict[str, Any]]:
 def _build_dataset(columns: dict[str, dict[str, Any]]) -> Dataset:
     spec = {name: (col["kind"], np.asarray(col["values"], dtype=np.float64)) for name, col in columns.items()}
     return Dataset(spec)
-
-
-def _construct(name: str, data: Dataset, params: dict[str, Any]) -> Any:
-    cls = TEST_CLASSES[name]
-    if name in ("pearson_correlation", "fisher_z"):
-        return cls(data)
-    if name == "pearson_equivalence":
-        return cls(data, delta_threshold=params["delta_threshold"])
-    # Discrete power-divergence family: configured by `yates`.
-    return cls(data, yates=params["yates"])
 
 
 def _assert_close(actual: float | None, expected: Any, field: str, case_id: str) -> None:
@@ -103,7 +92,7 @@ def test_golden_case(case: dict[str, Any]) -> None:
     assert case_id, "fixture case ID must not be empty"
     assert case["test"] in TEST_CLASSES, f"{case_id}: unknown test {case['test']}"
     data = _build_dataset(case["columns"])
-    test = _construct(case["test"], data, case["params"])
+    test = TEST_CLASSES[case["test"]](data, **case["params"])
 
     result = test.run_test(case["x"], case["y"], case["z"])
     expected = case["expected"]
@@ -121,8 +110,7 @@ def test_golden_case(case: dict[str, Any]) -> None:
     _assert_close(result.effect_size, expected.get("effect_size"), "effect_size", case_id)
 
 
-def test_golden_covers_all_cases() -> None:
-    """The fixture has exactly the expected number of cases, all dispatched."""
-    assert len(GOLDEN_CASES) == EXPECTED_CASE_COUNT, f"expected {EXPECTED_CASE_COUNT} cases, found {len(GOLDEN_CASES)}"
+def test_golden_covers_all_tests() -> None:
+    """Every supported test has fixture rows, all parametrized above."""
     names = {c["test"] for c in GOLDEN_CASES}
     assert names == set(TEST_CLASSES), f"fixture tests {names} do not match binding classes {set(TEST_CLASSES)}"

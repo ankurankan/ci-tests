@@ -79,6 +79,35 @@ Conditional-Independence-Testing/
 
 See individual `README.md` files in each directory for more details.
 
+Within the core, keep shared computation separate from a test's statistical interpretation:
+
+| File | Responsibility |
+| --- | --- |
+| `dataset.rs` | Column storage, encoding, query validation, and cache lifetime |
+| `correlation.rs` | Shared correlation, residual regression, and Fisher transform |
+| `gram.rs` | Lazy covariance cache and linear algebra used by correlation |
+| `strata.rs` | Conditioning-set grouping and its bounded cache |
+| `discrete.rs` | Contingency tables and power-divergence calculations |
+| `ci_tests/power_divergence.rs` | The five named discrete tests, configuration, and result assembly |
+| `ci_tests/{pearson_correlation,fisher_z,pearson_equivalence}.rs` | Test-specific statistics, p-values, and metadata |
+| `strategy.rs`, `registry.rs` | Shared test contract and default test catalogue |
+
+Keep implementation-specific tests alongside the behavior they exercise. Shared helpers
+belong with their consumers' common domain, not inside a sibling test implementation.
+`ColumnKind` describes column types throughout the core; `DataType` remains a compatibility
+alias for existing users.
+
+In the bindings, pandas classification and encoding live together in Python's
+`_column_from_pandas`; JavaScript option defaults, allowed keys, and TypeScript option
+declarations live in `crates/ci-js/src/options.rs`. R's maintained code is split into
+`R/dataset.R` (conversion and dataset construction), `R/tests.R` (factories and queries),
+and `R/adapters.R` (`pcalg` and `htest` adapters). `R/cir.R` holds package documentation;
+`R/extendr-wrappers.R` is generated.
+
+The core copy under `crates/ci-r/src/rust/ci-core` is a distribution asset, not a second
+implementation. After changing the canonical core, synchronize it with
+`python crates/ci-r/tools/sync_package_assets.py --sync`.
+
 ## Coding Standards
 
 ### Rust Code Style
@@ -153,6 +182,11 @@ Create a new file in `crates/ci-core/src/ci_tests/`:
 crates/ci-core/src/ci_tests/students_t.rs
 ```
 
+For another member of the existing power-divergence family, add a declaration to
+`ci_tests/power_divergence.rs` instead of creating another wrapper file. Keep shared
+numerical work in `discrete.rs` or `correlation.rs` and test-specific interpretation in
+`ci_tests/`.
+
 ### 2. Implement the `CITest` Trait
 
 Your test struct holds **only** its configuration and implements the `CITest` trait defined in
@@ -162,9 +196,9 @@ assume a well-formed query. Per-test config is constructor fields, the decision 
 `TestMeta`, and `is_independent` has a default impl (no per-test branching at the call site):
 
 ```rust
-use crate::dataset::Dataset;
+use crate::dataset::{ColumnKind, Dataset};
 use crate::error::CiError;
-use crate::strategy::{CITest, CiResult, DataType, IndependenceRule, TestMeta};
+use crate::strategy::{CITest, CiResult, IndependenceRule, TestMeta};
 
 pub struct StudentsT { /* config fields only */ }
 
@@ -176,7 +210,7 @@ impl CITest for StudentsT {
     fn meta(&self) -> TestMeta {
         TestMeta {
             name: "students_t",
-            data_types: &[DataType::Continuous],
+            data_types: &[ColumnKind::Continuous],
             symmetric: true,
             rule: IndependenceRule::PValueGe,   // or PValueLt for an equivalence/TOST test
         }
@@ -184,7 +218,7 @@ impl CITest for StudentsT {
 }
 ```
 
-See existing tests (e.g., `chi_squared.rs`, or `pearson_equivalence.rs` for the inverted rule)
+See existing tests (e.g., `power_divergence.rs`, or `pearson_equivalence.rs` for the inverted rule)
 as examples. Return `CiError` rather than panicking; never let a panic escape into a binding.
 
 ### 3. Export and Register the Test
@@ -208,11 +242,14 @@ Each binding has one small wrapper per test; add yours next to the existing ones
   the constructor kwargs onto your config) and register the generated class in the `#[pymodule]`
   at the bottom of that file. Re-export it from `crates/ci-python/ci_python/__init__.py` and add
   it to the `.pyi` stub.
-- **R** — add a factory function in `crates/ci-r/R/cir.R` (following `chi_squared()` /
+- **R** — add a factory function in `crates/ci-r/R/tests.R` (following `chi_squared()` /
   `pearson_equivalence()`), and export the extendr handle in the Rust glue
-  (`crates/ci-r/src/rust/src/lib.rs`).
+  (`crates/ci-r/src/rust/src/lib.rs`). Run `rextendr::document()` to regenerate wrappers
+  and documentation. Adapters derive the decision rule from the native test metadata;
+  they do not need a separate list of inverted-rule tests.
 - **JavaScript** — add a `ci_test_class!(...)` invocation in `crates/ci-js/src/lib.rs` (with a
-  `serde`-derived config struct if the test takes options).
+  config from `crates/ci-js/src/options.rs`). If new options are needed, define their
+  defaults, allowed keys, and TypeScript declaration together in that module.
 
 ### 5. Add Tests
 
@@ -252,6 +289,10 @@ self-contained:
 - Python: `crates/ci-python/test/test_golden.py`
 - R: `crates/ci-r/tests/testthat/test-golden.R`
 - JavaScript: `crates/ci-js/tests/golden.test.js`
+
+Consumers execute every supplied case and check that every supported test is represented.
+The expected catalogue size and per-test distribution are checked only by fixture tooling,
+so adding reference cases does not require updating a count in four languages.
 
 If you change a statistic or add a test, install the pinned independent-generator dependencies,
 regenerate the fixture, and verify that its committed bytes are current:

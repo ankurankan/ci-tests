@@ -66,6 +66,10 @@ Dataset$index_of <- function(name) .Call(wrap__Dataset__index_of, self, name)
 #'Decide independence at `significance_level` using the test's rule.
 #'}
 #'
+#'\subsection{Method `decision_rule`}{
+#'Internal decision rule used by the R adapters.
+#'}
+#'
 ChiSquared <- new.env(parent = emptyenv())
 
 ChiSquared$new <- function(data, yates) .Call(wrap__ChiSquared__new, data, yates)
@@ -73,6 +77,8 @@ ChiSquared$new <- function(data, yates) .Call(wrap__ChiSquared__new, data, yates
 ChiSquared$run_test <- function(x, y, z) .Call(wrap__ChiSquared__run_test, self, x, y, z)
 
 ChiSquared$is_independent <- function(x, y, z, significance_level) .Call(wrap__ChiSquared__is_independent, self, x, y, z, significance_level)
+
+ChiSquared$decision_rule <- function() .Call(wrap__ChiSquared__decision_rule, self)
 
 #' @export
 `$.ChiSquared` <- function (self, name) { func <- ChiSquared[[name]]; environment(func) <- environment(); func }
@@ -95,6 +101,10 @@ ChiSquared$is_independent <- function(x, y, z, significance_level) .Call(wrap__C
 #'Decide independence at `significance_level` using the test's rule.
 #'}
 #'
+#'\subsection{Method `decision_rule`}{
+#'Internal decision rule used by the R adapters.
+#'}
+#'
 LogLikelihood <- new.env(parent = emptyenv())
 
 LogLikelihood$new <- function(data, yates) .Call(wrap__LogLikelihood__new, data, yates)
@@ -102,6 +112,8 @@ LogLikelihood$new <- function(data, yates) .Call(wrap__LogLikelihood__new, data,
 LogLikelihood$run_test <- function(x, y, z) .Call(wrap__LogLikelihood__run_test, self, x, y, z)
 
 LogLikelihood$is_independent <- function(x, y, z, significance_level) .Call(wrap__LogLikelihood__is_independent, self, x, y, z, significance_level)
+
+LogLikelihood$decision_rule <- function() .Call(wrap__LogLikelihood__decision_rule, self)
 
 #' @export
 `$.LogLikelihood` <- function (self, name) { func <- LogLikelihood[[name]]; environment(func) <- environment(); func }
@@ -124,6 +136,10 @@ LogLikelihood$is_independent <- function(x, y, z, significance_level) .Call(wrap
 #'Decide independence at `significance_level` using the test's rule.
 #'}
 #'
+#'\subsection{Method `decision_rule`}{
+#'Internal decision rule used by the R adapters.
+#'}
+#'
 CressieRead <- new.env(parent = emptyenv())
 
 CressieRead$new <- function(data, yates) .Call(wrap__CressieRead__new, data, yates)
@@ -131,6 +147,8 @@ CressieRead$new <- function(data, yates) .Call(wrap__CressieRead__new, data, yat
 CressieRead$run_test <- function(x, y, z) .Call(wrap__CressieRead__run_test, self, x, y, z)
 
 CressieRead$is_independent <- function(x, y, z, significance_level) .Call(wrap__CressieRead__is_independent, self, x, y, z, significance_level)
+
+CressieRead$decision_rule <- function() .Call(wrap__CressieRead__decision_rule, self)
 
 #' @export
 `$.CressieRead` <- function (self, name) { func <- CressieRead[[name]]; environment(func) <- environment(); func }
@@ -153,6 +171,10 @@ CressieRead$is_independent <- function(x, y, z, significance_level) .Call(wrap__
 #'Decide independence at `significance_level` using the test's rule.
 #'}
 #'
+#'\subsection{Method `decision_rule`}{
+#'Internal decision rule used by the R adapters.
+#'}
+#'
 FreemanTukey <- new.env(parent = emptyenv())
 
 FreemanTukey$new <- function(data, yates) .Call(wrap__FreemanTukey__new, data, yates)
@@ -160,6 +182,8 @@ FreemanTukey$new <- function(data, yates) .Call(wrap__FreemanTukey__new, data, y
 FreemanTukey$run_test <- function(x, y, z) .Call(wrap__FreemanTukey__run_test, self, x, y, z)
 
 FreemanTukey$is_independent <- function(x, y, z, significance_level) .Call(wrap__FreemanTukey__is_independent, self, x, y, z, significance_level)
+
+FreemanTukey$decision_rule <- function() .Call(wrap__FreemanTukey__decision_rule, self)
 
 #' @export
 `$.FreemanTukey` <- function (self, name) { func <- FreemanTukey[[name]]; environment(func) <- environment(); func }
@@ -182,6 +206,10 @@ FreemanTukey$is_independent <- function(x, y, z, significance_level) .Call(wrap_
 #'Decide independence at `significance_level` using the test's rule.
 #'}
 #'
+#'\subsection{Method `decision_rule`}{
+#'Internal decision rule used by the R adapters.
+#'}
+#'
 ModifiedLikelihood <- new.env(parent = emptyenv())
 
 ModifiedLikelihood$new <- function(data, yates) .Call(wrap__ModifiedLikelihood__new, data, yates)
@@ -189,6 +217,8 @@ ModifiedLikelihood$new <- function(data, yates) .Call(wrap__ModifiedLikelihood__
 ModifiedLikelihood$run_test <- function(x, y, z) .Call(wrap__ModifiedLikelihood__run_test, self, x, y, z)
 
 ModifiedLikelihood$is_independent <- function(x, y, z, significance_level) .Call(wrap__ModifiedLikelihood__is_independent, self, x, y, z, significance_level)
+
+ModifiedLikelihood$decision_rule <- function() .Call(wrap__ModifiedLikelihood__decision_rule, self)
 
 #' @export
 `$.ModifiedLikelihood` <- function (self, name) { func <- ModifiedLikelihood[[name]]; environment(func) <- environment(); func }
@@ -211,6 +241,10 @@ ModifiedLikelihood$is_independent <- function(x, y, z, significance_level) .Call
 #'Decide independence at `significance_level` using the test's rule.
 #'}
 #'
+#'\subsection{Method `decision_rule`}{
+#'Internal decision rule used by the R adapters.
+#'}
+#'
 PearsonCorrelation <- new.env(parent = emptyenv())
 
 PearsonCorrelation$new <- function(data) .Call(wrap__PearsonCorrelation__new, data)
@@ -218,6 +252,8 @@ PearsonCorrelation$new <- function(data) .Call(wrap__PearsonCorrelation__new, da
 PearsonCorrelation$run_test <- function(x, y, z) .Call(wrap__PearsonCorrelation__run_test, self, x, y, z)
 
 PearsonCorrelation$is_independent <- function(x, y, z, significance_level) .Call(wrap__PearsonCorrelation__is_independent, self, x, y, z, significance_level)
+
+PearsonCorrelation$decision_rule <- function() .Call(wrap__PearsonCorrelation__decision_rule, self)
 
 #' @export
 `$.PearsonCorrelation` <- function (self, name) { func <- PearsonCorrelation[[name]]; environment(func) <- environment(); func }
@@ -240,6 +276,10 @@ PearsonCorrelation$is_independent <- function(x, y, z, significance_level) .Call
 #'Decide independence at `significance_level` using the test's rule.
 #'}
 #'
+#'\subsection{Method `decision_rule`}{
+#'Internal decision rule used by the R adapters.
+#'}
+#'
 FisherZ <- new.env(parent = emptyenv())
 
 FisherZ$new <- function(data) .Call(wrap__FisherZ__new, data)
@@ -247,6 +287,8 @@ FisherZ$new <- function(data) .Call(wrap__FisherZ__new, data)
 FisherZ$run_test <- function(x, y, z) .Call(wrap__FisherZ__run_test, self, x, y, z)
 
 FisherZ$is_independent <- function(x, y, z, significance_level) .Call(wrap__FisherZ__is_independent, self, x, y, z, significance_level)
+
+FisherZ$decision_rule <- function() .Call(wrap__FisherZ__decision_rule, self)
 
 #' @export
 `$.FisherZ` <- function (self, name) { func <- FisherZ[[name]]; environment(func) <- environment(); func }
@@ -269,6 +311,10 @@ FisherZ$is_independent <- function(x, y, z, significance_level) .Call(wrap__Fish
 #'Decide independence at `significance_level` using the test's rule.
 #'}
 #'
+#'\subsection{Method `decision_rule`}{
+#'Internal decision rule used by the R adapters.
+#'}
+#'
 PearsonEquivalence <- new.env(parent = emptyenv())
 
 PearsonEquivalence$new <- function(data, delta_threshold) .Call(wrap__PearsonEquivalence__new, data, delta_threshold)
@@ -276,6 +322,8 @@ PearsonEquivalence$new <- function(data, delta_threshold) .Call(wrap__PearsonEqu
 PearsonEquivalence$run_test <- function(x, y, z) .Call(wrap__PearsonEquivalence__run_test, self, x, y, z)
 
 PearsonEquivalence$is_independent <- function(x, y, z, significance_level) .Call(wrap__PearsonEquivalence__is_independent, self, x, y, z, significance_level)
+
+PearsonEquivalence$decision_rule <- function() .Call(wrap__PearsonEquivalence__decision_rule, self)
 
 #' @export
 `$.PearsonEquivalence` <- function (self, name) { func <- PearsonEquivalence[[name]]; environment(func) <- environment(); func }

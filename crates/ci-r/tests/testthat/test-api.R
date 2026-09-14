@@ -171,6 +171,21 @@ test_that("as_pcalg returns a (x, y, S, suffStat) -> p.value closure", {
   expect_equal(p_uncond, run_test(pearson_correlation(data), "X", "Y")$p_value)
 })
 
+test_that("as_pcalg uses the native rule rather than the display name", {
+  data <- dataset(continuous_df())
+  equivalence <- pearson_equivalence(data)
+  equivalence$name <- "renamed_equivalence"
+  expect_error(as_pcalg(equivalence), "inverted decision rule")
+
+  standard <- fisher_z(data)
+  standard$name <- "pearson_equivalence"
+  callback <- as_pcalg(standard)
+  expect_equal(
+    callback(1, 2, integer(), list()),
+    run_test(standard, "X", "Y")$p_value
+  )
+})
+
 test_that("fisher_z runs and reports no dof", {
   set.seed(11)
   n <- 80

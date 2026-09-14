@@ -39,7 +39,7 @@ testpaths = ["test"]
 [tool.ruff]
 line-length = 120
 
-# Exclude the generated native stub package.
+# The hand-maintained native stubs use their own compact formatting.
 extend-exclude = [
     "ci_python/_ci_python",
 ]

@@ -41,11 +41,13 @@
 //! ```
 
 pub mod ci_tests;
+mod correlation;
 pub mod dataset;
 pub mod discrete;
 pub mod error;
 pub(crate) mod gram;
 pub mod registry;
+mod strata;
 pub mod strategy;
 
 pub use dataset::{ColumnKind, Dataset};

@@ -2,7 +2,7 @@
 
 use statrs::distribution::{ContinuousCDF, Normal};
 
-use crate::ci_tests::pearson_correlation::{partial_correlation, RHO_CLIP_EPS};
+use crate::correlation::{clipped_fisher_transform, partial_correlation};
 use crate::dataset::Dataset;
 use crate::error::CiError;
 use crate::strategy::{CITest, CiResult, DataType, IndependenceRule, TestMeta};
@@ -47,9 +47,7 @@ impl CITest for PearsonEquivalence {
         let n_z = z.len();
 
         let (rho_raw, _dof) = partial_correlation(data, x, y, z)?;
-        let rho = rho_raw.clamp(-1.0 + RHO_CLIP_EPS, 1.0 - RHO_CLIP_EPS);
-
-        let z_rho = rho.atanh();
+        let z_rho = clipped_fisher_transform(rho_raw);
         let z_delta = self.delta_threshold.atanh();
 
         // partial_correlation guarantees n >= |Z| + 3, so the radicand is >= 0

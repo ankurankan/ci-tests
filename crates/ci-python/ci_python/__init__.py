@@ -43,6 +43,7 @@ from ci_python._ci_python import (
 
 if TYPE_CHECKING:  # pragma: no cover - typing-only import
     import pandas as pd
+    from numpy.typing import NDArray
 
 __all__ = [
     "ChiSquared",
@@ -59,16 +60,6 @@ __all__ = [
 ]
 
 
-def _is_numpy_numeric(dtype: Any) -> bool:  # noqa: ANN401
-    """Return True iff *dtype* is a numpy numeric (number or bool) dtype.
-
-    Delegates to :func:`_safe_issubdtype`, which returns ``False`` (rather than
-    raising ``TypeError``) for pandas extension dtypes such as ``StringDtype``
-    or ``ArrowDtype`` that numpy cannot interpret.
-    """
-    return _safe_issubdtype(dtype, np.number) or _safe_issubdtype(dtype, np.bool_)
-
-
 def _safe_issubdtype(dtype: Any, base: Any) -> bool:  # noqa: ANN401
     """Return whether ``dtype`` is a subtype of ``base`` without raising.
 
@@ -80,27 +71,34 @@ def _safe_issubdtype(dtype: Any, base: Any) -> bool:  # noqa: ANN401
         return False
 
 
-def _infer_kind(dtype: Any) -> str:  # noqa: ANN401 - numpy/pandas dtype is opaque here
-    """Infer a column kind from a numpy/pandas dtype.
+def _column_from_pandas(series: pd.Series[Any]) -> tuple[str, NDArray[np.float64]]:
+    """Infer a column's kind and encode its values for the native dataset.
 
-    Integer, boolean, categorical, object and string dtypes map to
-    ``"discrete"``; floating dtypes map to ``"continuous"``. Anything else
-    raises ``TypeError``.
+    Categorical and string/object values become integer codes. Missing values
+    remain NaN so the core enforces the same strict missing-data policy.
     """
+    import pandas as pd  # noqa: PLC0415 - optional dependency imported lazily
+
+    dtype = series.dtype
     name = str(getattr(dtype, "name", dtype))
-    if name in ("category", "string", "str"):
-        return "discrete"
-    if dtype == np.object_ or _safe_issubdtype(dtype, np.str_):
-        return "discrete"
+    if name == "category":
+        codes = np.asarray(series.cat.codes, dtype=np.float64)
+        codes[codes == -1.0] = np.nan
+        return "discrete", codes
+    if name in ("string", "str") or dtype == np.object_ or _safe_issubdtype(dtype, np.str_):
+        raw, _ = pd.factorize(series)
+        codes = raw.astype(np.float64)
+        codes[codes == -1.0] = np.nan
+        return "discrete", codes
     # Temporal dtypes are neither categorical nor plain-numeric; reject them
     # explicitly (timedelta64 would otherwise pass the integer check below).
     if _safe_issubdtype(dtype, np.datetime64) or _safe_issubdtype(dtype, np.timedelta64):
         msg = f"cannot infer column kind for temporal dtype {dtype!r}; convert it explicitly first"
         raise TypeError(msg)
     if _safe_issubdtype(dtype, np.floating):
-        return "continuous"
+        return "continuous", np.asarray(series, dtype=np.float64)
     if _safe_issubdtype(dtype, np.integer) or _safe_issubdtype(dtype, np.bool_):
-        return "discrete"
+        return "discrete", np.asarray(series, dtype=np.float64)
     msg = f"cannot infer column kind for dtype {dtype!r}; pass an explicit mapping"
     raise TypeError(msg)
 
@@ -134,23 +132,4 @@ class Dataset(_Dataset):
             is built per constructor call; to share data across tests, build
             a :class:`Dataset` explicitly.
         """
-        import pandas as pd  # noqa: PLC0415 - optional dependency imported lazily
-
-        columns: dict[str, tuple[str, Any]] = {}
-        for name in df.columns:
-            series = df[name]
-            kind = _infer_kind(series.dtype)
-            dtype_name = str(getattr(series.dtype, "name", ""))
-            if dtype_name == "category":
-                codes = np.asarray(series.cat.codes, dtype=np.float64)
-                codes[codes == -1.0] = np.nan  # missing category -> NaN -> core error
-                values = codes
-            elif kind == "discrete" and not _is_numpy_numeric(series.dtype):
-                raw, _ = pd.factorize(series)  # -1 marks missing
-                codes = raw.astype(np.float64)
-                codes[codes == -1.0] = np.nan
-                values = codes
-            else:
-                values = np.asarray(series, dtype=np.float64)
-            columns[str(name)] = (kind, values)
-        return cls(columns)
+        return cls({str(name): _column_from_pandas(df[name]) for name in df.columns})

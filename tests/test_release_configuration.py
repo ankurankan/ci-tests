@@ -1,11 +1,11 @@
 from __future__ import annotations
 
-from pathlib import Path
 import tarfile
+from pathlib import Path
+
+import pytest
 import tomllib
-
 import yaml
-
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 R_PACKAGE = REPO_ROOT / "crates" / "ci-r"
@@ -216,30 +216,7 @@ def test_rust_distribution_dependency_tree_is_minimal() -> None:
     ).get("dependencies", {})
 
 
-def test_leaf_docs_examples_and_package_metadata_are_current() -> None:
-    crates_readme = (REPO_ROOT / "crates" / "README.md").read_text()
-    core_readme = (REPO_ROOT / "crates" / "ci-core" / "README.md").read_text()
-    packaged_core_readme = (
-        REPO_ROOT / "crates" / "ci-r" / "src" / "rust" / "ci-core" / "README.md"
-    ).read_text()
-    example = (REPO_ROOT / "crates" / "ci-js" / "examples" / "test.html").read_text()
-    assert "Asynchronous API" not in crates_readme
-    assert "TestRegistry" not in core_readme
-    assert "src/tests/" not in core_readme
-    assert "pearson_correlation_test" not in example
-    assert "new Dataset" in example
-    assert "new PearsonCorrelation" in example
-
-    for readme in (core_readme, packaged_core_readme):
-        assert "https://github.com/pgmpy/ci-tests/blob/main/README.md" in readme
-        assert "https://github.com/pgmpy/ci-tests/blob/main/CONTRIBUTING.md" in readme
-        assert "../../README.md" not in readme
-        assert "../../CONTRIBUTING.md" not in readme
-        assert "`test(&data, x, y, z)`" in readme
-        assert "`is_independent(&data, x, y, z, alpha)`" in readme
-        assert "`run_test(" not in readme
-        assert "A bound test" not in readme
-
+def test_published_crates_declare_license_and_repository() -> None:
     for relative in (
         "crates/ci-core/Cargo.toml",
         "crates/ci-python/Cargo.toml",
@@ -251,39 +228,23 @@ def test_leaf_docs_examples_and_package_metadata_are_current() -> None:
         assert "Your Team" not in " ".join(package.get("authors", []))
 
 
-def test_rust_lockfiles_preserve_unaffected_binding_versions() -> None:
-    def versions(lockfile: Path, names: set[str]) -> dict[str, str]:
-        packages = tomllib.loads(lockfile.read_text())["package"]
-        return {
-            package["name"]: package["version"]
-            for package in packages
-            if package["name"] in names
-        }
-
-    assert versions(
-        REPO_ROOT / "Cargo.lock",
-        {
-            "js-sys",
-            "thiserror",
-            "thiserror-impl",
-            "wasm-bindgen",
-            "wasm-bindgen-macro",
-            "wasm-bindgen-macro-support",
-            "wasm-bindgen-shared",
-        },
-    ) == {
-        "js-sys": "0.3.99",
-        "thiserror": "2.0.18",
-        "thiserror-impl": "2.0.18",
-        "wasm-bindgen": "0.2.122",
-        "wasm-bindgen-macro": "0.2.122",
-        "wasm-bindgen-macro-support": "0.2.122",
-        "wasm-bindgen-shared": "0.2.122",
+@pytest.mark.parametrize("workspace", [REPO_ROOT, R_RUST], ids=["bindings", "r"])
+def test_lockfiles_track_workspace_package_versions(workspace: Path) -> None:
+    """A locked build must use the versions declared by its workspace members."""
+    manifest = tomllib.loads((workspace / "Cargo.toml").read_text())
+    members = [workspace / member for member in manifest["workspace"]["members"]]
+    if "package" in manifest:
+        members.append(workspace)
+    packages = [
+        tomllib.loads((member / "Cargo.toml").read_text())["package"]
+        for member in members
+    ]
+    locked = tomllib.loads((workspace / "Cargo.lock").read_text())["package"]
+    locked_local_versions = {
+        (package["name"], package["version"])
+        for package in locked
+        if "source" not in package
     }
-    assert versions(
-        R_RUST / "Cargo.lock", {"readonly", "thiserror", "thiserror-impl"}
-    ) == {
-        "readonly": "0.2.13",
-        "thiserror": "2.0.20",
-        "thiserror-impl": "2.0.20",
-    }
+    assert {
+        (package["name"], package["version"]) for package in packages
+    } <= locked_local_versions

@@ -2,7 +2,7 @@
 
 use statrs::distribution::{ContinuousCDF, Normal};
 
-use crate::ci_tests::pearson_correlation::{partial_correlation, RHO_CLIP_EPS};
+use crate::correlation::{clipped_fisher_transform, partial_correlation};
 use crate::dataset::Dataset;
 use crate::error::CiError;
 use crate::strategy::{CITest, CiResult, DataType, IndependenceRule, TestMeta};
@@ -38,13 +38,12 @@ impl CITest for FisherZ {
         let n_z = z.len();
 
         let (r, _dof) = partial_correlation(data, x, y, z)?;
-        let rho = r.clamp(-1.0 + RHO_CLIP_EPS, 1.0 - RHO_CLIP_EPS);
 
         // partial_correlation guarantees n >= |Z| + 3, so the radicand is >= 0
         // (n == |Z| + 3 gives statistic 0 and p = 1, matching pgmpy).
         #[allow(clippy::cast_precision_loss)]
         let scale = ((n - n_z - 3) as f64).sqrt();
-        let statistic = scale * rho.atanh();
+        let statistic = scale * clipped_fisher_transform(r);
 
         let normal =
             Normal::new(0.0, 1.0).map_err(|e| CiError::Numeric(format!("standard normal: {e}")))?;

@@ -44,15 +44,18 @@
 // documented once on the types/module rather than repeated per method.
 #![allow(clippy::missing_errors_doc)]
 
+mod options;
+
 use std::rc::Rc;
 
 use ci_core::dataset::{ColumnKind, Dataset as CoreDataset};
 use ci_core::error::CiError as CoreError;
 use ci_core::strategy::{CITest, CiResult as CoreResult, DataType, IndependenceRule, TestMeta};
-use serde::Deserialize;
 use wasm_bindgen::convert::TryFromJsValue;
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
+
+use options::{Config, DiscreteConfig, EmptyConfig, EquivalenceConfig};
 
 #[wasm_bindgen(typescript_custom_section)]
 const TS_TYPES: &'static str = r#"
@@ -60,8 +63,6 @@ export type ColumnKind = "discrete" | "continuous";
 export interface ColumnSpec { kind: ColumnKind; values: number[] | Float64Array | string[]; }
 export type ColumnsObject = Record<string, ColumnSpec>;
 export type DataInput = Dataset | ColumnsObject;
-export interface DiscreteOptions { yates?: boolean; }
-export interface EquivalenceOptions { deltaThreshold?: number; }
 "#;
 
 /// Install the panic hook so Rust panics surface as readable JS errors. Called
@@ -363,7 +364,6 @@ macro_rules! ci_test_class {
         $config:ident,
         $cfg:ident,
         $config_ts:literal,
-        $allowed_keys:expr,
         $build:expr
     ) => {
         #[doc = concat!("Data-bound `", $js_name, "` conditional-independence test.")]
@@ -387,25 +387,7 @@ macro_rules! ci_test_class {
             ) -> Result<$wrapper, JsValue> {
                 console_error_panic_hook::set_once();
                 let data = coerce_dataset(data)?;
-                // serde-wasm-bindgen reads only the *known* fields off a JS
-                // object, so unknown keys would be silently ignored; reject
-                // them explicitly (config typos must not pass unnoticed).
-                let allowed: &[&str] = $allowed_keys;
-                if let Some(ref obj) = config {
-                    for key in js_sys::Object::keys(obj).iter() {
-                        let key = key.as_string().unwrap_or_default();
-                        if !allowed.contains(&key.as_str()) {
-                            return Err(js_error(&format!(
-                                "invalid config object: unknown key {key:?} (allowed: {allowed:?})"
-                            )));
-                        }
-                    }
-                }
-                let $cfg: $config = match config {
-                    Some(obj) => serde_wasm_bindgen::from_value(obj.into())
-                        .map_err(|e| js_error(&format!("invalid config object: {e}")))?,
-                    None => $config::default(),
-                };
+                let $cfg = $config::parse(config)?;
                 let inner = $build;
                 Ok($wrapper { data, inner })
             }
@@ -450,40 +432,6 @@ macro_rules! ci_test_class {
     };
 }
 
-/// Config for the discrete power-divergence tests: `{ yates }` (default `true`).
-#[derive(Deserialize)]
-#[serde(default, rename_all = "camelCase")]
-struct DiscreteConfig {
-    yates: bool,
-}
-
-impl Default for DiscreteConfig {
-    fn default() -> Self {
-        // Yates' continuity correction on by default (scipy/pgmpy convention).
-        Self { yates: true }
-    }
-}
-
-/// Config for [`PearsonCorrelation`] and [`FisherZ`]: no options.
-#[derive(Deserialize, Default)]
-#[serde(default)]
-struct EmptyConfig {}
-
-/// Config for [`PearsonEquivalence`]: `{ deltaThreshold }` (default `0.1`).
-#[derive(Deserialize)]
-#[serde(default, rename_all = "camelCase")]
-struct EquivalenceConfig {
-    delta_threshold: f64,
-}
-
-impl Default for EquivalenceConfig {
-    fn default() -> Self {
-        Self {
-            delta_threshold: 0.1,
-        }
-    }
-}
-
 ci_test_class!(
     "ChiSquared",
     ChiSquared,
@@ -491,7 +439,6 @@ ci_test_class!(
     DiscreteConfig,
     cfg,
     "DiscreteOptions | undefined",
-    &["yates"],
     ci_core::ci_tests::ChiSquared { yates: cfg.yates }
 );
 
@@ -502,7 +449,6 @@ ci_test_class!(
     DiscreteConfig,
     cfg,
     "DiscreteOptions | undefined",
-    &["yates"],
     ci_core::ci_tests::LogLikelihood { yates: cfg.yates }
 );
 
@@ -513,7 +459,6 @@ ci_test_class!(
     DiscreteConfig,
     cfg,
     "DiscreteOptions | undefined",
-    &["yates"],
     ci_core::ci_tests::CressieRead { yates: cfg.yates }
 );
 
@@ -524,7 +469,6 @@ ci_test_class!(
     DiscreteConfig,
     cfg,
     "DiscreteOptions | undefined",
-    &["yates"],
     ci_core::ci_tests::FreemanTukey { yates: cfg.yates }
 );
 
@@ -535,7 +479,6 @@ ci_test_class!(
     DiscreteConfig,
     cfg,
     "DiscreteOptions | undefined",
-    &["yates"],
     ci_core::ci_tests::ModifiedLikelihood { yates: cfg.yates }
 );
 
@@ -546,7 +489,6 @@ ci_test_class!(
     EmptyConfig,
     _cfg,
     "Record<string, never> | undefined",
-    &[],
     ci_core::ci_tests::PearsonCorrelation::new()
 );
 
@@ -557,7 +499,6 @@ ci_test_class!(
     EquivalenceConfig,
     cfg,
     "EquivalenceOptions | undefined",
-    &["deltaThreshold"],
     ci_core::ci_tests::PearsonEquivalence {
         delta_threshold: cfg.delta_threshold
     }
@@ -570,6 +511,5 @@ ci_test_class!(
     EmptyConfig,
     _cfg,
     "Record<string, never> | undefined",
-    &[],
     ci_core::ci_tests::FisherZ::new()
 );

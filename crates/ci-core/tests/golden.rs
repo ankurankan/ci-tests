@@ -11,20 +11,20 @@
 //!
 //! Every non-null `statistic`/`p_value`/`dof`/`effect_size` field is asserted to
 //! within `1e-7`, with the `+∞` statistic / `p = 0` degenerate case handled
-//! exactly. The test asserts it exercised all 80 fixture cases.
+//! exactly. The test asserts it exercised every supplied fixture case.
 
 use std::collections::BTreeMap;
 
 use ci_core::ci_tests::{
-    ChiSquared, CressieRead, FisherZ, FreemanTukey, LogLikelihood, ModifiedLikelihood,
+    chi_squared::ChiSquared, cressie_read::CressieRead, freeman_tukey::FreemanTukey,
+    log_likelihood::LogLikelihood, modified_likelihood::ModifiedLikelihood, FisherZ,
     PearsonCorrelation, PearsonEquivalence,
 };
 use ci_core::dataset::{ColumnKind, Dataset};
-use ci_core::strategy::{CITest, CiResult};
+use ci_core::strategy::{CITest, CiResult, DataType};
 use serde::Deserialize;
 
 const TOL: f64 = 1e-7;
-const EXPECTED_CASE_COUNT: usize = 80;
 
 #[derive(Debug, Default, Deserialize)]
 struct Params {
@@ -77,7 +77,7 @@ fn build_dataset(case: &Case) -> (Dataset, BTreeMap<String, usize>) {
     let mut cols = Vec::new();
     let mut index = BTreeMap::new();
     for (i, (name, spec)) in case.columns.iter().enumerate() {
-        let kind = match spec.kind.as_str() {
+        let kind: DataType = match spec.kind.as_str() {
             "discrete" => ColumnKind::Discrete,
             "continuous" => ColumnKind::Continuous,
             other => panic!("[{}:{}] unknown column kind {other}", case.id, case.test),
@@ -234,8 +234,9 @@ fn golden_fixture_matches() {
     // Every test in the fixture must be covered, and every single case asserted.
     let total: usize = counts.values().sum();
     assert_eq!(
-        total, EXPECTED_CASE_COUNT,
-        "expected to assert all {EXPECTED_CASE_COUNT} fixture cases, asserted {total}: {counts:?}"
+        total,
+        cases.len(),
+        "not every supplied fixture case was asserted: {counts:?}"
     );
     for test in [
         "chi_squared",

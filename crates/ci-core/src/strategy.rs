@@ -45,14 +45,8 @@ impl IndependenceRule {
     }
 }
 
-/// The kind of data a test consumes.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum DataType {
-    /// Categorical data.
-    Discrete,
-    /// Numeric data.
-    Continuous,
-}
+/// Compatibility name for the column kind a test consumes.
+pub use crate::dataset::ColumnKind as DataType;
 
 /// Static description of a test: its name, supported data types, whether it is
 /// symmetric in `x`/`y`, and its independence rule.

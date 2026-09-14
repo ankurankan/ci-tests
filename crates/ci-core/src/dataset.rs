@@ -8,51 +8,11 @@
 //! and apply a missing-data convention (drop / impute) before binding.
 
 use std::collections::HashMap;
-use std::sync::{Arc, OnceLock, RwLock};
+use std::sync::{Arc, OnceLock};
 
-use crate::discrete::{build_strata_partition, StrataPartition};
 use crate::error::CiError;
 use crate::gram::GramCache;
-
-/// Total byte budget for cached stratum partitions (see
-/// [`Dataset::strata_partition`]): partitions are cached until the budget is
-/// reached; further conditioning sets compute on the fly without caching
-/// (monotone — no eviction).
-pub(crate) const MAX_STRATA_CACHE_BYTES: usize = 256 << 20;
-
-/// Keyed cache of stratum partitions plus its current byte footprint.
-#[derive(Debug, Default)]
-pub(crate) struct StrataCacheInner {
-    pub(crate) map: HashMap<Vec<usize>, Arc<StrataPartition>>,
-    bytes: usize,
-}
-
-impl StrataCacheInner {
-    /// Insert `partition` under `key` iff it fits in `budget`; returns whether
-    /// it was cached. Factored out so tests can drive a tiny budget.
-    ///
-    /// The caller must ensure `key` is absent (the cache's double-checked
-    /// lookup guarantees this); inserting an existing key would double-count
-    /// `bytes`.
-    pub(crate) fn insert_within_budget(
-        &mut self,
-        key: Vec<usize>,
-        partition: &Arc<StrataPartition>,
-        budget: usize,
-    ) -> bool {
-        debug_assert!(
-            !self.map.contains_key(&key),
-            "insert_within_budget requires an absent key"
-        );
-        let size = partition.approx_bytes();
-        if self.bytes + size > budget {
-            return false;
-        }
-        self.bytes += size;
-        self.map.insert(key, Arc::clone(partition));
-        true
-    }
-}
+use crate::strata::{StrataCache, StrataPartition};
 
 /// Whether a column holds categorical (discrete) or numeric (continuous) data.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -91,7 +51,7 @@ pub struct Dataset {
     gram: OnceLock<Option<GramCache>>,
     /// Lazily built, budget-bounded cache of stratum partitions keyed by the
     /// sorted conditioning-set indices (see [`Dataset::strata_partition`]).
-    strata_cache: RwLock<StrataCacheInner>,
+    strata_cache: StrataCache,
 }
 
 /// Canonicalize a float for factorization so that `-0.0` and `0.0` share a
@@ -179,7 +139,7 @@ impl Dataset {
             columns,
             n_rows,
             gram: OnceLock::new(),
-            strata_cache: RwLock::new(StrataCacheInner::default()),
+            strata_cache: StrataCache::default(),
         })
     }
 
@@ -259,7 +219,7 @@ impl Dataset {
     /// The stratum partition for conditioning set `z`, cached per distinct
     /// (order-insensitive) set of column indices. On a miss the partition is
     /// built outside the lock and inserted only while the total cache stays
-    /// within [`MAX_STRATA_CACHE_BYTES`]; once the budget is reached, further
+    /// within the cache's byte budget; once the budget is reached, further
     /// sets are computed per call without caching.
     ///
     /// # Errors
@@ -267,36 +227,7 @@ impl Dataset {
     /// Returns the usual column errors ([`CiError::WrongColumnKind`] /
     /// [`CiError::UnknownColumn`]) if any `z` column is not discrete.
     pub(crate) fn strata_partition(&self, z: &[usize]) -> Result<Arc<StrataPartition>, CiError> {
-        let mut key: Vec<usize> = z.to_vec();
-        key.sort_unstable();
-
-        if let Some(hit) = self
-            .strata_cache
-            .read()
-            .expect("strata cache lock poisoned")
-            .map
-            .get(&key)
-        {
-            return Ok(Arc::clone(hit));
-        }
-
-        // Build outside the lock; gather columns in sorted order so equal sets
-        // yield byte-identical partitions.
-        let z_columns: Vec<(&[usize], usize)> = key
-            .iter()
-            .map(|&zi| self.discrete(zi))
-            .collect::<Result<_, _>>()?;
-        let partition = Arc::new(build_strata_partition(&z_columns, self.n_rows));
-
-        let mut cache = self
-            .strata_cache
-            .write()
-            .expect("strata cache lock poisoned");
-        if let Some(hit) = cache.map.get(&key) {
-            return Ok(Arc::clone(hit)); // another thread won the race
-        }
-        cache.insert_within_budget(key, &partition, MAX_STRATA_CACHE_BYTES);
-        Ok(partition)
+        self.strata_cache.get_or_build(self, z)
     }
 }
 
@@ -310,7 +241,7 @@ impl Clone for Dataset {
             columns: self.columns.clone(),
             n_rows: self.n_rows,
             gram: OnceLock::new(),
-            strata_cache: RwLock::new(StrataCacheInner::default()),
+            strata_cache: StrataCache::default(),
         }
     }
 }
@@ -422,46 +353,6 @@ mod tests {
     }
 
     #[test]
-    fn strata_partition_is_cached_and_order_insensitive() {
-        let ds = Dataset::from_columns(vec![
-            (
-                "x".into(),
-                ColumnKind::Discrete,
-                vec![1., 2., 1., 2., 1., 2.],
-            ),
-            (
-                "z1".into(),
-                ColumnKind::Discrete,
-                vec![1., 1., 2., 2., 1., 2.],
-            ),
-            (
-                "z2".into(),
-                ColumnKind::Discrete,
-                vec![2., 1., 2., 1., 1., 2.],
-            ),
-        ])
-        .unwrap();
-        let a = ds.strata_partition(&[1, 2]).unwrap();
-        let b = ds.strata_partition(&[1, 2]).unwrap();
-        let c = ds.strata_partition(&[2, 1]).unwrap();
-        assert!(
-            std::sync::Arc::ptr_eq(&a, &b),
-            "repeat query must hit the cache"
-        );
-        assert!(std::sync::Arc::ptr_eq(&a, &c), "z order must not matter");
-        // A continuous column in z surfaces the usual WrongColumnKind.
-        let ds2 = Dataset::from_columns(vec![
-            ("x".into(), ColumnKind::Discrete, vec![1., 2.]),
-            ("c".into(), ColumnKind::Continuous, vec![0.1, 0.2]),
-        ])
-        .unwrap();
-        assert!(matches!(
-            ds2.strata_partition(&[1]),
-            Err(CiError::WrongColumnKind(_))
-        ));
-    }
-
-    #[test]
     fn clone_starts_with_fresh_caches() {
         let ds = Dataset::from_columns(vec![
             ("x".into(), ColumnKind::Discrete, vec![1., 2., 1., 2.]),
@@ -475,22 +366,5 @@ mod tests {
         assert_eq!(before.starts, after.starts);
         assert_eq!(before.rows, after.rows);
         assert!(!std::sync::Arc::ptr_eq(&before, &after));
-    }
-
-    #[test]
-    fn strata_cache_respects_budget() {
-        let p = std::sync::Arc::new(crate::discrete::StrataPartition {
-            starts: vec![0, 2, 4],
-            rows: vec![0, 1, 2, 3],
-        });
-        let mut inner = StrataCacheInner::default();
-        // A zero budget rejects even the first insert (strict `>` boundary).
-        assert!(!inner.insert_within_budget(vec![0], &p, 0));
-        assert_eq!(inner.bytes, 0);
-        // Budget fits exactly one copy (7 u32s = 28 bytes).
-        assert!(inner.insert_within_budget(vec![1], &p, 28));
-        assert!(!inner.insert_within_budget(vec![2], &p, 28), "over budget");
-        assert!(inner.map.contains_key(&vec![1]));
-        assert!(!inner.map.contains_key(&vec![2]));
     }
 }

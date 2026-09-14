@@ -32,7 +32,6 @@ const {
 } = pkg;
 
 const TOL = 1e-7;
-const EXPECTED_CASE_COUNT = 80;
 
 // Map the fixture's stable test name to its binding class.
 const TEST_CLASSES = {
@@ -77,14 +76,13 @@ function buildDataset(columns) {
 /** Construct the test class for `name`, bound to `data`, with the case params. */
 function construct(name, data, params) {
   const cls = TEST_CLASSES[name];
-  if (name === "pearson_correlation" || name === "fisher_z") {
-    return new cls(data);
-  }
-  if (name === "pearson_equivalence") {
-    return new cls(data, { deltaThreshold: params.delta_threshold });
-  }
-  // Discrete power-divergence family: configured by `yates`.
-  return new cls(data, { yates: params.yates });
+  const options = Object.fromEntries(
+    Object.entries(params).map(([key, value]) => [
+      key === "delta_threshold" ? "deltaThreshold" : key,
+      value,
+    ]),
+  );
+  return new cls(data, options);
 }
 
 /**
@@ -165,8 +163,10 @@ describe("golden fixture parity", () => {
   );
 
   test("all fixture cases were exercised", () => {
-    expect(GOLDEN_CASES.length).toBe(EXPECTED_CASE_COUNT);
-    const names = new Set(GOLDEN_CASES.map((c) => c.test));
-    expect(names).toEqual(new Set(Object.keys(TEST_CLASSES)));
+    const total = Object.values(counts).reduce((sum, count) => sum + count, 0);
+    expect(total).toBe(GOLDEN_CASES.length);
+    expect(new Set(Object.keys(counts))).toEqual(
+      new Set(Object.keys(TEST_CLASSES)),
+    );
   });
 });

@@ -20,17 +20,10 @@
 //! is `O = 0`-safe for every `λ > −1`: at `O = 0` the term is `0` instead of the
 //! `0·∞ = NaN` the naive form would produce for `λ < 0`.
 //!
-//! ## Conditional stratification strategy
-//!
-//! Stratification is split into a build phase and a consume phase so that the
-//! grouping work can be cached on the [`crate::dataset::Dataset`]. The build
-//! phase ([`build_strata_partition`]) produces a [`StrataPartition`] — a
-//! counting-sort permutation of the row indices by their Z-code combination —
-//! and the consume phase ([`power_divergence_conditional`]) sweeps the
-//! partition, tabulating each stratum in turn. When the mixed-radix product
-//! `∏ k_zi` overflows `usize` (very many / very-high-cardinality Z columns)
-//! the builder falls back to a [`HashMap`]-based grouping internally; the API
-//! is unchanged.
+//! Conditional tests consume a cached row partition for the conditioning set,
+//! tabulating each stratum in turn.
+
+use crate::strata::StrataPartition;
 
 /// The parameter `λ` selecting a member of the power-divergence family.
 const LAMBDA_LOG_LIKELIHOOD: f64 = 0.0;
@@ -160,28 +153,6 @@ fn power_divergence_table(table: &ContingencyTable, lambda: f64, yates: bool) ->
     Some((statistic, dof))
 }
 
-/// Rows grouped by the observed combinations of a conditioning set `Z`:
-/// `rows[starts[s] .. starts[s + 1]]` are the row indices of stratum `s`
-/// (original row order within each stratum). Built once per distinct `Z` and
-/// cached on the [`crate::dataset::Dataset`].
-#[derive(Debug)]
-pub(crate) struct StrataPartition {
-    pub(crate) starts: Vec<u32>,
-    pub(crate) rows: Vec<u32>,
-}
-
-impl StrataPartition {
-    /// Number of observed strata.
-    fn n_strata(&self) -> usize {
-        self.starts.len().saturating_sub(1)
-    }
-
-    /// Approximate heap size, for the cache budget.
-    pub(crate) fn approx_bytes(&self) -> usize {
-        4 * (self.starts.len() + self.rows.len())
-    }
-}
-
 /// Result of the discrete power-divergence test.
 pub(crate) struct DiscreteOutcome {
     pub statistic: f64,
@@ -205,102 +176,6 @@ pub(crate) fn power_divergence_unconditional(
     }
     let (statistic, dof) = power_divergence_table(&table, lambda, yates).unwrap_or((0.0, 0));
     DiscreteOutcome { statistic, dof }
-}
-
-/// When the folded space (`∏ k_zi`) fits within this many times the row count
-/// plus slack, use a flat `u32::MAX`-sentinel remap array instead of a `HashMap`.
-const DENSE_REMAP_SLACK: usize = 4096;
-
-/// Mixed-radix strides over the Z cardinalities, and the total `∏ k_zi`.
-/// `None` if the product overflows `usize` (caller falls back to hashing).
-fn fold_strides(z_columns: &[(&[usize], usize)]) -> Option<(Vec<usize>, usize)> {
-    let mut strides = Vec::with_capacity(z_columns.len());
-    let mut acc: usize = 1;
-    for &(_, card) in z_columns {
-        strides.push(acc);
-        // card >= 1 whenever there are rows; max(1) keeps n == 0 safe.
-        acc = acc.checked_mul(card.max(1))?;
-    }
-    Some((strides, acc))
-}
-
-/// Map each key to a first-seen dense id in `[0, n_strata)`, pushing the ids
-/// onto `dense_ids`; returns the number of distinct keys (`n_strata`).
-fn densify_hashed<K: Eq + std::hash::Hash>(
-    keys: impl IntoIterator<Item = K>,
-    dense_ids: &mut Vec<u32>,
-) -> usize {
-    let mut remap: std::collections::HashMap<K, u32> = std::collections::HashMap::new();
-    for key in keys {
-        let next = u32::try_from(remap.len()).expect("strata bounded by row count");
-        dense_ids.push(*remap.entry(key).or_insert(next));
-    }
-    remap.len()
-}
-
-/// Group rows by the combination of the `Z` columns' codes. Strata are
-/// identified by a mixed-radix fold (no per-row allocation); if `∏ k_zi`
-/// overflows `usize` (only reachable with very many / very-high-cardinality Z
-/// columns), falls back to hashing the per-row code tuple. Rows are then
-/// grouped with a counting sort.
-pub(crate) fn build_strata_partition(z_columns: &[(&[usize], usize)], n: usize) -> StrataPartition {
-    let mut dense_ids: Vec<u32> = Vec::with_capacity(n);
-    let n_strata: usize;
-
-    if let Some((strides, total)) = fold_strides(z_columns) {
-        // Pass 1: folded stratum id per row.
-        let folded: Vec<usize> = (0..n)
-            .map(|row| {
-                z_columns
-                    .iter()
-                    .zip(&strides)
-                    .map(|((codes, _), stride)| codes[row] * stride)
-                    .sum()
-            })
-            .collect();
-        // Pass 2: densify (flat remap when the folded space is small).
-        if total <= 4 * n + DENSE_REMAP_SLACK {
-            let mut remap = vec![u32::MAX; total];
-            let mut next = 0u32;
-            for &f in &folded {
-                if remap[f] == u32::MAX {
-                    remap[f] = next;
-                    next += 1;
-                }
-                dense_ids.push(remap[f]);
-            }
-            n_strata = next as usize;
-        } else {
-            n_strata = densify_hashed(folded.iter().copied(), &mut dense_ids);
-        }
-    } else {
-        // Radix overflow: hash the per-row code tuple to first-seen dense ids.
-        let keys = (0..n).map(|row| {
-            z_columns
-                .iter()
-                .map(|(codes, _)| codes[row])
-                .collect::<Vec<usize>>()
-        });
-        n_strata = densify_hashed(keys, &mut dense_ids);
-    }
-
-    // Pass 3: counting-sort row indices by dense stratum id.
-    let mut starts = vec![0u32; n_strata + 1];
-    for &d in &dense_ids {
-        starts[d as usize + 1] += 1;
-    }
-    for s in 0..n_strata {
-        starts[s + 1] += starts[s];
-    }
-    let mut cursor = starts.clone();
-    let mut rows = vec![0u32; n];
-    for (row, &d) in dense_ids.iter().enumerate() {
-        let slot = cursor[d as usize] as usize;
-        rows[slot] = u32::try_from(row).expect("row count fits in u32");
-        cursor[d as usize] += 1;
-    }
-
-    StrataPartition { starts, rows }
 }
 
 /// Conditional power-divergence statistic for parameter `lambda`: tabulate
@@ -337,6 +212,7 @@ pub(crate) fn power_divergence_conditional(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::strata::build_strata_partition;
 
     const LAMBDA_PEARSON: f64 = 1.0;
     const LAMBDA_CRESSIE_READ: f64 = 2.0 / 3.0;
@@ -473,7 +349,7 @@ mod tests {
     }
 
     #[test]
-    fn partition_matches_naive_grouping() {
+    fn conditional_matches_naive_grouping() {
         let mut seed = 0x00C0_FFEE_u64;
         for (n, kx, ky, z_cards) in [
             (200, 2, 2, vec![2]),
