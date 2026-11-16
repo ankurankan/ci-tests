@@ -19,11 +19,16 @@ Column kinds are inferred from the data.frame: \code{integer}/\code{logical}/\co
 on the R side before they reach the Rust core (which only handles numbers).
 }
 \author{
-\strong{Maintainer}: GIP House \email{giphouse@example.com}
+\strong{Maintainer}: Ankur Ankan \email{ankurankan@gmail.com}
 
 Authors:
 \itemize{
-  \item GIP House \email{giphouse@example.com}
+  \item GIP House
+}
+
+Other contributors:
+\itemize{
+  \item pgmpy [copyright holder]
 }
 
 }

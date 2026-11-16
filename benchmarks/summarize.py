@@ -22,17 +22,33 @@ PY_MARKS = {("pillai", "pgmpy"): "ᵃ", ("chi_square", "andrey-core"): "ᵇ", ("
             ("chi_square", "pgmpy"): "ᶜ", ("g_sq", "pgmpy"): "ᶜ",
             ("hsic", "causal-learn"): "ᵈ", ("hsic", "andrey-core"): "ᵈ"}
 PY_ROW_MARKS = {"fisher_z": "ᵉ", "pearson_t": "ᵉ"}
-R_MARKS = {("g_sq", "pcalg"): "ᶠ", ("chi_square", "bnlearn"): "ᶠ", ("g_sq", "bnlearn"): "ᶠ", ("hsic", "dHSIC"): "ᵈ"}
+R_MARKS = {("g_sq", "pcalg"): "ᶠ", ("chi_square", "bnlearn"): "ᶠᵍ", ("g_sq", "bnlearn"): "ᶠᵍ",
+           ("fisher_z", "bnlearn"): "ᵍ", ("pearson_t", "bnlearn"): "ᵍ", ("hsic", "dHSIC"): "ᵈ"}
 R_ROW_MARKS = {"fisher_z": "ᵉ", "pearson_t": "ᵉ"}
 FOOT = {
     "ᵃ": "pgmpy runs a random-forest Pillai test. FastCIT runs a linear Pillai test. The two tests differ.",
     "ᵇ": "andrey-core χ² and G² use a different degrees-of-freedom rule from FastCIT.",
     "ᶜ": "pgmpy applies the Yates correction and cannot turn it off. FastCIT runs without it.",
     "ᵈ": "Different null approximation or kernel width rule from FastCIT.",
-    "ᵉ": ("One-time setup is not part of the time. FastCIT, pcalg, causal-learn and andrey-core precompute "
-          "the correlation matrix. pgmpy and bnlearn compute it in every call. See the total-per-pass table."),
     "ᶠ": "Uses the nominal degrees of freedom. FastCIT uses the adjusted degrees of freedom.",
+    "ᵍ": ("bnlearn ci.test() checks the whole data frame in each call. "
+          "The benchmark gives it only the columns of the query."),
 }
+# The footnote of the setup mark differs for each table, because each table has its own packages.
+FOOT_E = {
+    "python": ("The time does not include the one-time setup. FastCIT, causal-learn and andrey-core precompute "
+               "the correlation matrix. FastCIT computes it in the first call and keeps it. "
+               "pgmpy computes it in every call. With the setup included, andrey-core finishes a pass "
+               "faster than FastCIT on Fisher-z and Pearson t. See the total-time tables."),
+    "r": ("The time does not include the one-time setup. FastCIT and pcalg precompute the correlation matrix. "
+          "FastCIT computes it in the first call and keeps it. bnlearn computes it in every call. "
+          "See the total-time tables."),
+}
+MARK_ORDER = "ᵃᵇᶜᵈᵉᶠᵍ"
+STAR_TABLE = ("\\* The engine raised an error or returned NaN on some queries. "
+              "The median leaves them out. See the lists below.")
+STAR_TOTAL = ("\\* The engine raised an error or returned NaN on some queries. "
+              "The total includes the time of those queries.")
 
 
 def fmt(ms):
@@ -64,9 +80,9 @@ def table(results, rows, cols, labels, marks, row_marks, key="median_ms"):
     return out
 
 
-def footnotes(marks, row_marks, extra=()):
-    used = sorted(set(marks.values()) | set(row_marks.values()))
-    lines = [f"{m} {FOOT[m]}" for m in used] + list(extra)
+def footnotes(marks, row_marks, foot_e, extra=()):
+    used = sorted(set("".join(marks.values()) + "".join(row_marks.values())), key=MARK_ORDER.index)
+    lines = [f"{m} {foot_e if m == 'ᵉ' else FOOT[m]}" for m in used] + list(extra)
     return "\n" + "\n".join(lines) + "\n" if lines else ""
 
 
@@ -122,10 +138,18 @@ def failed_list(results):
 
 def meta_block(title, m):
     lines = [f"- {title}: {m['date']}, {m['cpu']} ({m['logical_cpus']} logical CPUs), {m['os']}"]
-    lines.append("  - versions: " + ", ".join(f"{k} {v}" for k, v in m["versions"].items()))
+    commits = m.get("commits", {})
+    lines.append("  - versions: " + ", ".join(
+        f"{k} {v} (dev {commits['pgmpy']})" if k == "pgmpy" and commits.get("pgmpy") else f"{k} {v}"
+        for k, v in m["versions"].items()))
     lines.append("  - commits: " + ", ".join(f"{k} {v}" for k, v in m.get("commits", {}).items()))
     t = m.get("threads", {})
     lines.append(f"  - passes: {m['passes']}")
+    aff = m.get("affinity")
+    if aff:
+        lines.append("  - CPU affinity: " + "; ".join(f"{k} {v}" for k, v in aff.items()))
+    else:
+        lines.append("  - CPU affinity: not recorded")
     lines.append(f"  - threads: FastCIT {t.get('fastcit', 'unknown')}; environment variables: {t.get('env') or 'none set'}")
     for k in ("pools", "blas", "lapack"):
         if t.get(k):
@@ -148,19 +172,19 @@ def main(d):
     out += "\nQuick run (2 queries per group): " + ("yes" if quick else "no") + "\n"
     out += "\n## Python packages, median time of one call\n\n" + table(py["results"], PY_ROWS, PY_COLS, PY_LABELS, PY_MARKS, PY_ROW_MARKS)
     failed = failed_list(py["results"])
-    out += footnotes(PY_MARKS, PY_ROW_MARKS, ["\\* The engine raised an error or returned NaN on some queries. "
-                                                "The median leaves them out. See the lists below."] if failed else [])
+    out += footnotes(PY_MARKS, PY_ROW_MARKS, FOOT_E["python"], [STAR_TABLE] if failed else [])
     out += "\n## R packages, median time of one call\n\n" + table(r["results"], R_ROWS, R_COLS, R_LABELS, R_MARKS, R_ROW_MARKS)
     failed_r = failed_list(r["results"])
-    out += footnotes(R_MARKS, R_ROW_MARKS, ["\\* The engine raised an error or returned NaN on some queries. "
-                                              "The median leaves them out. See the lists below."] if failed_r else [])
+    out += footnotes(R_MARKS, R_ROW_MARKS, FOOT_E["r"], [STAR_TABLE] if failed_r else [])
     out += ("\n## Python packages, total time of one pass\n\n"
             "Each pass builds the state of the engine (data conversion, test object, correlation matrix) "
             "and then runs all queries of the group once. The table shows the best of 3 passes.\n\n")
     out += table(py["results"], PY_ROWS, PY_COLS, PY_LABELS, {}, {}, key="total_ms")
+    out += "\n" + STAR_TOTAL + "\n" if failed else ""
     out += ("\n## R packages, total time of one pass\n\nThe table shows the best of 3 passes. "
             "bnlearn and dHSIC have no setup.\n\n")
     out += table(r["results"], R_ROWS, R_COLS, R_LABELS, {}, {}, key="total_ms")
+    out += "\n" + STAR_TOTAL + "\n" if failed_r else ""
     if failed or failed_r:
         out += "\n## Errors and NaN\n\n" + "\n".join(["Python:"] * bool(failed) + failed + ["R:"] * bool(failed_r) + failed_r) + "\n"
     else:

@@ -149,7 +149,7 @@ def test_r_package_completes_the_mit_license_template() -> None:
     description = (REPO_ROOT / "crates" / "ci-r" / "DESCRIPTION").read_text()
     assert "License: MIT + file LICENSE" in description
     assert (REPO_ROOT / "crates" / "ci-r" / "LICENSE").read_text() == (
-        "YEAR: 2026\nCOPYRIGHT HOLDER: GIP House\n"
+        "YEAR: 2026\nCOPYRIGHT HOLDER: pgmpy\n"
     )
 
 

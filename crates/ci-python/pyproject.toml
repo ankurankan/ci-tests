@@ -3,6 +3,13 @@ name = "fastcit"
 description = "FastCIT: Fast Conditional Independence Tests"
 version = "0.1.0"
 requires-python = ">=3.10,<3.15"
+authors = [
+  { name = "Ankur Ankan", email = "ankurankan@gmail.com" },
+  { name = "GIP House" },
+]
+maintainers = [
+  { name = "Ankur Ankan", email = "ankurankan@gmail.com" },
+]
 dependencies = [
   "numpy>=1.26",
 ]

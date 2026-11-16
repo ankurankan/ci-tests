@@ -26,12 +26,15 @@ read_data <- function(group) read.csv(file.path(outdir, Q[[group]]$data), check.
 
 # An engine factory builds the test objects outside the timer.
 # It returns run(x, y, z) -> list(stat, p). run() runs inside the timer.
-bn <- function(data, test) {
-  function(x, y, z) {
-    r <- if (length(z)) bnlearn::ci.test(x, y, z, data = data, test = test)
-         else bnlearn::ci.test(x, y, data = data, test = test)
-    list(stat = unname(r$statistic), p = unname(r$p.value))
-  }
+# bnlearn ci.test() checks the whole data frame in each call. The query gets only its own columns.
+# The subset is built before the timer starts, so the timer covers only the ci.test() call.
+bn_subset <- function(data, test) {
+  list(prepare = function(x, y, z) data[, unique(c(x, y, z)), drop = FALSE],
+       run = function(sub, x, y, z) {
+         r <- if (length(z)) bnlearn::ci.test(x, y, z, data = sub, test = test)
+              else bnlearn::ci.test(x, y, data = sub, test = test)
+         list(stat = unname(r$statistic), p = unname(r$p.value))
+       })
 }
 fc <- function(ctor, df) {
   function() {
@@ -51,8 +54,9 @@ time_engine <- function(factory, qs) {
     total <- setup
     for (i in seq_along(qs)) {
       q <- qs[[i]]; z <- as.character(unlist(q$z))
+      arg <- if (is.list(run)) run$prepare(q$x, q$y, z) else NULL  # not timed
       t0 <- Sys.time()
-      r <- tryCatch(run(q$x, q$y, z), error = function(e) {
+      r <- tryCatch(if (is.list(run)) run$run(arg, q$x, q$y, z) else run(q$x, q$y, z), error = function(e) {
         if (!err[i]) message("  error: ", conditionMessage(e))
         NULL
       })
@@ -85,24 +89,24 @@ h <- read_data("hsic")
 ROWS <- list(
   chi_square = list(group = "discrete", label = "chi-squared", engines = list(
     fastcit = fc(function(ds) fastcit::chi_squared(ds, yates = FALSE), dint),
-    bnlearn = function() bn(dfac, "x2"),
-    `bnlearn (adf)` = function() bn(dfac, "x2-adf"))),
+    bnlearn = function() bn_subset(dfac, "x2"),
+    `bnlearn (adf)` = function() bn_subset(dfac, "x2-adf"))),
   g_sq = list(group = "discrete", label = "G-squared", engines = list(
     fastcit = fc(function(ds) fastcit::log_likelihood(ds, yates = FALSE), dint),
     pcalg = pc_disc(FALSE),
     `pcalg (adaptDF)` = pc_disc(TRUE),
-    bnlearn = function() bn(dfac, "mi"),
-    `bnlearn (adf)` = function() bn(dfac, "mi-adf"))),
+    bnlearn = function() bn_subset(dfac, "mi"),
+    `bnlearn (adf)` = function() bn_subset(dfac, "mi-adf"))),
   fisher_z = list(group = "gaussian", label = "Fisher-z", engines = list(
     fastcit = fc(fastcit::fisher_z, g),
     pcalg = function() {
       ss <- list(C = cor(g), n = nrow(g))  # the correlation matrix is built once, outside the timer
       function(x, y, z) list(p = pcalg::gaussCItest(gi[[x]], gi[[y]], unname(gi[z]), ss))
     },
-    bnlearn = function() bn(g, "zf"))),
+    bnlearn = function() bn_subset(g, "zf"))),
   pearson_t = list(group = "gaussian", label = "Pearson t", engines = list(
     fastcit = fc(fastcit::pearson_correlation, g),
-    bnlearn = function() bn(g, "cor"))),
+    bnlearn = function() bn_subset(g, "cor"))),
   hsic = list(group = "hsic", label = "HSIC (median width)", engines = list(
     fastcit = fc(function(ds) fastcit::hsic(ds, bandwidth = "median"), h),
     dHSIC = function() function(x, y, z) {
@@ -125,10 +129,13 @@ fastcit_commit <- function() {
   paste0(head, if (nzchar(dirty)) "-dirty" else "")
 }
 env_threads <- Filter(nzchar, Sys.getenv(c("OMP_NUM_THREADS", "OPENBLAS_NUM_THREADS", "MKL_NUM_THREADS")))
+affinity <- tryCatch({
+  l <- readLines("/proc/self/status"); trimws(sub("^Cpus_allowed_list:", "", grep("^Cpus_allowed_list", l, value = TRUE)))
+}, error = function(e) "")
 meta <- list(
   date = format(Sys.time(), "%Y-%m-%d %H:%M:%S"), cpu = cpu, logical_cpus = parallel::detectCores(),
   os = paste(Sys.info()[["sysname"]], Sys.info()[["release"]]), r = R.version.string, quick = quick,
-  passes = PASSES, uptime_start = sh("uptime"),
+  passes = PASSES, uptime_start = sh("uptime"), affinity = list(cpus_allowed_list = affinity),
   versions = list(fastcit = as.character(packageVersion("fastcit")), pcalg = as.character(packageVersion("pcalg")),
                   bnlearn = as.character(packageVersion("bnlearn")), dHSIC = as.character(packageVersion("dHSIC"))),
   commits = list(fastcit = fastcit_commit()),

@@ -1,13 +1,13 @@
 # FastCIT: Fast Conditional Independence Tests
 
-[![CI](https://img.shields.io/github/actions/workflow/status/GiPHouse/Conditional-Independence-Testing/rust.yml?branch=main&logo=github&label=CI)](https://github.com/GiPHouse/Conditional-Independence-Testing/actions)
-[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/GiPHouse/Conditional-Independence-Testing/blob/main/LICENSE)
+[![CI](https://img.shields.io/github/actions/workflow/status/pgmpy/ci-tests/rust.yml?branch=main&logo=github&label=CI)](https://github.com/pgmpy/ci-tests/actions)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/pgmpy/ci-tests/blob/main/LICENSE)
 
-FastCIT is a library of conditional independence tests for causal discovery. The core is written in Rust. Bindings exist for Python, R and JavaScript.
+FastCIT is a library of conditional independence tests for causal discovery. FastCIT has a Rust core. Bindings exist for Python, R and JavaScript.
 
 ## Install
 
-Choose your language and run one command.
+Choose your language. Run one command.
 
 | Language | Command |
 |---|---|
@@ -133,13 +133,16 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 | GCM (`gcm`) | Continuous |
 | Pillai's trace (`pillai`) | Mixed (discrete and continuous) |
 
+Python and JavaScript use class names, for example `FisherZ` and `PillaiTrace`.
+
 ## Performance
 
 The tables show the median time of one test call, in milliseconds. Lower is better.
-A dash means the package does not have the test.
+A dash means the package does not offer the test, or the benchmark has no result.
 
-The Python run used an Intel Core Ultra 5 125U (14 logical CPUs) on Linux, on 2026-11-16. The pgmpy version is `dev`, commit a67c17d9.
-FastCIT is slower than pgmpy and andrey-core on KCI at n = 1 000.
+The Python run and the R run used the same machine. It has an Intel Core Ultra 5 125U (14 logical CPUs) and runs Linux. Both runs took place on 2026-11-16. The pgmpy version is `dev`, commit a67c17d9.
+FastCIT runs on one thread. On this machine, the Python packages use numpy with 14 OpenBLAS threads.
+FastCIT is slower than andrey-core on KCI at n = 300 and n = 1 000. It is also slower than pgmpy on KCI at n = 1 000.
 
 ### Python packages, median time of one call
 
@@ -155,32 +158,33 @@ FastCIT is slower than pgmpy and andrey-core on KCI at n = 1 000.
 | GCM | 0.592 | 4.02 | — | — |
 | Pillai | 0.124 | 142ᵃ | — | — |
 
-- ᵃ pgmpy runs a random-forest Pillai test. FastCIT runs a linear Pillai test. The tests differ.
-- ᵇ andrey-core uses a different degrees-of-freedom rule for χ² and G².
+- ᵃ pgmpy runs a random-forest Pillai test. FastCIT runs a linear Pillai test. The two tests differ.
+- ᵇ andrey-core χ² and G² use a different degrees-of-freedom rule from FastCIT.
 - ᶜ pgmpy applies the Yates correction and cannot turn it off. FastCIT runs without it.
-- ᵈ The null approximation or the kernel width rule differs from FastCIT.
-- ᵉ The time does not include the one-time setup. FastCIT, causal-learn and andrey-core precompute the correlation matrix. pgmpy computes it in every call.
+- ᵈ Different null approximation or kernel width rule from FastCIT.
+- ᵉ The time does not include the one-time setup. FastCIT, causal-learn and andrey-core precompute the correlation matrix. FastCIT computes it in the first call and keeps it. pgmpy computes it in every call. With the setup included, andrey-core finishes a pass faster than FastCIT on Fisher-z and Pearson t. See the totals in [summary.md](benchmarks/results/summary.md).
 - \* pgmpy returned NaN for one G² query. The median leaves it out.
 
 ### R packages, median time of one call
 
 | Test | FastCIT (R) | pcalg | bnlearn | dHSIC |
 |---|---:|---:|---:|---:|
-| χ² | 0.210 | — | 1.86ᶠ | — |
-| G² | 0.070 | 9.92ᶠ | 1.60ᶠ | — |
-| Fisher-zᵉ | 0.013 | 0.033 | 1.33 | — |
-| Pearson tᵉ | 0.029 | — | 1.39 | — |
-| HSIC (median width) | 1.40 | — | — | 6.13ᵈ |
+| χ² | 0.212 | — | 0.635ᶠᵍ | — |
+| G² | 0.093 | 11.6ᶠ | 0.315ᶠᵍ | — |
+| Fisher-zᵉ | 0.015 | 0.033 | 0.398ᵍ | — |
+| Pearson tᵉ | 0.013 | — | 0.394ᵍ | — |
+| HSIC (median width) | 1.40 | — | — | 6.10ᵈ |
 
-- ᵈ The null approximation or the kernel width rule differs from FastCIT.
-- ᵉ The time does not include the one-time setup. FastCIT and pcalg precompute the correlation matrix. bnlearn computes it in every call.
-- ᶠ The package uses the nominal degrees of freedom. FastCIT uses the adjusted degrees of freedom.
+- ᵈ Different null approximation or kernel width rule from FastCIT.
+- ᵉ The time does not include the one-time setup. FastCIT and pcalg precompute the correlation matrix. FastCIT computes it in the first call and keeps it. bnlearn computes it in every call. See the totals in [summary.md](benchmarks/results/summary.md).
+- ᶠ Uses the nominal degrees of freedom. FastCIT uses the adjusted degrees of freedom.
+- ᵍ bnlearn ci.test() checks the whole data frame in each call. The benchmark gives it only the columns of the query.
 
 The [benchmarks](benchmarks/) folder explains the method and the total time of one pass. It also shows how to run the benchmark.
 
 ## Documentation and contributing
 
-Read the [API documentation](https://giphouse.github.io/Conditional-Independence-Testing/).
+Read the [API documentation](https://pgmpy.github.io/ci-tests/).
 Read [CONTRIBUTING.md](CONTRIBUTING.md) before you open a pull request.
 
 ## License

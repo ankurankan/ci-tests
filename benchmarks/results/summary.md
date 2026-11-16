@@ -5,22 +5,24 @@ The first two tables give the median time of one test call, in milliseconds. The
 ## Setup
 
 - Python run: 2026-11-16 19:19:50, Intel(R) Core(TM) Ultra 5 125U (14 logical CPUs), Linux 6.8.0-147-generic
-  - versions: fastcit 0.1.0, pgmpy 1.1.0, causal-learn 0.1.4.5, andrey-core 0.17.1, numpy 2.4.1, pandas 3.0.0
+  - versions: fastcit 0.1.0, pgmpy 1.1.0 (dev a67c17d9), causal-learn 0.1.4.5, andrey-core 0.17.1, numpy 2.4.1, pandas 3.0.0, scipy 1.17.0, scikit-learn 1.8.0
   - commits: fastcit b4dafa4, pgmpy a67c17d9
   - passes: 3
+  - CPU affinity: not recorded
   - threads: FastCIT single-threaded (no rayon); environment variables: none set
   - pools: openblas (libscipy_openblas64_-fdde5778.so), 14 threads; openblas (libscipy_openblas-6cdc3b4a.so), 14 threads; openmp (libgomp-e985bcbb.so.1.0.0), 14 threads
   - uptime before: `19:19:50 up  5:41,  1 user,  load average: 1.50, 3.31, 3.87`
   - uptime after: `19:22:12 up  5:43,  1 user,  load average: 8.46, 6.25, 4.93`
-- R run: 2026-11-16 19:22:17, Intel(R) Core(TM) Ultra 5 125U (14 logical CPUs), Linux 6.8.0-147-generic
+- R run: 2026-11-16 19:46:06, Intel(R) Core(TM) Ultra 5 125U (14 logical CPUs), Linux 6.8.0-147-generic
   - versions: fastcit 0.0.0.9000, pcalg 2.7.12, bnlearn 5.2.1, dHSIC 2.2
-  - commits: fastcit b4dafa4
+  - commits: fastcit 6361fa3
   - passes: 3
+  - CPU affinity: cpus_allowed_list 0-3
   - threads: FastCIT single-threaded (no rayon); environment variables: none set
   - blas: /home/ankur/miniconda3/envs/cir-dev/lib/libopenblasp-r0.3.34.so
   - lapack: /home/ankur/miniconda3/envs/cir-dev/lib/libopenblasp-r0.3.34.so
-  - uptime before: `19:22:17 up  5:43,  1 user,  load average: 7.94, 6.18, 4.91`
-  - uptime after: `19:22:26 up  5:43,  1 user,  load average: 7.46, 6.11, 4.89`
+  - uptime before: `19:46:06 up  6:07,  1 user,  load average: 1.18, 2.10, 3.15`
+  - uptime after: `19:46:14 up  6:07,  1 user,  load average: 1.30, 2.10, 3.14`
 
 Quick run (2 queries per group): no
 
@@ -40,24 +42,25 @@ Quick run (2 queries per group): no
 
 ᵃ pgmpy runs a random-forest Pillai test. FastCIT runs a linear Pillai test. The two tests differ.
 ᵇ andrey-core χ² and G² use a different degrees-of-freedom rule from FastCIT.
-ᵈ Different null approximation or kernel width rule from FastCIT.
-ᵉ One-time setup is not part of the time. FastCIT, pcalg, causal-learn and andrey-core precompute the correlation matrix. pgmpy and bnlearn compute it in every call. See the total-per-pass table.
 ᶜ pgmpy applies the Yates correction and cannot turn it off. FastCIT runs without it.
+ᵈ Different null approximation or kernel width rule from FastCIT.
+ᵉ The time does not include the one-time setup. FastCIT, causal-learn and andrey-core precompute the correlation matrix. FastCIT computes it in the first call and keeps it. pgmpy computes it in every call. With the setup included, andrey-core finishes a pass faster than FastCIT on Fisher-z and Pearson t. See the total-time tables.
 \* The engine raised an error or returned NaN on some queries. The median leaves them out. See the lists below.
 
 ## R packages, median time of one call
 
 | Test | FastCIT (R) | pcalg | bnlearn | dHSIC |
 |---|---:|---:|---:|---:|
-| χ² | 0.210 | — | 1.86ᶠ | — |
-| G² | 0.070 | 9.92ᶠ | 1.60ᶠ | — |
-| Fisher-zᵉ | 0.013 | 0.033 | 1.33 | — |
-| Pearson tᵉ | 0.029 | — | 1.39 | — |
-| HSIC (median width) | 1.40 | — | — | 6.13ᵈ |
+| χ² | 0.212 | — | 0.635ᶠᵍ | — |
+| G² | 0.093 | 11.6ᶠ | 0.315ᶠᵍ | — |
+| Fisher-zᵉ | 0.015 | 0.033 | 0.398ᵍ | — |
+| Pearson tᵉ | 0.013 | — | 0.394ᵍ | — |
+| HSIC (median width) | 1.40 | — | — | 6.10ᵈ |
 
 ᵈ Different null approximation or kernel width rule from FastCIT.
-ᵉ One-time setup is not part of the time. FastCIT, pcalg, causal-learn and andrey-core precompute the correlation matrix. pgmpy and bnlearn compute it in every call. See the total-per-pass table.
+ᵉ The time does not include the one-time setup. FastCIT and pcalg precompute the correlation matrix. FastCIT computes it in the first call and keeps it. bnlearn computes it in every call. See the total-time tables.
 ᶠ Uses the nominal degrees of freedom. FastCIT uses the adjusted degrees of freedom.
+ᵍ bnlearn ci.test() checks the whole data frame in each call. The benchmark gives it only the columns of the query.
 
 ## Python packages, total time of one pass
 
@@ -75,17 +78,19 @@ Each pass builds the state of the engine (data conversion, test object, correlat
 | GCM | 34.7 | 221 | — | — |
 | Pillai | 5.88 | 10 299 | — | — |
 
+\* The engine raised an error or returned NaN on some queries. The total includes the time of those queries.
+
 ## R packages, total time of one pass
 
 The table shows the best of 3 passes. bnlearn and dHSIC have no setup.
 
 | Test | FastCIT (R) | pcalg | bnlearn | dHSIC |
 |---|---:|---:|---:|---:|
-| χ² | 24.0 | — | 94.8 | — |
-| G² | 8.14 | 1 064 | 82.2 | — |
-| Fisher-z | 4.91 | 7.59 | 67.3 | — |
-| Pearson t | 12.1 | — | 71.7 | — |
-| HSIC (median width) | 40.3 | — | — | 198 |
+| χ² | 25.2 | — | 31.5 | — |
+| G² | 9.96 | 1 333 | 15.4 | — |
+| Fisher-z | 4.54 | 6.21 | 19.8 | — |
+| Pearson t | 4.50 | — | 19.9 | — |
+| HSIC (median width) | 39.5 | — | — | 192 |
 
 ## Errors and NaN
 

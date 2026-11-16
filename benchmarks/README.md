@@ -59,7 +59,8 @@ The script builds this matrix once, outside the timer.
 ## Data
 
 `data.py` writes all data.
-The data are synthetic, and the seeds are fixed.
+The data are synthetic.
+The script fixes the seeds.
 The script downloads nothing.
 
 | Data | Shape | Used by |
@@ -80,11 +81,13 @@ The script downloads nothing.
 
 ## Install
 
-Use Python 3.10 or newer and a recent R.
+Use Python 3.11 to 3.14.
+Use a recent R.
 Install the Python packages with pinned versions.
+The run in `results` used these versions of numpy, pandas, scipy and scikit-learn.
 
 ```bash
-pip install causal-learn==0.1.4.5 andrey-core==0.17.1 pandas numpy threadpoolctl
+pip install causal-learn==0.1.4.5 andrey-core==0.17.1 numpy==2.4.1 pandas==3.0.0 scipy==1.17.0 scikit-learn==1.8.0 threadpoolctl
 pip install "pgmpy @ git+https://github.com/pgmpy/pgmpy.git@a67c17d9"
 ```
 
@@ -95,7 +98,9 @@ Note the commit of the repository in your result.
 pip install ./crates/ci-python
 ```
 
-You can also run `maturin build --release -m crates/ci-python/Cargo.toml` and install the wheel.
+You can also build a wheel instead.
+Run `maturin build --release -m crates/ci-python/Cargo.toml`.
+Then install the wheel.
 
 Install the R packages with pinned versions.
 The pcalg package needs the Bioconductor packages `graph` and `RBGL`.
@@ -110,13 +115,21 @@ remotes::install_version("pcalg", "2.7.12")
 
 Install the FastCIT R package from this repository.
 
+The build writes the package file to the current folder.
+Build in a temporary folder, so the repository stays clean.
+
 ```bash
-R CMD build crates/ci-r
+REPO="$(pwd)"
+cd "$(mktemp -d)"
+R CMD build "$REPO/crates/ci-r"
 R CMD INSTALL fastcit_*.tar.gz
+cd "$REPO"
 ```
 
-The scripts record the installed versions, the FastCIT commit and the thread settings.
-The FastCIT commit gets the suffix `-dirty` when the working tree has changes.
+The scripts record the installed versions, the FastCIT commit, the thread settings and the CPU affinity.
+The FastCIT commit is the commit of the checkout that holds the scripts.
+It gets the suffix `-dirty` when the working tree has changes.
+Set `FASTCIT_COMMIT` when the installed FastCIT comes from another commit.
 The scripts read the pgmpy commit from the pip metadata.
 If you use a source archive, set `PGMPY_COMMIT=a67c17d9` before you run `bench_python.py`.
 Without this value, the scripts record `unknown`.
@@ -147,6 +160,11 @@ The scripts use the default thread count of each package.
 FastCIT runs on one thread.
 The scripts record the BLAS libraries and their thread counts.
 
+The R run in `results` ran pinned to the two P-cores with `taskset -c 0-3`.
+The Python run did not use pinning.
+Its rival packages use numpy with 14 OpenBLAS threads, and pinning would slow them down.
+The pinning keeps the single-threaded R timings stable.
+
 To publish a result, copy the files to the results folder.
 
 ```bash
@@ -172,7 +190,7 @@ The `results` folder holds the files of the last full run.
 
 Each cell holds the median time of one test call, in milliseconds.
 A lower number is better.
-A dash means that the package does not offer the test.
+A dash means that the package does not offer the test, or that the benchmark has no result.
 A star means that the package raised an error or returned NaN on some queries.
 The median leaves those queries out.
 
@@ -199,6 +217,11 @@ Known differences:
 - pgmpy `PillaiTrace` uses a random forest.
 - causal-learn, andrey-core and dHSIC use a different kernel width or null approximation for HSIC.
   causal-learn uses a different one for KCI.
+- bnlearn `ci.test()` checks the whole data frame in each call.
+  The benchmark gives it only the columns of the query.
+  This is closer to the cost inside bnlearn structure learning.
+- andrey-core KCI keeps a cache of the eigendecomposition of each conditioning set across queries.
+  13 of the 30 queries at n = 300 reuse a conditioning set.
 - andrey-core KCI can swap X and Y.
   The table compares it with FastCIT with X and Y swapped when this gives a closer match.
 

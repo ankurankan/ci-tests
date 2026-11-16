@@ -25,8 +25,8 @@ This document provides guidelines and instructions for contributing to the CI Te
 
 1. **Clone the repository**:
 ```bash
-   git clone https://github.com/GiPHouse/Conditional-Independence-Testing
-   cd Conditional-Independence-Testing
+   git clone https://github.com/pgmpy/ci-tests
+   cd ci-tests
 ```
 
 2. **Build the core crate** (each binding has its own toolchain; see [Testing](#testing)):
@@ -66,7 +66,7 @@ If all commands complete successfully, your environment is ready!
 
 ## Repository Structure
 ```
-Conditional-Independence-Testing/
+ci-tests/
 ├── crates/                 # Rust workspace
 │   ├── ci-core/           # Core CI test implementations, Dataset, CITest trait, registry
 │   ├── ci-python/         # Python bindings (PyO3 + maturin)

@@ -44,11 +44,25 @@ def version(dist):
         return "unknown"
 
 
-def sh(cmd):
+def sh(*cmd):
     try:
-        return subprocess.run(cmd, capture_output=True, text=True, shell=True).stdout.strip()
+        return subprocess.run(list(cmd), capture_output=True, text=True).stdout.strip()
     except OSError:
         return ""
+
+
+def cpus_allowed():
+    """Return the CPU affinity: the Linux Cpus_allowed_list value and the scheduler affinity."""
+    info = {}
+    try:
+        for line in Path("/proc/self/status").read_text().splitlines():
+            if line.startswith("Cpus_allowed_list"):
+                info["cpus_allowed_list"] = line.split(":", 1)[1].strip()
+    except OSError:
+        pass
+    if hasattr(os, "sched_getaffinity"):
+        info["sched_getaffinity"] = sorted(os.sched_getaffinity(0))
+    return info
 
 
 def cpu_name():
@@ -238,9 +252,17 @@ def pgmpy_commit():
 
 
 def fastcit_commit():
-    root = Path(__file__).resolve().parent
-    head = sh(f"git -C {root} rev-parse --short HEAD") or "unknown"
-    dirty = sh(f"git -C {root} status --porcelain")
+    """Return the commit of the checkout that holds this script, or the FASTCIT_COMMIT value.
+
+    The commit of the checkout is not always the commit that built the installed wheel.
+    Set FASTCIT_COMMIT when they differ.
+    """
+    env = os.environ.get("FASTCIT_COMMIT", "")
+    if env:
+        return env
+    root = str(Path(__file__).resolve().parent)
+    head = sh("git", "-C", root, "rev-parse", "--short", "HEAD") or "unknown"
+    dirty = sh("git", "-C", root, "status", "--porcelain")
     return head + ("-dirty" if dirty else "")
 
 
@@ -272,12 +294,14 @@ def main(outdir, quick):
             "fastcit": version("fastcit"), "pgmpy": version("pgmpy") if version("pgmpy") != "unknown" else getattr(pgmpy, "__version__", "dev"),
             "causal-learn": version("causal-learn"), "andrey-core": version("andrey-core"),
             "numpy": np.__version__, "pandas": pd.__version__,
+            "scipy": version("scipy"), "scikit-learn": version("scikit-learn"),
         },
         "commits": {
             "fastcit": fastcit_commit(),
             "pgmpy": pgmpy_commit(),
         },
         "threads": thread_info(),
+        "affinity": cpus_allowed(),
     }
     results = {}
     cache = {}
