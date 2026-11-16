@@ -18,6 +18,13 @@ from typing import Any
 
 DEFAULT_GOLDEN = Path(__file__).with_name("golden.json")
 DEFAULT_TOLERANCE = 1e-7
+# pgmpy's Pillai statistic and effect size come from sklearn's iterative CCA,
+# which stops at its own tolerance (largest measured relative gap 3.1e-9).
+PILLAI_STAT_REL_TOL = 1e-8
+# pgmpy computes the p-value as 1 - cdf, which floors near 1e-16 in absolute
+# terms, so the p-value gets an absolute floor, else the fixture's relative 1e-9.
+PILLAI_P_ABS_FLOOR = 1e-15
+PILLAI_P_REL_TOL = 1e-9
 MISSING = object()
 DISCRETE_TESTS = {
     "chi_squared",
@@ -42,6 +49,37 @@ def build_kernel(spec: dict[str, Any] | None) -> Any:
     raise ValueError(f"unknown kernel type: {spec['type']}")
 
 
+class LinearProbabilityModel:
+    """OLS estimator for pgmpy's residualization (sklearn-compatible, no args)."""
+
+    def get_params(self, deep: bool = True) -> dict[str, Any]:
+        return {}
+
+    def set_params(self, **params: Any) -> "LinearProbabilityModel":
+        return self
+
+    def fit(self, X: Any, y: Any) -> "LinearProbabilityModel":
+        import numpy as np
+
+        features = np.asarray(X, dtype=float)
+        target = np.asarray(y)
+        self._coef, *_ = np.linalg.lstsq(features, target.astype(float), rcond=None)
+        classes = np.unique(target)
+        indicators = (target[:, None] == classes[None, :]).astype(float)
+        self._proba_coef, *_ = np.linalg.lstsq(features, indicators, rcond=None)
+        return self
+
+    def predict(self, X: Any) -> Any:
+        import numpy as np
+
+        return np.asarray(X, dtype=float) @ self._coef
+
+    def predict_proba(self, X: Any) -> Any:
+        import numpy as np
+
+        return np.asarray(X, dtype=float) @ self._proba_coef
+
+
 Constructor = Callable[[ModuleType, Any, dict[str, Any]], Any]
 CONSTRUCTORS: dict[str, Constructor] = {
     "chi_squared": lambda m, df, p: m.ChiSquare(data=df),
@@ -61,6 +99,10 @@ CONSTRUCTORS: dict[str, Constructor] = {
         kernel=build_kernel(p["kernel"]),
         bandwidth=p["bandwidth"],
         null_dist=p["null_dist"],
+    ),
+    "gcm": lambda m, df, p: m.GCM(data=df),
+    "pillai": lambda m, df, p: m.PillaiTrace(
+        data=df, estimator=LinearProbabilityModel()
     ),
     "kci": lambda m, df, p: m.KCI(
         data=df,
@@ -82,9 +124,14 @@ def should_skip(case: dict[str, Any]) -> str | None:
 
 def build_dataframe(case: dict[str, Any], pandas: ModuleType) -> Any:
     """Convert language-neutral fixture columns to a pandas DataFrame."""
-    return pandas.DataFrame(
+    frame = pandas.DataFrame(
         {name: spec["values"] for name, spec in case["columns"].items()}
     )
+    if case.get("test") == "pillai":
+        for name, spec in case["columns"].items():
+            if spec.get("kind") == "discrete":
+                frame[name] = frame[name].astype("category")
+    return frame
 
 
 def _fields_match(
@@ -151,13 +198,21 @@ def compare_actual_fields(
     """Separate strict field mismatches from declared pgmpy divergences."""
     errors: list[str] = []
     divergences: list[str] = []
+    rel_tol = case.get("rel_tol")
+    pillai = case.get("test") == "pillai"
     for field, expected_value in case["expected"].items():
+        field_tolerance, field_rel_tol = tolerance, rel_tol
+        if pillai and field in ("statistic", "effect_size"):
+            field_rel_tol = PILLAI_STAT_REL_TOL
+        elif pillai and field == "p_value":
+            field_tolerance = max(PILLAI_P_ABS_FLOOR, PILLAI_P_REL_TOL * abs(expected_value))
+            field_rel_tol = None
         field_errors = compare_fields(
             case["id"],
             {field: expected_value},
             {field: actual[field]},
-            tolerance,
-            case.get("rel_tol"),
+            field_tolerance,
+            field_rel_tol,
         )
         if not field_errors:
             continue

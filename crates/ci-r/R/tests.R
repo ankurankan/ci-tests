@@ -121,6 +121,69 @@ fisher_z <- function(data) {
   )
 }
 
+#' Generalised covariance measure (GCM) continuous CI test.
+#'
+#' Residualizes `X` and `Y` on the conditioning variables with linear
+#' regression, then tests the mean of the product of the residuals with a
+#' studentised z statistic. Only continuous columns are supported: a factor
+#' column raises a "wrong column kind" error. Degenerate inputs raise errors
+#' rather than returning `NaN`. Conditioning sets whose columns are linearly
+#' dependent (duplicate or nested categorical variables, a constant column)
+#' raise a degenerate-data error, whereas pgmpy fits them by least squares.
+#'
+#' @param data A [dataset()] result or a data.frame.
+#' @return A `cir_test` bound to `data`.
+#' @examples
+#' set.seed(1)
+#' df <- data.frame(Z = rnorm(100))
+#' df$X <- df$Z + rnorm(100)
+#' df$Y <- df$Z + rnorm(100)
+#' run_test(gcm(df), "X", "Y", "Z")
+#' @export
+gcm <- function(data) {
+  ds <- .cir_as_dataset(data)
+  .cir_make_test(
+    GCM$new(ds$ptr), # nolint: object_usage_linter.
+    ds,
+    "gcm"
+  )
+}
+
+#' Pillai trace CI test for mixed data.
+#'
+#' Residualizes `X` and `Y` on the conditioning variables with linear
+#' regression (pgmpy's Pillai default is a random forest) and computes the
+#' Pillai trace from the exact canonical correlations of the residuals.
+#' Conditioning variables are one-hot encoded minus one level. A categorical
+#' `X` or `Y` becomes `K - 1` level indicators, residualized with a linear
+#' probability model. Factor and numeric columns may be mixed. Degenerate
+#' inputs raise errors instead of returning `NaN`. Conditioning sets whose columns are linearly
+#' dependent (duplicate or nested categorical variables, a constant column)
+#' raise a degenerate-data error, whereas pgmpy fits them by least squares.
+#' With few rows relative to the conditioning columns and categorical levels
+#' (`n - columns < p + q`), the test returns `p = 0` ("dependent"), as pgmpy
+#' does.
+#'
+#' @param data A [dataset()] result or a data.frame.
+#' @return A `cir_test` bound to `data`.
+#' @examples
+#' set.seed(1)
+#' df <- data.frame(
+#'   X = factor(sample(c("a", "b", "c"), 100, TRUE)),
+#'   Y = rnorm(100),
+#'   Z = rnorm(100)
+#' )
+#' run_test(pillai(df), "X", "Y", "Z")
+#' @export
+pillai <- function(data) {
+  ds <- .cir_as_dataset(data)
+  .cir_make_test(
+    Pillai$new(ds$ptr), # nolint: object_usage_linter.
+    ds,
+    "pillai"
+  )
+}
+
 #' Pearson equivalence (TOST) continuous CI test.
 #'
 #' Declares independence when the partial correlation is within the equivalence

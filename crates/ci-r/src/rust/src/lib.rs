@@ -278,6 +278,18 @@ ci_test_handle!(
 );
 
 ci_test_handle!(
+    GCM,
+    ci_core::ci_tests::Gcm,
+    new() { Ok(ci_core::ci_tests::Gcm::new()) }
+);
+
+ci_test_handle!(
+    Pillai,
+    ci_core::ci_tests::Pillai,
+    new() { Ok(ci_core::ci_tests::Pillai::new()) }
+);
+
+ci_test_handle!(
     PearsonEquivalence,
     ci_core::ci_tests::PearsonEquivalence,
     new(delta_threshold: f64) {
@@ -365,4 +377,6 @@ extendr_module! {
     impl PearsonEquivalence;
     impl HSIC;
     impl KCI;
+    impl GCM;
+    impl Pillai;
 }

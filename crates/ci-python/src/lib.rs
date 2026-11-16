@@ -15,7 +15,9 @@
 //! Discrete: [`ChiSquared`], [`LogLikelihood`], [`CressieRead`],
 //! [`FreemanTukey`], [`ModifiedLikelihood`].
 //! Continuous: [`PearsonCorrelation`], [`FisherZ`], [`PearsonEquivalence`],
-//! [`PyHsic`], [`PyKci`] (kernel tests, configured with [`PyRbf`] / [`PyLinear`]).
+//! [`PyHsic`], [`PyKci`] (kernel tests, configured with [`PyRbf`] / [`PyLinear`]),
+//! `GCM` (continuous only).
+//! Mixed: `PillaiTrace` (discrete and continuous columns).
 
 use std::collections::BTreeMap;
 use std::sync::Arc;
@@ -564,6 +566,24 @@ ci_test_class!(
 );
 
 ci_test_class!(
+    "GCM",
+    PyGcm,
+    ci_core::ci_tests::Gcm,
+    new() {
+        ci_core::ci_tests::Gcm::new()
+    }
+);
+
+ci_test_class!(
+    "PillaiTrace",
+    PyPillaiTrace,
+    ci_core::ci_tests::Pillai,
+    new() {
+        ci_core::ci_tests::Pillai::new()
+    }
+);
+
+ci_test_class!(
     "PearsonEquivalence",
     PyPearsonEquivalence,
     ci_core::ci_tests::PearsonEquivalence,
@@ -640,6 +660,8 @@ fn ci_python(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<PyPearsonCorrelation>()?;
     m.add_class::<PyFisherZ>()?;
     m.add_class::<PyPearsonEquivalence>()?;
+    m.add_class::<PyGcm>()?;
+    m.add_class::<PyPillaiTrace>()?;
     m.add_class::<PyRbf>()?;
     m.add_class::<PyLinear>()?;
     m.add_class::<PyHsic>()?;

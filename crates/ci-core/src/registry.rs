@@ -10,8 +10,8 @@
 //! [`PearsonEquivalence`] uses an equivalence margin of `0.1`.
 
 use crate::ci_tests::{
-    ChiSquared, CressieRead, FisherZ, FreemanTukey, Hsic, Kci, LogLikelihood, ModifiedLikelihood,
-    PearsonCorrelation, PearsonEquivalence,
+    ChiSquared, CressieRead, FisherZ, FreemanTukey, Gcm, Hsic, Kci, LogLikelihood,
+    ModifiedLikelihood, PearsonCorrelation, PearsonEquivalence, Pillai,
 };
 use crate::strategy::{CITest, TestMeta};
 
@@ -33,6 +33,8 @@ fn default_tests() -> Vec<Box<dyn CITest>> {
         Box::new(PearsonEquivalence::new(DEFAULT_DELTA_THRESHOLD)),
         Box::new(Hsic::new()),
         Box::new(Kci::new()),
+        Box::new(Gcm::new()),
+        Box::new(Pillai::new()),
     ]
 }
 
@@ -59,7 +61,7 @@ mod tests {
     use std::collections::BTreeSet;
 
     /// The stable names the registry must expose.
-    const EXPECTED_NAMES: [&str; 10] = [
+    const EXPECTED_NAMES: [&str; 12] = [
         "chi_squared",
         "log_likelihood",
         "cressie_read",
@@ -70,6 +72,8 @@ mod tests {
         "pearson_equivalence",
         "hsic",
         "kci",
+        "gcm",
+        "pillai",
     ];
 
     #[test]

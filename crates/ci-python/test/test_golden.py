@@ -1,7 +1,7 @@
 """Golden parity test for the data-bound Python bindings.
 
 Loads the shared cross-language fixture ``tests/fixtures/golden.json`` and, for
-each of the ten tests, builds a :class:`Dataset` from the case's columns,
+each test, builds a :class:`Dataset` from the case's columns,
 constructs the test with the case's parameters, runs it, and asserts that
 ``statistic`` / ``p_value`` / ``dof`` / ``effect_size`` match the recorded
 ``expected`` values.
@@ -19,6 +19,7 @@ import numpy as np
 import pytest
 
 from ci_python import (
+    GCM,
     HSIC,
     KCI,
     RBF,
@@ -32,6 +33,7 @@ from ci_python import (
     ModifiedLikelihood,
     PearsonCorrelation,
     PearsonEquivalence,
+    PillaiTrace,
 )
 
 # Locate the repo-root fixture relative to this file:
@@ -53,6 +55,8 @@ TEST_CLASSES = {
     "pearson_equivalence": PearsonEquivalence,
     "hsic": HSIC,
     "kci": KCI,
+    "gcm": GCM,
+    "pillai": PillaiTrace,
 }
 
 

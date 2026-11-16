@@ -55,6 +55,8 @@ accepts a raw data.frame directly (`chi_squared(df)`).
 | `modified_likelihood(data, yates = TRUE)` | discrete | `yates` | `p >= alpha` |
 | `pearson_correlation(data)` | continuous | — | `p >= alpha` |
 | `fisher_z(data)` | continuous | — | `p >= alpha` |
+| `gcm(data)` | continuous | — | `p >= alpha` |
+| `pillai(data)` | mixed | — | `p >= alpha` |
 | `pearson_equivalence(data, delta_threshold = 0.1)` | continuous | `delta_threshold` | `p < alpha` (TOST) |
 | `hsic(data, kernel = NULL, bandwidth = "heuristic", null_dist = "gamma", n_permutations = 100L, seed = 0)` | continuous | kernel, bandwidth, null | `p >= alpha` (no `z`) |
 | `kci(data, kernel = NULL, bandwidth = "heuristic", epsilon = 1e-3)` | continuous | kernel, bandwidth, `epsilon` | `p >= alpha` |
@@ -67,6 +69,13 @@ df <- data.frame(X = rnorm(100), Y = rnorm(100), Z = rnorm(100))
 run_test(hsic(df, kernel = rbf_kernel(2)), "X", "Y")
 run_test(kci(df, kernel = list(X = linear_kernel())), "X", "Y", "Z")
 ```
+
+`gcm()` and `pillai()` use linear residualization (pgmpy's Pillai default is a
+random forest); in `pillai()` conditioning variables are one-hot encoded minus one level and a
+categorical `X`/`Y` becomes `K - 1` level indicators fitted with a linear
+probability model. Degenerate inputs raise errors instead of `NaN`. Conditioning sets whose columns are linearly dependent (duplicate or nested categorical variables, a constant column) raise a degenerate-data error, whereas pgmpy fits them by least squares. With few rows relative to the conditioning
+columns and categorical levels (`n - columns < p + q`), `pillai()` returns
+`p = 0` ("dependent"), as pgmpy does. `gcm()` is continuous-only; `pillai()` accepts mixed factor and numeric columns.
 
 `is_independent()` applies each test's own decision rule, so the caller never
 writes it — including the equivalence test's inverted rule.

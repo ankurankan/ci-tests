@@ -401,4 +401,74 @@ KCI$decision_rule <- function() .Call(wrap__KCI__decision_rule, self)
 #' @export
 `[[.KCI` <- `$.KCI`
 
+#'
+#' @section Methods:
+#'\subsection{Method `new`}{
+#'Construct the handle bound to `data` with the given config.
+#'}
+#'
+#'\subsection{Method `run_test`}{
+#'Run the test for `x ⟂ y | z` (column names; `z` a character
+#'vector), returning `list(statistic, p_value, dof, effect_size)`.
+#'}
+#'
+#'\subsection{Method `is_independent`}{
+#'Decide independence at `significance_level` using the test's rule.
+#'}
+#'
+#'\subsection{Method `decision_rule`}{
+#'Internal decision rule used by the R adapters.
+#'}
+#'
+GCM <- new.env(parent = emptyenv())
+
+GCM$new <- function(data) .Call(wrap__GCM__new, data)
+
+GCM$run_test <- function(x, y, z) .Call(wrap__GCM__run_test, self, x, y, z)
+
+GCM$is_independent <- function(x, y, z, significance_level) .Call(wrap__GCM__is_independent, self, x, y, z, significance_level)
+
+GCM$decision_rule <- function() .Call(wrap__GCM__decision_rule, self)
+
+#' @export
+`$.GCM` <- function (self, name) { func <- GCM[[name]]; environment(func) <- environment(); func }
+
+#' @export
+`[[.GCM` <- `$.GCM`
+
+#'
+#' @section Methods:
+#'\subsection{Method `new`}{
+#'Construct the handle bound to `data` with the given config.
+#'}
+#'
+#'\subsection{Method `run_test`}{
+#'Run the test for `x ⟂ y | z` (column names; `z` a character
+#'vector), returning `list(statistic, p_value, dof, effect_size)`.
+#'}
+#'
+#'\subsection{Method `is_independent`}{
+#'Decide independence at `significance_level` using the test's rule.
+#'}
+#'
+#'\subsection{Method `decision_rule`}{
+#'Internal decision rule used by the R adapters.
+#'}
+#'
+Pillai <- new.env(parent = emptyenv())
+
+Pillai$new <- function(data) .Call(wrap__Pillai__new, data)
+
+Pillai$run_test <- function(x, y, z) .Call(wrap__Pillai__run_test, self, x, y, z)
+
+Pillai$is_independent <- function(x, y, z, significance_level) .Call(wrap__Pillai__is_independent, self, x, y, z, significance_level)
+
+Pillai$decision_rule <- function() .Call(wrap__Pillai__decision_rule, self)
+
+#' @export
+`$.Pillai` <- function (self, name) { func <- Pillai[[name]]; environment(func) <- environment(); func }
+
+#' @export
+`[[.Pillai` <- `$.Pillai`
+
 # nolint end

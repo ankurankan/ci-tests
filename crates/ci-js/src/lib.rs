@@ -516,6 +516,26 @@ ci_test_class!(
 );
 
 ci_test_class!(
+    "GCM",
+    Gcm,
+    ci_core::ci_tests::Gcm,
+    EmptyConfig,
+    _cfg,
+    "Record<string, never> | undefined",
+    ci_core::ci_tests::Gcm::new()
+);
+
+ci_test_class!(
+    "PillaiTrace",
+    PillaiTrace,
+    ci_core::ci_tests::Pillai,
+    EmptyConfig,
+    _cfg,
+    "Record<string, never> | undefined",
+    ci_core::ci_tests::Pillai::new()
+);
+
+ci_test_class!(
     "HSIC",
     Hsic,
     ci_core::ci_tests::Hsic,

@@ -1,10 +1,10 @@
 // Golden parity test for the data-bound JavaScript / WebAssembly bindings.
 //
 // Loads the shared cross-language fixture `tests/fixtures/golden.json` (at the
-// repository root) and, for each of the ten tests, builds a `Dataset` from the
+// repository root) and, for each of the twelve tests, builds a `Dataset` from the
 // case's columns, constructs the test with the case's parameters, runs it, and
 // asserts that `statistic` / `pValue` / `dof` / `effectSize` match the recorded
-// `expected` values within 1e-7 (hsic/kci cases carry a `rel_tol` and use a relative
+// `expected` values within 1e-7 (hsic/kci/gcm/pillai cases carry a `rel_tol` and use a relative
 // tolerance instead). This is the binding's numeric parity gate
 // against the scipy/pgmpy reference, mirroring the Rust
 // (`crates/ci-core/tests/golden.rs`) and Python
@@ -31,6 +31,8 @@ const {
   FisherZ,
   HSIC,
   KCI,
+  GCM,
+  PillaiTrace,
   init,
 } = pkg;
 
@@ -48,6 +50,8 @@ const TEST_CLASSES = {
   fisher_z: FisherZ,
   hsic: HSIC,
   kci: KCI,
+  gcm: GCM,
+  pillai: PillaiTrace,
 };
 
 const __dirname = dirname(fileURLToPath(import.meta.url));

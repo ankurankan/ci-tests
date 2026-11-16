@@ -6,6 +6,9 @@
 //! tests ([`PearsonCorrelation`], [`FisherZ`], [`PearsonEquivalence`]) cover the
 //! partial-correlation path. Two continuous kernel tests, [`Hsic`] (unconditional) and
 //! [`Kci`] (conditional), compare dense kernel matrices.
+//! [`Gcm`] is the continuous generalized covariance measure (linear residuals);
+//! [`Pillai`] is Pillai's trace on linear residuals and handles mixed
+//! discrete/continuous data.
 
 mod power_divergence;
 
@@ -18,6 +21,7 @@ pub mod cressie_read {
     pub use super::power_divergence::CressieRead;
 }
 pub mod fisher_z;
+pub mod gcm;
 pub mod hsic;
 pub mod kci;
 /// Freeman-Tukey conditional-independence test (power divergence, λ = −1/2).
@@ -35,14 +39,17 @@ pub mod modified_likelihood {
 }
 pub mod pearson_correlation;
 pub mod pearson_equivalence;
+pub mod pillai;
 
 pub use chi_squared::ChiSquared;
 pub use cressie_read::CressieRead;
 pub use fisher_z::FisherZ;
 pub use freeman_tukey::FreemanTukey;
+pub use gcm::Gcm;
 pub use hsic::{Hsic, NullDistribution};
 pub use kci::Kci;
 pub use log_likelihood::LogLikelihood;
 pub use modified_likelihood::ModifiedLikelihood;
 pub use pearson_correlation::PearsonCorrelation;
 pub use pearson_equivalence::PearsonEquivalence;
+pub use pillai::Pillai;

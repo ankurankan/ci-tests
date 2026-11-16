@@ -1,7 +1,7 @@
 """Data-bound conditional-independence testing.
 
 Build a :class:`Dataset` once from named, typed columns, then construct any of
-the ten tests bound to that data and query ``run_test`` / ``is_independent``::
+the twelve tests bound to that data and query ``run_test`` / ``is_independent``::
 
     import numpy as np
     from ci_python import Dataset, ChiSquared, PearsonEquivalence
@@ -26,6 +26,7 @@ from typing import TYPE_CHECKING, Any
 import numpy as np
 
 from ci_python._ci_python import (
+    GCM,
     HSIC,
     KCI,
     RBF,
@@ -40,6 +41,7 @@ from ci_python._ci_python import (
     ModifiedLikelihood,
     PearsonCorrelation,
     PearsonEquivalence,
+    PillaiTrace,
 )
 from ci_python._ci_python import (
     Dataset as _Dataset,
@@ -50,6 +52,7 @@ if TYPE_CHECKING:  # pragma: no cover - typing-only import
     from numpy.typing import NDArray
 
 __all__ = [
+    "GCM",
     "HSIC",
     "KCI",
     "RBF",
@@ -65,6 +68,7 @@ __all__ = [
     "ModifiedLikelihood",
     "PearsonCorrelation",
     "PearsonEquivalence",
+    "PillaiTrace",
 ]
 
 

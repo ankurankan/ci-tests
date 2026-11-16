@@ -325,3 +325,52 @@ test_that("hsic rejects a conditioning set", {
   data <- dataset(kernel_df())
   expect_error(run_test(hsic(data), "X", "Y", "Z"))
 })
+
+test_that("gcm and pillai expose names and decision rule", {
+  data <- dataset(continuous_df())
+  for (factory in list(gcm, pillai)) {
+    test <- factory(data)
+    expect_s3_class(test, "cir_test")
+    res <- run_test(test, "X", "Y", c("Z"))
+    expect_null(res$dof)
+    expect_true(res$p_value >= 0 && res$p_value <= 1)
+    expect_equal(
+      is_independent(test, "X", "Y", c("Z"), significance_level = 0.05),
+      res$p_value >= 0.05
+    )
+  }
+  expect_equal(gcm(data)$name, "gcm")
+  expect_equal(pillai(data)$name, "pillai")
+})
+
+test_that("gcm rejects a factor column", {
+  df <- data.frame(
+    X = rnorm(50), Y = rnorm(50),
+    F = factor(rep(c("a", "b"), 25))
+  )
+  expect_error(run_test(gcm(dataset(df)), "X", "F"), "wrong column kind")
+})
+
+test_that("pillai runs on mixed factor and numeric data", {
+  set.seed(5)
+  n <- 120
+  df <- data.frame(
+    X = factor(sample(c("a", "b", "c"), n, TRUE)),
+    Y = rnorm(n),
+    ZD = factor(sample(c("u", "v"), n, TRUE)),
+    ZC = rnorm(n)
+  )
+  res <- run_test(pillai(dataset(df)), "X", "Y", c("ZD", "ZC"))
+  expect_true(is.finite(res$statistic))
+  expect_true(res$p_value >= 0 && res$p_value <= 1)
+})
+
+test_that("pillai errors on degenerate data", {
+  set.seed(6)
+  zd <- sample(0:2, 60, TRUE)
+  df <- data.frame(X = (zd + 1L) %% 3L, Y = rnorm(60), Z = zd)
+  expect_error(
+    run_test(pillai(dataset(df)), "X", "Y", "Z"),
+    "degenerate data"
+  )
+})

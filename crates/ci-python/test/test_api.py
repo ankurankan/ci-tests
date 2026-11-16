@@ -5,9 +5,11 @@ from __future__ import annotations
 import threading
 
 import numpy as np
+import pandas as pd
 import pytest
 
 from ci_python import (
+    GCM,
     HSIC,
     KCI,
     RBF,
@@ -18,6 +20,7 @@ from ci_python import (
     Linear,
     PearsonCorrelation,
     PearsonEquivalence,
+    PillaiTrace,
 )
 
 
@@ -406,3 +409,50 @@ def test_kci_concurrent_calls_are_safe() -> None:
     results = [p for bucket in per_thread for p in bucket]
     assert len(results) == 20
     assert all(r == expected for r in results)
+
+
+def test_gcm_and_pillai_meta() -> None:
+    gcm_meta = GCM(_continuous_data()).meta()
+    assert gcm_meta["name"] == "gcm"
+    assert gcm_meta["data_types"] == ["continuous"]
+    assert gcm_meta["symmetric"] is True
+
+    pillai_meta = PillaiTrace(_continuous_data()).meta()
+    assert pillai_meta["name"] == "pillai"
+    assert pillai_meta["data_types"] == ["discrete", "continuous"]
+    assert pillai_meta["symmetric"] is True
+
+
+def test_gcm_rejects_discrete_columns() -> None:
+    with pytest.raises(CiError):
+        GCM(_discrete_data()).run_test("A", "B", ["C"])
+
+
+def test_pillai_accepts_mixed_dataframe() -> None:
+    rng = np.random.default_rng(5)
+    n = 200
+    df = pd.DataFrame(
+        {
+            "X": rng.standard_normal(n),
+            "Y": rng.standard_normal(n),
+            "Z": rng.standard_normal(n),
+            "G": pd.Categorical(rng.choice(["a", "b", "c"], n)),
+        }
+    )
+    res = PillaiTrace(df).run_test("X", "Y", ["Z", "G"])
+    assert 0.0 <= res.p_value <= 1.0
+    assert res.dof is None
+
+
+def test_pillai_degenerate_raises() -> None:
+    rng = np.random.default_rng(6)
+    z = rng.standard_normal(100)
+    data = Dataset(
+        {
+            "X": ("continuous", z.copy()),
+            "Y": ("continuous", rng.standard_normal(100)),
+            "Z": ("continuous", z),
+        }
+    )
+    with pytest.raises(CiError, match="degenerate"):
+        PillaiTrace(data).run_test("X", "Y", ["Z"])

@@ -315,3 +315,79 @@ def test_relative_tolerance_applies_to_rel_tol_cases() -> None:
     tiny = {"id": "t", "rel_tol": 1e-9, "expected": {"p_value": 1e-20}}
     assert checker.compare_actual_fields(tiny, {"p_value": 2e-20}, 1e-7)[0]
     assert not checker.compare_actual_fields(tiny, {"p_value": 1e-20}, 1e-7)[0]
+
+
+def test_linear_probability_model_matches_ols() -> None:
+    import numpy as np
+
+    checker = load_checker()
+    rng = np.random.default_rng(0)
+    features = rng.normal(size=(40, 2))
+    features = np.column_stack([features, np.ones(40)])
+    codes = rng.integers(0, 3, size=40)
+    model = checker.LinearProbabilityModel().fit(features, codes)
+    proba = model.predict_proba(features)
+    assert proba.shape == (40, 3)
+    np.testing.assert_allclose(proba.sum(axis=1), 1.0, atol=1e-12)
+    for k in range(3):
+        indicator = (codes == k).astype(float)
+        beta, *_ = np.linalg.lstsq(features, indicator, rcond=None)
+        np.testing.assert_allclose(proba[:, k], features @ beta, atol=1e-10)
+    target = rng.normal(size=40)
+    fitted = checker.LinearProbabilityModel().fit(features, target).predict(features)
+    beta, *_ = np.linalg.lstsq(features, target, rcond=None)
+    np.testing.assert_allclose(fitted, features @ beta, atol=1e-10)
+    assert checker.LinearProbabilityModel().get_params() == {}
+
+
+def test_pillai_cases_are_compared_with_the_declared_tolerance() -> None:
+    checker = load_checker()
+    case = {
+        "id": "pillai-x",
+        "test": "pillai",
+        "rel_tol": 1e-9,
+        "expected": {"statistic": 0.5, "effect_size": 0.5, "p_value": 1e-13},
+    }
+
+    def actual(stat: float, p: float) -> dict[str, float]:
+        return {"statistic": stat, "effect_size": stat, "p_value": p}
+
+    check = checker.compare_actual_fields
+    assert check(case, actual(0.5 * (1 + 3e-9), 1e-13), 1e-7) == ([], [])
+    assert check(case, actual(0.5 * (1 + 1e-6), 1e-13), 1e-7)[0]
+    # pgmpy's 1 - cdf floors the p-value in absolute terms.
+    assert check(case, actual(0.5, 1e-13 + 8e-18), 1e-7) == ([], [])
+    assert check(case, actual(0.5, 1e-13 + 1e-14), 1e-7)[0]
+    # Away from the floor the fixture's relative 1e-9 applies.
+    big = dict(case, expected={"p_value": 0.5})
+    assert check(big, {"p_value": 0.5 * (1 + 1e-10)}, 1e-7) == ([], [])
+    assert check(big, {"p_value": 0.5 * (1 + 1e-7)}, 1e-7)[0]
+
+
+def test_gcm_case_is_strict() -> None:
+    checker = load_checker()
+    case = {
+        "id": "gcm-x",
+        "test": "gcm",
+        "rel_tol": 1e-9,
+        "expected": {"statistic": 1.0, "p_value": 0.5},
+    }
+    assert checker.compare_actual_fields(
+        case, {"statistic": 1.0 + 1e-6, "p_value": 0.5}, 1e-7
+    )[0] == ["gcm-x: statistic expected 1.0, got 1.000001"]
+    assert checker.CONSTRUCTORS["gcm"] and checker.CONSTRUCTORS["pillai"]
+
+
+def test_discrete_columns_become_categories_only_for_pillai() -> None:
+    import pandas
+
+    checker = load_checker()
+    columns = {
+        "X": {"kind": "discrete", "values": [0, 1, 0, 1]},
+        "Y": {"kind": "continuous", "values": [0.1, 0.2, 0.3, 0.4]},
+    }
+    pillai = checker.build_dataframe({"test": "pillai", "columns": columns}, pandas)
+    assert str(pillai["X"].dtype) == "category"
+    assert pillai["Y"].dtype == float
+    other = checker.build_dataframe({"test": "chi_squared", "columns": columns}, pandas)
+    assert other["X"].dtype != "category"

@@ -26,6 +26,8 @@ EXPECTED_COUNTS = {
     "fisher_z": 7,
     "hsic": 13,
     "kci": 12,
+    "gcm": 6,
+    "pillai": 10,
 }
 
 PINNED_SHUFFLE_SEED0_N10 = [6, 3, 2, 9, 8, 1, 4, 7, 0, 5]
@@ -49,9 +51,9 @@ def test_reference_catalog_has_the_approved_contract() -> None:
     cases = generator.build_cases()
     generator.validate_cases(cases)
 
-    assert len(cases) == 105
+    assert len(cases) == 121
     assert Counter(case["test"] for case in cases) == Counter(EXPECTED_COUNTS)
-    assert len({case["id"] for case in cases}) == 105
+    assert len({case["id"] for case in cases}) == 121
 
     balanced = by_id(cases, "discrete-balanced-2x2-yates-chi-squared")
     assert balanced["expected"] == {
@@ -84,9 +86,11 @@ def test_reference_catalog_has_the_approved_contract() -> None:
     ] == pytest.approx(1 / 51)
     assert 1e-80 < by_id(cases, "hsic-tiny-p-value")["expected"]["p_value"] < 1e-30
     for case in cases:
-        if case["test"] in {"hsic", "kci"}:
+        if case["test"] in {"hsic", "kci", "gcm", "pillai"}:
             assert case["rel_tol"] == 1e-9, case["id"]
             assert case["expected"]["dof"] is None, case["id"]
+            if case["test"] in {"gcm", "pillai"}:
+                assert case["params"] == {}, case["id"]
         else:
             assert "rel_tol" not in case, case["id"]
 
@@ -139,7 +143,7 @@ def test_render_cases_is_strict_and_deterministic() -> None:
     assert "NaN" not in first
     assert "Infinity" not in first
     decoded = json.loads(first)
-    assert len(decoded) == 105
+    assert len(decoded) == 121
     positive = by_id(decoded, "pearson-correlation-positive-unconditional")
     assert positive["expected"]["statistic"] == 0.8
 
@@ -343,4 +347,31 @@ def test_fixture_growth_within_budget() -> None:
     generator = load_generator()
     rendered = generator.render_cases(generator.build_cases())
 
-    assert len(rendered.encode()) <= 143_771 + 250_000
+    assert len(rendered.encode()) <= 308_638 + 150_000
+
+
+def test_pillai_reference_matches_squared_pearson() -> None:
+    generator = load_generator()
+    case = deepcopy(by_id(generator.build_cases(), "pillai-continuous-z1"))
+    case["z"] = []
+    x = np.asarray(case["columns"]["X"]["values"])
+    y = np.asarray(case["columns"]["Y"]["values"])
+    r = float(np.corrcoef(x, y)[0, 1])
+
+    result = generator._pillai_reference(case)
+    assert result["statistic"] == pytest.approx(r * r, rel=1e-12)
+    assert result["effect_size"] == pytest.approx(r * r, rel=1e-12)
+
+
+def test_validation_rejects_params_on_gcm_and_pillai() -> None:
+    generator = load_generator()
+    cases = generator.build_cases()
+    for case_id in ("gcm-dependent-z1", "pillai-mixed-z"):
+        copy = deepcopy(cases)
+        by_id(copy, case_id)["params"] = {"yates": True}
+        with pytest.raises(ValueError):
+            generator.validate_cases(copy)
+        copy = deepcopy(cases)
+        by_id(copy, case_id).pop("rel_tol")
+        with pytest.raises(ValueError):
+            generator.validate_cases(copy)

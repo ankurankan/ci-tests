@@ -40,6 +40,25 @@ kci.runTest("X", "Y", ["Z"]);
 
 `kernel` and `kernels` are mutually exclusive; invalid options throw.
 
+### Residual-based tests (GCM, PillaiTrace)
+
+```js
+import { Dataset, GCM, PillaiTrace } from "./pkg/ci_js.js";
+
+new GCM(data).runTest("X", "Y", ["Z"]); // continuous columns only
+new PillaiTrace(data).runTest("X", "Y", ["Z"]); // mixed discrete/continuous
+```
+
+Neither class takes options (unknown keys throw). Both residualize with linear
+regression (pgmpy's Pillai default is a random forest). In PillaiTrace,
+conditioning variables enter as one-hot columns minus one level; a categorical X or Y becomes K-1 level
+indicators, residualized with a linear probability model. Canonical
+correlations are computed exactly. Degenerate inputs throw instead of returning
+NaN (both tests). Conditioning sets whose columns are linearly dependent (duplicate or nested categorical variables, a constant column) raise a degenerate-data error, whereas pgmpy fits them by least squares. With few rows relative to the conditioning columns and
+categorical levels (`n - columns < p + q`), PillaiTrace returns `p = 0`
+("dependent"), as pgmpy does. GCM is continuous-only; a discrete X, Y or Z
+throws.
+
 Run the JavaScript checks from the package directory:
 
 ```sh

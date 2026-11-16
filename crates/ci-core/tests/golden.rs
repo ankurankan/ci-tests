@@ -9,6 +9,7 @@
 //!   case's own `params.yates`, so both Yates-on and Yates-off rows are covered.
 //! - All `pearson_correlation`, `pearson_equivalence`, and `fisher_z` rows.
 //! - All `hsic` and `kci` rows, built from the case's kernel/bandwidth/null params.
+//! - All `gcm` and `pillai` rows (parameter-free).
 //!
 //! Every non-null `statistic`/`p_value`/`dof`/`effect_size` field is asserted to
 //! within `1e-7` (or, for cases carrying `rel_tol`, within
@@ -19,8 +20,8 @@ use std::collections::BTreeMap;
 
 use ci_core::ci_tests::{
     chi_squared::ChiSquared, cressie_read::CressieRead, freeman_tukey::FreemanTukey,
-    log_likelihood::LogLikelihood, modified_likelihood::ModifiedLikelihood, FisherZ, Hsic, Kci,
-    NullDistribution, PearsonCorrelation, PearsonEquivalence,
+    log_likelihood::LogLikelihood, modified_likelihood::ModifiedLikelihood, FisherZ, Gcm, Hsic,
+    Kci, NullDistribution, PearsonCorrelation, PearsonEquivalence, Pillai,
 };
 use ci_core::dataset::{ColumnKind, Dataset};
 use ci_core::kernel::{Bandwidth, Kernel, KernelChoice};
@@ -220,6 +221,8 @@ fn run_case(case: &Case) -> CiResult {
             Box::new(PearsonEquivalence::new(delta))
         }
         "fisher_z" => Box::new(FisherZ::new()),
+        "gcm" => Box::new(Gcm::new()),
+        "pillai" => Box::new(Pillai::new()),
         "hsic" => Box::new(Hsic {
             kernel: kernel_choice(&case.params.kernel),
             bandwidth: case_bandwidth(case),
@@ -341,6 +344,8 @@ fn golden_fixture_matches() {
         "fisher_z",
         "hsic",
         "kci",
+        "gcm",
+        "pillai",
     ] {
         assert!(
             counts.get(test).copied().unwrap_or(0) > 0,

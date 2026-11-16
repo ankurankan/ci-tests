@@ -12,6 +12,8 @@ const {
   PearsonEquivalence,
   HSIC,
   KCI,
+  GCM,
+  PillaiTrace,
   init,
 } = pkg;
 
@@ -391,5 +393,55 @@ describe("HSIC and KCI", () => {
 
   test("HSIC with a non-empty z throws at runTest", () => {
     expect(() => new HSIC(COLS).runTest("X", "Y", ["Z"])).toThrow();
+  });
+});
+
+describe("GCM and PillaiTrace", () => {
+  const MIXED = {
+    X: {
+      kind: "continuous",
+      values: [0.1, 0.9, 0.4, 1.3, 0.7, 1.9, 1.1, 0.2, 1.6, 0.5],
+    },
+    Y: {
+      kind: "continuous",
+      values: [0.3, 1.1, 0.2, 1.7, 0.9, 1.5, 1.4, 0.6, 1.2, 0.1],
+    },
+    D: {
+      kind: "discrete",
+      values: ["a", "b", "a", "b", "c", "c", "a", "b", "c", "a"],
+    },
+  };
+
+  test("meta reports names, data types, symmetry and rule", () => {
+    const g = new GCM(MIXED).meta();
+    expect(g.name).toBe("gcm");
+    expect(g.dataTypes).toEqual(["continuous"]);
+    expect(g.symmetric).toBe(true);
+    expect(g.rule).toBe("p_value_ge");
+    const p = new PillaiTrace(MIXED).meta();
+    expect(p.name).toBe("pillai");
+    expect(p.dataTypes).toEqual(["discrete", "continuous"]);
+    expect(p.symmetric).toBe(true);
+    expect(p.rule).toBe("p_value_ge");
+  });
+
+  test("GCM throws on a discrete column", () => {
+    expect(() => new GCM(MIXED).runTest("X", "D", [])).toThrow(
+      /wrong column kind/,
+    );
+  });
+
+  test("PillaiTrace runs on mixed data", () => {
+    const r = new PillaiTrace(MIXED).runTest("X", "D", ["Y"]);
+    expect(Number.isFinite(r.statistic)).toBe(true);
+    expect(r.pValue).toBeGreaterThanOrEqual(0);
+    expect(r.pValue).toBeLessThanOrEqual(1);
+  });
+
+  test("unknown option keys throw", () => {
+    expect(() => new GCM(MIXED, { foo: 1 })).toThrow(/invalid config object/);
+    expect(() => new PillaiTrace(MIXED, { foo: 1 })).toThrow(
+      /invalid config object/,
+    );
   });
 });

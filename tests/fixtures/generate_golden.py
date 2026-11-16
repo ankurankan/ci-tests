@@ -29,7 +29,7 @@ LAMBDA_BY_TEST = {
 DISCRETE_LAMBDAS = LAMBDA_BY_TEST
 RHO_CLIP = 0.999999
 CORRELATION_ZERO_ATOL = 1e-15
-EXPECTED_CASE_COUNT = 105
+EXPECTED_CASE_COUNT = 121
 EXPECTED_COUNTS = {
     "chi_squared": 12,
     "log_likelihood": 12,
@@ -41,9 +41,12 @@ EXPECTED_COUNTS = {
     "fisher_z": 7,
     "hsic": 13,
     "kci": 12,
+    "gcm": 6,
+    "pillai": 10,
 }
 KERNEL_TESTS = {"hsic", "kci"}
 KERNEL_REL_TOL = 1e-9
+REL_TOL_TESTS = {"hsic", "kci", "gcm", "pillai"}
 BANDWIDTHS = {"heuristic", "median"}
 NULL_DISTS = {"gamma", "permutation"}
 CASE_ID = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
@@ -825,6 +828,227 @@ def _kci_scenarios() -> list[dict[str, Any]]:
     return scenarios
 
 
+def _linear_design(case: dict[str, Any]) -> np.ndarray:
+    """Intercept, continuous Z raw, discrete Z one-hot with first-seen level 0 dropped."""
+    columns = case["columns"]
+    n = len(columns[case["x"]]["values"])
+    parts = [np.ones((n, 1))]
+    for name in case["z"]:
+        column = columns[name]
+        values = np.asarray(column["values"], dtype=float)
+        if column["kind"] == "discrete":
+            levels = list(dict.fromkeys(values.tolist()))
+            for level in levels[1:]:
+                parts.append((values == level).astype(float)[:, None])
+        else:
+            parts.append(values[:, None])
+    return np.hstack(parts)
+
+
+def _residual_block(case: dict[str, Any], name: str, design: np.ndarray) -> np.ndarray:
+    column = case["columns"][name]
+    values = np.asarray(column["values"], dtype=float)
+    if column["kind"] == "discrete":
+        levels = list(dict.fromkeys(values.tolist()))
+        target = np.column_stack([(values == level).astype(float) for level in levels[:-1]])
+    else:
+        target = values[:, None]
+    beta = np.linalg.lstsq(design, target, rcond=None)[0]
+    return target - design @ beta
+
+
+def _gcm_reference(case: dict[str, Any]) -> dict[str, Any]:
+    design = _linear_design(case)
+    rx = _residual_block(case, case["x"], design)[:, 0]
+    ry = _residual_block(case, case["y"], design)[:, 0]
+    n = len(rx)
+    u = rx * ry
+    statistic = float(np.sum(u) / (math.sqrt(n) * np.std(u)))
+    return {
+        "statistic": statistic,
+        "p_value": float(2.0 * stats.norm.sf(abs(statistic))),
+        "dof": None,
+        "effect_size": float(abs(np.corrcoef(rx, ry)[0, 1])),
+    }
+
+
+def _pillai_reference(case: dict[str, Any]) -> dict[str, Any]:
+    design = _linear_design(case)
+    rx = _residual_block(case, case["x"], design)
+    ry = _residual_block(case, case["y"], design)
+    n, p = rx.shape
+    q = ry.shape[1]
+    qx = np.linalg.qr(rx - rx.mean(axis=0))[0]
+    qy = np.linalg.qr(ry - ry.mean(axis=0))[0]
+    rho = np.linalg.svd(qx.T @ qy, compute_uv=False)
+    s = min(p, q)
+    v = float(np.sum(rho**2))
+    df1 = p * q
+    df2 = s * (n - 1 + s - p - q)
+    f_stat = (v / df1) * (df2 / (s - v))
+    return {
+        "statistic": v,
+        "p_value": float(stats.f.sf(f_stat, df1, df2)),
+        "dof": None,
+        "effect_size": v / s,
+    }
+
+
+def _linear_scenario(
+    scenario_id: str,
+    arrays: dict[str, np.ndarray],
+    discrete: set[str],
+    z_names: list[str],
+    x: str = "X",
+    y: str = "Y",
+) -> dict[str, Any]:
+    columns = {
+        name: _column("discrete", [int(v) for v in values])
+        if name in discrete
+        else _column("continuous", [float(f"{v:.6f}") for v in values])
+        for name, values in arrays.items()
+    }
+    return {
+        "scenario_id": scenario_id,
+        "columns": columns,
+        "x": x,
+        "y": y,
+        "z": z_names,
+        "params": {},
+    }
+
+
+def _gcm_data(
+    seed: int, n: int, n_z: int, direct: float, z_effect: bool = True
+) -> dict[str, np.ndarray]:
+    rng = np.random.default_rng(seed)
+    z = rng.standard_normal((n, n_z))
+    zs = z.sum(axis=1) if z_effect else 0.0
+    x = zs + rng.standard_normal(n)
+    y = 0.8 * zs + direct * x + rng.standard_normal(n)
+    arrays = {"X": x, "Y": y}
+    names = ["Z"] if n_z == 1 else [f"Z{i + 1}" for i in range(n_z)]
+    arrays.update({name: z[:, i] for i, name in enumerate(names)})
+    return arrays
+
+
+def _gcm_scenarios() -> list[dict[str, Any]]:
+    cases = [
+        ("gcm-independent-unconditional", _gcm_data(57, 150, 0, 0.0, False), []),
+        ("gcm-dependent-unconditional", _gcm_data(52, 150, 0, 1.0, False), []),
+        ("gcm-independent-z1", _gcm_data(53, 150, 1, 0.0), ["Z"]),
+        ("gcm-dependent-z1", _gcm_data(54, 150, 1, 0.6), ["Z"]),
+        ("gcm-independent-z2", _gcm_data(55, 150, 2, 0.0), ["Z1", "Z2"]),
+        ("gcm-weak-effect", _gcm_data(56, 200, 1, 0.15), ["Z"]),
+    ]
+    return [_linear_scenario(i, a, set(), z) for i, a, z in cases]
+
+
+def _levels(rng: Any, n: int, k: int, shift: np.ndarray | None = None) -> np.ndarray:
+    """Discrete codes 0..k-1 from a latent score (optionally shifted)."""
+    latent = rng.standard_normal(n) + (0.0 if shift is None else shift)
+    cuts = np.quantile(latent, np.linspace(0, 1, k + 1)[1:-1])
+    return np.searchsorted(cuts, latent).astype(int)
+
+
+def _pillai_scenarios() -> list[dict[str, Any]]:
+    out: list[dict[str, Any]] = []
+
+    def add(sid: str, arrays: dict[str, np.ndarray], disc: set[str], z: list[str]):
+        out.append(_linear_scenario(sid, arrays, disc, z))
+
+    rng = np.random.default_rng(61)
+    z = rng.standard_normal(150)
+    add(
+        "pillai-continuous-z1",
+        {
+            "X": z + rng.standard_normal(150),
+            "Y": 0.7 * z + rng.standard_normal(150),
+            "Z": z,
+        },
+        set(),
+        ["Z"],
+    )
+
+    rng = np.random.default_rng(62)
+    x = _levels(rng, 150, 3)
+    add(
+        "pillai-categorical-x-continuous-y",
+        {"X": x, "Y": 0.6 * x + rng.standard_normal(150)},
+        {"X"},
+        [],
+    )
+
+    rng = np.random.default_rng(63)
+    latent = rng.standard_normal(200)
+    x = np.searchsorted(np.quantile(latent, [1 / 3, 2 / 3]), latent)
+    y_latent = 0.8 * latent + rng.standard_normal(200)
+    y = np.searchsorted(np.quantile(y_latent, [0.25, 0.5, 0.75]), y_latent)
+    add("pillai-categorical-xy", {"X": x, "Y": y}, {"X", "Y"}, [])
+
+    rng = np.random.default_rng(64)
+    z = rng.standard_normal(150)
+    x = (z + rng.standard_normal(150) > 0).astype(int)
+    add(
+        "pillai-binary-x",
+        {"X": x, "Y": 0.5 * z + 0.5 * x + rng.standard_normal(150), "Z": z},
+        {"X"},
+        ["Z"],
+    )
+
+    rng = np.random.default_rng(65)
+    zc = rng.integers(0, 3, 200)
+    add(
+        "pillai-discrete-z",
+        {
+            "X": zc + rng.standard_normal(200),
+            "Y": 0.8 * zc + rng.standard_normal(200),
+            "Z": zc,
+        },
+        {"Z"},
+        ["Z"],
+    )
+
+    for sid, seed, direct in (
+        ("pillai-mixed-z", 66, 0.0),
+        ("pillai-mixed-z-dependent", 67, 0.7),
+    ):
+        rng = np.random.default_rng(seed)
+        zd = rng.integers(0, 3, 200)
+        zc = rng.standard_normal(200)
+        x = _levels(rng, 200, 3, 0.8 * zd + 0.5 * zc)
+        y = 0.5 * zd + 0.6 * zc + direct * x + rng.standard_normal(200)
+        add(sid, {"X": x, "Y": y, "ZD": zd, "ZC": zc}, {"X", "ZD"}, ["ZD", "ZC"])
+
+    rng = np.random.default_rng(68)
+    add(
+        "pillai-unconditional-independent",
+        {"X": rng.integers(0, 2, 150), "Y": rng.integers(0, 3, 150)},
+        {"X", "Y"},
+        [],
+    )
+
+    rng = np.random.default_rng(69)
+    x = _levels(rng, 150, 3)
+    add(
+        "pillai-tiny-p-value",
+        {"X": x, "Y": 1.5 * x + 1.4 * rng.standard_normal(150)},
+        {"X"},
+        [],
+    )
+
+    rng = np.random.default_rng(70)
+    zd = rng.integers(0, 2, 150)
+    x = _levels(rng, 150, 3, 0.7 * zd)
+    # Recode so the first-seen order of X differs from the sorted order.
+    first = list(dict.fromkeys(x.tolist()))
+    remap = {level: code for code, level in enumerate(sorted(first, reverse=True))}
+    x = np.array([remap[v] for v in x])
+    y = 0.4 * zd + 0.4 * (x == 1) + rng.standard_normal(150)
+    add("pillai-level-order", {"X": x, "Y": y, "Z": zd}, {"X", "Z"}, ["Z"])
+    return out
+
+
 def _case(
     case_id: str,
     test: str,
@@ -895,6 +1119,10 @@ def build_cases() -> list[dict[str, Any]]:
         cases.append(_kernel_case("hsic", scenario, _hsic_reference))
     for scenario in _kci_scenarios():
         cases.append(_kernel_case("kci", scenario, _kci_reference))
+    for scenario in _gcm_scenarios():
+        cases.append(_kernel_case("gcm", scenario, _gcm_reference))
+    for scenario in _pillai_scenarios():
+        cases.append(_kernel_case("pillai", scenario, _pillai_reference))
     return cases
 
 
@@ -994,14 +1222,14 @@ def validate_cases(cases: list[dict[str, Any]]) -> None:
                 raise ValueError(f"{case_id}: invalid equivalence params")
             if not 0.0 < params["delta_threshold"] < 1.0:
                 raise ValueError(f"{case_id}: delta_threshold must be in (0, 1)")
-        elif test in {"pearson_correlation", "fisher_z"}:
+        elif test in {"pearson_correlation", "fisher_z", "gcm", "pillai"}:
             if params:
                 raise ValueError(f"{case_id}: unexpected params")
         elif test in KERNEL_TESTS:
             _validate_kernel_params(case_id, test, params)
         else:
             raise ValueError(f"{case_id}: unknown test {test!r}")
-        if test in KERNEL_TESTS:
+        if test in REL_TOL_TESTS:
             rel_tol = case.get("rel_tol")
             if not _finite_number(rel_tol) or rel_tol != KERNEL_REL_TOL:
                 raise ValueError(f"{case_id}: rel_tol must be {KERNEL_REL_TOL}")
@@ -1037,8 +1265,8 @@ def validate_cases(cases: list[dict[str, Any]]) -> None:
             if not _finite_number(expected[field]):
                 raise ValueError(f"{case_id}: {field} must be finite")
         dof = expected["dof"]
-        if test in KERNEL_TESTS and dof is not None:
-            raise ValueError(f"{case_id}: kernel tests have no dof")
+        if test in REL_TOL_TESTS and dof is not None:
+            raise ValueError(f"{case_id}: {test} has no dof")
         if dof is not None and (
             isinstance(dof, bool) or not isinstance(dof, int) or dof < 0
         ):

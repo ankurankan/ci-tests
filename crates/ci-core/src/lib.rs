@@ -19,8 +19,10 @@
 //! | Pearson equivalence (TOST) | Continuous | [`ci_tests::PearsonEquivalence`] |
 //! | HSIC | Continuous | [`ci_tests::Hsic`] |
 //! | KCI | Continuous | [`ci_tests::Kci`] |
+//! | GCM (linear residuals) | Continuous | [`ci_tests::Gcm`] |
+//! | Pillai's trace (linear residuals) | Discrete, continuous, mixed | [`ci_tests::Pillai`] |
 //!
-//! [`registry`] enumerates all ten and constructs a default-configured one by
+//! [`registry`] enumerates all twelve and constructs a default-configured one by
 //! name.
 //!
 //! # Usage
@@ -50,6 +52,7 @@ pub mod error;
 pub(crate) mod gram;
 pub mod kernel;
 pub mod registry;
+mod residual;
 mod rng;
 mod strata;
 pub mod strategy;

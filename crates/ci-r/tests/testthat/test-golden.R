@@ -1,7 +1,7 @@
 # Golden parity test for the data-bound R bindings.
 #
 # Loads the packaged copy of the shared cross-language golden fixture and, for
-# each of the ten tests, builds a `dataset()` from the case's columns,
+# each of the twelve tests, builds a `dataset()` from the case's columns,
 # constructs the test with the case's parameters, runs it, and asserts that
 # `statistic` / `p_value` / `dof` / `effect_size` match the recorded `expected`
 # values within a tight tolerance. This is the binding's numeric parity gate
@@ -22,7 +22,9 @@ test_factories <- list(
   fisher_z = fisher_z,
   pearson_equivalence = pearson_equivalence,
   hsic = hsic,
-  kci = kci
+  kci = kci,
+  gcm = gcm,
+  pillai = pillai
 )
 
 find_golden <- function() {

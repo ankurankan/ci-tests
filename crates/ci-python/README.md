@@ -20,6 +20,8 @@ writes the `p >= alpha` (vs. `p < alpha`) logic.
 | `PearsonCorrelation` | Continuous | — | `n - |Z| - 2` |
 | `PearsonEquivalence` | Continuous | `delta_threshold=0.1` | `None` |
 | `FisherZ` | Continuous | — | `None` |
+| `GCM` | Continuous | — | `None` |
+| `PillaiTrace` | Mixed (discrete and continuous) | — | `None` |
 | `HSIC` | Continuous | `kernel=None`, `bandwidth="heuristic"`, `null_dist="gamma"`, `n_permutations=100`, `seed=0` | `None` |
 | `KCI` | Continuous | `kernel=None`, `bandwidth="heuristic"`, `epsilon=1e-3` | `None` |
 
@@ -27,6 +29,27 @@ writes the `p >= alpha` (vs. `p < alpha`) logic.
 `p_value` (float), `dof` (int | None), and `effect_size` (float | None).
 `PearsonCorrelation` reports `dof = n - |Z| - 2`; Fisher-Z and Pearson
 equivalence report `None`.
+
+### GCM and PillaiTrace
+
+```python
+from ci_python import GCM, PillaiTrace
+
+GCM(data).run_test("X", "Y", ["Z"])  # continuous columns only
+PillaiTrace(df).run_test("X", "Y", ["Z", "G"])  # mixed discrete/continuous
+```
+
+Neither takes configuration. Both residualize `X` and `Y` on `Z` with **linear
+regression**, whereas pgmpy's default regressor is a random forest, so
+p-values differ from pgmpy defaults. In `PillaiTrace`, discrete conditioning
+variables are one-hot encoded minus one level, and a categorical `X` or `Y`
+becomes K-1 level indicators residualized with a linear probability model;
+canonical correlations are exact. `GCM` raises `CiError` for any discrete
+column; `PillaiTrace` raises `CiError` on degenerate data (e.g. `X` fully
+determined by `Z`). Conditioning sets whose columns are linearly dependent (duplicate or nested categorical variables, a constant column) raise a degenerate-data error, whereas pgmpy fits them by least squares. With few
+rows relative to the conditioning columns and categorical levels
+(`n - columns < p + q`), `PillaiTrace` returns `p = 0` ("dependent"), as pgmpy
+does.
 
 ### Kernel tests (HSIC and KCI)
 

@@ -161,6 +161,8 @@ eqv.isIndependent("X", "Y", ["Z"], 0.05);            // -> boolean (p < alpha)
 | `pearson_equivalence` | Continuous | `delta_threshold` (default `0.1`) | `p < α` (TOST) |
 | `hsic` | Continuous | `kernel`, `bandwidth` (default `heuristic`), `null_dist` (default `gamma`), `n_permutations` (default 100), `seed` (default 0) | `p ≥ α` |
 | `kci` | Continuous | `kernel`, `bandwidth` (default `heuristic`), `epsilon` (default `1e-3`) | `p ≥ α` |
+| `gcm` | Continuous | — | `p ≥ α` |
+| `pillai` | Discrete, continuous, or mixed | — | `p ≥ α` |
 
 - **Kernel tests.** `hsic` (unconditional) and `kci` (conditional) support RBF and linear
   kernels only. KCI costs O(n²) memory and O(n³) time. Differences from pgmpy: `hsic`
@@ -168,12 +170,28 @@ eqv.isIndependent("X", "Y", ["Z"], 0.05);            // -> boolean (p < alpha)
   instead of yielding NaN, and permutation p-values use the library's own seeded generator,
   so they differ from pgmpy's numpy-based draws.
 
+- **GCM and Pillai.** Both residualize X and Y linearly on `[1, Z]` (`pillai` one-hot encodes
+  discrete conditioning columns, minus one level; `gcm` takes continuous columns only).
+  `pillai` is the mixed-data test: any column may be discrete
+  or continuous, and a categorical variable with K levels contributes K−1 indicator
+  residual columns. Differences from pgmpy: only linear residualization is offered (pgmpy's
+  Pillai default is a random forest); categorical targets use a linear probability model
+  rather than a classifier's probabilities; canonical correlations are computed exactly
+  instead of by an iterative CCA; degenerate inputs (constant columns, X determined by Z)
+  raise an error instead of yielding NaN; conditioning sets whose columns are linearly
+  dependent (duplicate or nested categorical variables, a constant column) also raise a
+  degenerate-data error, whereas pgmpy fits them by least squares; and pgmpy's
+  `df2 = s·(n − 1 + s − p − q)` is kept as is, so it ignores the number of conditioning
+  columns. When `n` minus the design columns is smaller than `p + q` (few rows relative to the
+  conditioning columns and categorical levels), `pillai` returns `p = 0` ("dependent"), as pgmpy
+  does.
+
 - **Uniform result.** Every `run_test(X, Y, Z)` returns the same `CiResult`: `statistic`,
   `p_value`, `dof`, and `effect_size`. Fields a test does not define are absent
   (`None` / `NULL` / `null`). Pearson correlation reports
   `dof = n - |Z| - 2`, while Fisher-Z and Pearson equivalence report no degrees of freedom.
   The discrete tests report Cramér's V and the continuous tests the (partial) correlation as
-  `effect_size`.
+  `effect_size`; `pillai` reports `V/s` (the Pillai trace over its maximum, a partial η²).
 - **Independence decision.** `significance_level` (α) is **not** baked into the test; it is
   passed to `is_independent(X, Y, Z, significance_level)`, which applies that test's own rule
   from its metadata — the normal `p ≥ α` for most tests and the inverted `p < α` for the
@@ -182,7 +200,8 @@ eqv.isIndependent("X", "Y", ["Z"], 0.05);            // -> boolean (p < alpha)
   For conditional discrete tests the statistic is summed over the strata defined by `Z`; for
   continuous tests the partial correlation is derived from a lazily cached covariance matrix
   (O(|Z|³) per query after the first continuous test; falls back to per-query regression for
-  datasets with more than 2048 continuous columns). Pearson correlation reports
+  datasets with more than 2048 continuous columns). `gcm` and `pillai` instead run a per-query
+  least-squares fit on `[1, Z]`. Pearson correlation reports
   `dof = n - |Z| - 2`; Fisher-Z and Pearson equivalence have no degrees of freedom.
 - **Missing data.** NaN (Python/JS) and NA (R) are rejected when the dataset is bound — drop
   or impute first. Discrete columns accept strings everywhere (factorized to integer codes
@@ -197,7 +216,8 @@ eqv.isIndependent("X", "Y", ["Z"], 0.05);            // -> boolean (p < alpha)
   decision rule — it declares independence when `p < α`, i.e. when the partial correlation is
   confidently *within* that margin of zero.
 - **Naming.** Python and JavaScript expose these as classes (`ChiSquared`, `LogLikelihood`,
-  …); R exposes them as factory functions (`chi_squared`, `log_likelihood`, …).
+  …); R exposes them as factory functions (`chi_squared`, `log_likelihood`, …). The stable name
+  `pillai` is `PillaiTrace` in Python and JavaScript (and `GCM` for `gcm`).
 
 ## Package Structure & Contributing
 
