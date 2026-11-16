@@ -3,250 +3,186 @@
 [![CI](https://img.shields.io/github/actions/workflow/status/GiPHouse/Conditional-Independence-Testing/rust.yml?branch=main&logo=github&label=CI)](https://github.com/GiPHouse/Conditional-Independence-Testing/actions)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/GiPHouse/Conditional-Independence-Testing/blob/main/LICENSE)
 
-A fast, multi-language library for **conditional independence (CI) testing**: deciding
-whether two variables $X$ and $Y$ are independent given a (possibly empty) set of
-conditioning variables $Z$ — written $X \perp Y \mid Z$. CI tests are a fundamental building
-block of constraint-based causal discovery and of structure learning for probabilistic
-graphical models.
+FastCIT is a library of conditional independence tests for causal discovery. The core is written in Rust. Bindings exist for Python, R and JavaScript.
 
-Every test is implemented once in a dependency-light **Rust core** (`fastcit-core`) and exposed
-through thin, idiomatic bindings for **Python, R, and JavaScript/WebAssembly**. 
+## Install
 
-## Quick Start
+Choose your language and run one command.
 
-The API is **data-bound**: you bind a dataset once (its discrete columns are factorized a
-single time), then query any `X ⟂ Y | Z` against it. Each test exposes the same surface —
-`run_test(X, Y, Z)` returns a uniform result (`statistic`, `p_value`, `dof`, `effect_size`),
-and `is_independent(X, Y, Z, significance_level)` applies that test's own decision rule.
-Per-test configuration (e.g. `yates`, `delta_threshold`) lives in the constructor.
+| Language | Command |
+|---|---|
+| Python | `pip install fastcit` |
+| JavaScript | `npm install fastcit` |
+| R | `install.packages("fastcit")` |
+| Rust | `cargo add fastcit-core` |
 
-Each binding compiles the Rust core from source, so you need a Rust toolchain installed
-(via [rustup](https://rustup.rs)).
+## Quick start
 
-### Python
+Open the block for your language. Each example builds a dataset, runs one test, and prints the p-value.
 
-Build and install the package from the repository root:
-
-```bash
-pip install maturin
-maturin develop -m crates/ci-python/Cargo.toml
-```
+<details>
+<summary>Python</summary>
 
 ```python
-import numpy as np, pandas as pd
-from fastcit import Dataset, ChiSquared, FisherZ, PearsonEquivalence
+import numpy as np
+import pandas as pd
+import fastcit
 
 rng = np.random.default_rng(0)
+z = rng.standard_normal(500)
 df = pd.DataFrame({
-    "A": rng.integers(0, 2, 500), "B": rng.integers(0, 3, 500), "C": rng.integers(0, 2, 500),  # int -> discrete
-    "X": rng.standard_normal(500), "Y": rng.standard_normal(500), "Z": rng.standard_normal(500),  # float -> continuous
+    "X": z + rng.standard_normal(500),
+    "Y": z + rng.standard_normal(500),
+    "Z": z,
 })
 
-# Bind once; column kinds are inferred from dtypes.
-data = Dataset.from_pandas(df)
-# You can also pass the DataFrame straight to a test constructor — `ChiSquared(df)` binds it
-# implicitly (building a fresh Dataset; share one explicitly to factorize once).
-
-# Discrete chi-squared (Yates' correction on by default).
-chi = ChiSquared(data)
-res = chi.run_test("A", "C", ["B"])                 # A ⟂ C | B
-print(res.statistic, res.p_value, res.dof, res.effect_size)
-chi.is_independent("A", "C", ["B"], significance_level=0.05)   # -> bool (independent ⇔ p ≥ α)
-
-# Continuous Pearson equivalence (TOST); per-test config is constructor-only.
-eqv = PearsonEquivalence(data, delta_threshold=0.1)
-res = eqv.run_test("X", "Y", ["Z"])
-print(res.statistic, res.p_value, res.effect_size)  # Pearson equivalence has no degrees of freedom
-eqv.is_independent("X", "Y", ["Z"], significance_level=0.05)   # -> bool (independent ⇔ p < α)
+data = fastcit.Dataset.from_pandas(df)
+test = fastcit.FisherZ(data)
+result = test.run_test("X", "Y", ["Z"])
+print(result.p_value)
 ```
 
-`x` / `y` accept a column name or an integer index, and `z` is a sequence of names/indices
-(default: empty conditioning set). You can also build a `Dataset` directly from a
-`{name: (kind, values)}` mapping, or pass that mapping straight to a test constructor; one
-`Dataset` can be shared across several tests so the factorization happens once.
+</details>
 
-### R
-
-Install the package from the repository root (the R package is named `fastcit`):
-
-```r
-# install.packages("devtools")
-devtools::install("crates/ci-r")
-```
-
-A `fisher_z(data)` factory accompanies the factories below, mirroring the Python/JS `FisherZ`.
+<details>
+<summary>R</summary>
 
 ```r
 library(fastcit)
 
 set.seed(0)
-df <- data.frame(
-  A = sample(0:1, 500, TRUE), B = sample(0:2, 500, TRUE), C = sample(0:1, 500, TRUE),  # integer -> discrete
-  X = rnorm(500), Y = rnorm(500), Z = rnorm(500)                                        # numeric -> continuous
-)
+z <- rnorm(500)
+df <- data.frame(X = z + rnorm(500), Y = z + rnorm(500), Z = z)
 
-# Bind once; column kinds are inferred from column classes.
 data <- dataset(df)
-
-# Discrete chi-squared (Yates' correction on by default).
-chi <- chi_squared(data)
-res <- run_test(chi, "A", "C", c("B"))              # A ⟂ C | B
-c(res$statistic, res$p_value, res$dof, res$effect_size)
-is_independent(chi, "A", "C", c("B"), significance_level = 0.05)   # -> logical (p >= alpha)
-
-# Continuous Pearson equivalence (TOST); config is constructor-only.
-eqv <- pearson_equivalence(df, delta_threshold = 0.1)
-res <- run_test(eqv, "X", "Y", c("Z"))
-c(res$statistic, res$p_value)                       # Pearson equivalence has no degrees of freedom
-is_independent(eqv, "X", "Y", c("Z"), significance_level = 0.05)   # -> logical (p < alpha)
-
-# Any test adapts to pcalg's indepTest(x, y, S, suffStat) interface:
-indepTest <- as_pcalg(chi)
+test <- fisher_z(data)
+res <- run_test(test, "X", "Y", "Z")
+print(res$p_value)
 ```
 
-`run_test` / `is_independent` return / consume column **names**; `z` is a character vector of
-conditioning names. A factory accepts either a pre-built `dataset()` or a raw `data.frame`.
+</details>
 
-### JavaScript
-
-Build the WebAssembly package with [wasm-pack](https://rustwasm.github.io/wasm-pack/); the
-output is written to `crates/ci-js/pkg`:
-
-```bash
-wasm-pack build crates/ci-js --target web      # for browsers
-wasm-pack build crates/ci-js --target nodejs   # for Node.js
-```
-
-There are no dtypes in JS, so each column carries its `kind`. You can pass columns directly
-to a constructor — `new ChiSquared(cols)` (implicit; copies once per test object) — or build
-a shared `Dataset` first — `new ChiSquared(data)` — so the arrays cross the JS↔wasm boundary
-only once and can be reused across multiple tests:
+<details>
+<summary>JavaScript</summary>
 
 ```js
-import init, { Dataset, ChiSquared, FisherZ, PearsonEquivalence } from "./pkg/fastcit.js";
+const { Dataset, FisherZ } = require("fastcit");
 
-await init(); // load the WebAssembly module (web target)
+const n = 500;
+const z = Array.from({ length: n }, () => Math.random());
+const x = z.map((v) => v + Math.random());
+const y = z.map((v) => v + Math.random());
 
 const data = new Dataset({
-  A: { kind: "discrete",   values: [/* ... */] },  B: { kind: "discrete",   values: [/* ... */] },  C: { kind: "discrete",   values: [/* ... */] },
-  X: { kind: "continuous", values: [/* ... */] },  Y: { kind: "continuous", values: [/* ... */] },  Z: { kind: "continuous", values: [/* ... */] },
+  X: { kind: "continuous", values: x },
+  Y: { kind: "continuous", values: y },
+  Z: { kind: "continuous", values: z },
 });
-
-// Discrete chi-squared (config object optional: { yates }).
-const chi = new ChiSquared(data);
-const r1 = chi.runTest("A", "C", ["B"]);            // { statistic, pValue, dof, effectSize }
-chi.isIndependent("A", "C", ["B"], 0.05);            // -> boolean (p >= alpha)
-
-// Continuous Pearson equivalence (TOST); config is constructor-only.
-const eqv = new PearsonEquivalence(data, { deltaThreshold: 0.1 });
-const r2 = eqv.runTest("X", "Y", ["Z"]);            // r2.dof === null
-eqv.isIndependent("X", "Y", ["Z"], 0.05);            // -> boolean (p < alpha)
+const test = new FisherZ(data);
+const result = test.runTest("X", "Y", ["Z"]);
+console.log(result.pValue);
 ```
 
-`runTest` / `isIndependent` take column names (`x`, `y`) and an array of conditioning names
-(`z`); the result is a plain object with `statistic`, `pValue`, `dof`, and `effectSize`
-(`null` for fields a test does not define).
+</details>
 
-## Available Tests
+<details>
+<summary>Rust</summary>
 
-| Test | Data type | Constructor config | Decision rule |
-|---|---|---|---|
-| `chi_squared` | Discrete | `yates` (default `true`) | `p ≥ α` |
-| `log_likelihood` (G-test) | Discrete | `yates` (default `true`) | `p ≥ α` |
-| `cressie_read` | Discrete | `yates` (default `true`) | `p ≥ α` |
-| `freeman_tukey` | Discrete | `yates` (default `true`) | `p ≥ α` |
-| `modified_likelihood` | Discrete | `yates` (default `true`) | `p ≥ α` |
-| `pearson_correlation` | Continuous | — | `p ≥ α` |
-| `fisher_z` | Continuous | — | `p ≥ α` |
-| `pearson_equivalence` | Continuous | `delta_threshold` (default `0.1`) | `p < α` (TOST) |
-| `hsic` | Continuous | `kernel`, `bandwidth` (default `heuristic`), `null_dist` (default `gamma`), `n_permutations` (default 100), `seed` (default 0) | `p ≥ α` |
-| `kci` | Continuous | `kernel`, `bandwidth` (default `heuristic`), `epsilon` (default `1e-3`) | `p ≥ α` |
-| `gcm` | Continuous | — | `p ≥ α` |
-| `pillai` | Discrete, continuous, or mixed | — | `p ≥ α` |
+```rust
+use fastcit_core::ci_tests::FisherZ;
+use fastcit_core::dataset::{ColumnKind, Dataset};
+use fastcit_core::strategy::CITest;
 
-- **Kernel tests.** `hsic` (unconditional) and `kci` (conditional) support RBF and linear
-  kernels only. KCI costs O(n²) memory and O(n³) time. Differences from pgmpy: `hsic`
-  rejects a non-empty conditioning set (pgmpy ignores it), constant columns raise an error
-  instead of yielding NaN, and permutation p-values use the library's own seeded generator,
-  so they differ from pgmpy's numpy-based draws.
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let z: Vec<f64> = (0..500).map(|i| ((i * 37 % 101) as f64) / 10.0).collect();
+    let x: Vec<f64> = z.iter().enumerate().map(|(i, v)| v + ((i * 53 % 97) as f64) / 10.0).collect();
+    let y: Vec<f64> = z.iter().enumerate().map(|(i, v)| v + ((i * 29 % 89) as f64) / 10.0).collect();
 
-- **GCM and Pillai.** Both residualize X and Y linearly on `[1, Z]` (`pillai` one-hot encodes
-  discrete conditioning columns, minus one level; `gcm` takes continuous columns only).
-  `pillai` is the mixed-data test: any column may be discrete
-  or continuous, and a categorical variable with K levels contributes K−1 indicator
-  residual columns. Differences from pgmpy: only linear residualization is offered (pgmpy's
-  Pillai default is a random forest); categorical targets use a linear probability model
-  rather than a classifier's probabilities; canonical correlations are computed exactly
-  instead of by an iterative CCA; degenerate inputs (constant columns, X determined by Z)
-  raise an error instead of yielding NaN; conditioning sets whose columns are linearly
-  dependent (duplicate or nested categorical variables, a constant column) also raise a
-  degenerate-data error, whereas pgmpy fits them by least squares; and pgmpy's
-  `df2 = s·(n − 1 + s − p − q)` is kept as is, so it ignores the number of conditioning
-  columns. When `n` minus the design columns is smaller than `p + q` (few rows relative to the
-  conditioning columns and categorical levels), `pillai` returns `p = 0` ("dependent"), as pgmpy
-  does.
-
-- **Uniform result.** Every `run_test(X, Y, Z)` returns the same `CiResult`: `statistic`,
-  `p_value`, `dof`, and `effect_size`. Fields a test does not define are absent
-  (`None` / `NULL` / `null`). Pearson correlation reports
-  `dof = n - |Z| - 2`, while Fisher-Z and Pearson equivalence report no degrees of freedom.
-  The discrete tests report Cramér's V and the continuous tests the (partial) correlation as
-  `effect_size`; `pillai` reports `V/s` (the Pillai trace over its maximum, a partial η²).
-- **Independence decision.** `significance_level` (α) is **not** baked into the test; it is
-  passed to `is_independent(X, Y, Z, significance_level)`, which applies that test's own rule
-  from its metadata — the normal `p ≥ α` for most tests and the inverted `p < α` for the
-  equivalence test — so the caller never writes the rule.
-- **Conditioning.** Every test accepts a conditioning set `Z` (a list/vector of variables).
-  For conditional discrete tests the statistic is summed over the strata defined by `Z`; for
-  continuous tests the partial correlation is derived from a lazily cached covariance matrix
-  (O(|Z|³) per query after the first continuous test; falls back to per-query regression for
-  datasets with more than 2048 continuous columns). `gcm` and `pillai` instead run a per-query
-  least-squares fit on `[1, Z]`. Pearson correlation reports
-  `dof = n - |Z| - 2`; Fisher-Z and Pearson equivalence have no degrees of freedom.
-- **Missing data.** NaN (Python/JS) and NA (R) are rejected when the dataset is bound — drop
-  or impute first. Discrete columns accept strings everywhere (factorized to integer codes
-  internally).
-- **Discrete family.** The discrete tests are members of the power-divergence family and
-  differ only in the $\lambda$ parameter: `chi_squared` ($1$), `log_likelihood` ($0$),
-  `cressie_read` ($2/3$), `freeman_tukey` ($-1/2$), `modified_likelihood` ($-1$). They share a
-  `yates` option (default `true`) applying Yates' continuity correction on 2×2 (sub-)tables,
-  matching `scipy.stats.chi2_contingency` and pgmpy.
-- **Equivalence test.** `pearson_equivalence` is an equivalence (TOST) test: it takes a
-  `delta_threshold` (the equivalence margin on the correlation scale) and uses the **inverted**
-  decision rule — it declares independence when `p < α`, i.e. when the partial correlation is
-  confidently *within* that margin of zero.
-- **Naming.** Python and JavaScript expose these as classes (`ChiSquared`, `LogLikelihood`,
-  …); R exposes them as factory functions (`chi_squared`, `log_likelihood`, …). The stable name
-  `pillai` is `PillaiTrace` in Python and JavaScript (and `GCM` for `gcm`).
-
-## Package Structure & Contributing
-
-```
-crates/ci-core     Rust core: all test implementations, the CITest trait, the Dataset, and the registry
-crates/ci-python   Python bindings (PyO3)        -> import fastcit
-crates/ci-r        R package (extendr)           -> library(fastcit)
-crates/ci-js       JavaScript / WASM (wasm-pack)
+    let data = Dataset::from_columns(vec![
+        ("X".into(), ColumnKind::Continuous, x),
+        ("Y".into(), ColumnKind::Continuous, y),
+        ("Z".into(), ColumnKind::Continuous, z),
+    ])?;
+    let (x, y, z) = (
+        data.index_of("X").unwrap(),
+        data.index_of("Y").unwrap(),
+        data.index_of("Z").unwrap(),
+    );
+    let result = FisherZ::new().test(&data, x, y, &[z])?;
+    println!("{}", result.p_value);
+    Ok(())
+}
 ```
 
-All three bindings are thin wrappers that depend only on `fastcit-core`, so the statistics live in a
-single place; each binding maps its idiomatic input (a pandas/`data.frame`/typed columns) onto
-the core `Dataset` and forwards `run_test` / `is_independent`. The Rust core can also be used
-directly as a crate. A shared golden fixture (`tests/fixtures/golden.json`) is the canonical
-cross-language numeric parity gate. The R source package carries mechanically synchronized
-copies of that fixture and `fastcit-core` so its built archive can be checked outside the monorepo;
-`python crates/ci-r/tools/sync_package_assets.py --check` rejects drift. Full API documentation
-is published at <https://giphouse.github.io/Conditional-Independence-Testing/>.
+</details>
 
-Contributions are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md) for environment setup,
-coding standards, and how to add a new test. Each crate uses its own toolchain, so checks run
-per crate rather than across the whole workspace. For a change to `fastcit-core`, before opening a PR:
+## Available tests
 
-```bash
-cargo fmt --all -- --check
-cargo clippy -p fastcit-core --all-targets -- -D warnings
-cargo test -p fastcit-core          # includes the shared golden parity test
-```
+| Test | Data type |
+|---|---|
+| Chi-squared (`chi_squared`) | Discrete |
+| Log-likelihood (`log_likelihood`) | Discrete |
+| Cressie-Read (`cressie_read`) | Discrete |
+| Freeman-Tukey (`freeman_tukey`) | Discrete |
+| Modified log-likelihood (`modified_likelihood`) | Discrete |
+| Pearson correlation (`pearson_correlation`) | Continuous |
+| Fisher-z (`fisher_z`) | Continuous |
+| Pearson equivalence (`pearson_equivalence`) | Continuous |
+| HSIC (`hsic`) | Continuous |
+| KCI (`kci`) | Continuous |
+| GCM (`gcm`) | Continuous |
+| Pillai's trace (`pillai`) | Mixed (discrete and continuous) |
+
+## Performance
+
+The tables show the median time of one test call, in milliseconds. Lower is better.
+A dash means the package does not have the test.
+
+The Python run used an Intel Core Ultra 5 125U (14 logical CPUs) on Linux, on 2026-11-16. The pgmpy version is `dev`, commit a67c17d9.
+FastCIT is slower than pgmpy and andrey-core on KCI at n = 1 000.
+
+### Python packages, median time of one call
+
+| Test | FastCIT | pgmpy dev | causal-learn | andrey-core |
+|---|---:|---:|---:|---:|
+| χ² | 0.124 | 0.238ᶜ | 0.328 | 0.283ᵇ |
+| G² | 0.118 | 0.162ᶜ* | 0.173 | 0.259ᵇ |
+| Fisher-zᵉ | 0.001 | 1.01 | 0.044 | 0.013 |
+| Pearson tᵉ | 0.001 | 0.965 | — | 0.013 |
+| HSIC (n = 300) | 0.902 | 1.68 | 1.81ᵈ | 1.49ᵈ |
+| KCI (n = 300) | 18.2 | 37.8 | 54.2 | 13.0 |
+| KCI (n = 1 000) | 482 | 383 | 900 | 392 |
+| GCM | 0.592 | 4.02 | — | — |
+| Pillai | 0.124 | 142ᵃ | — | — |
+
+- ᵃ pgmpy runs a random-forest Pillai test. FastCIT runs a linear Pillai test. The tests differ.
+- ᵇ andrey-core uses a different degrees-of-freedom rule for χ² and G².
+- ᶜ pgmpy applies the Yates correction and cannot turn it off. FastCIT runs without it.
+- ᵈ The null approximation or the kernel width rule differs from FastCIT.
+- ᵉ The time does not include the one-time setup. FastCIT, causal-learn and andrey-core precompute the correlation matrix. pgmpy computes it in every call.
+- \* pgmpy returned NaN for one G² query. The median leaves it out.
+
+### R packages, median time of one call
+
+| Test | FastCIT (R) | pcalg | bnlearn | dHSIC |
+|---|---:|---:|---:|---:|
+| χ² | 0.210 | — | 1.86ᶠ | — |
+| G² | 0.070 | 9.92ᶠ | 1.60ᶠ | — |
+| Fisher-zᵉ | 0.013 | 0.033 | 1.33 | — |
+| Pearson tᵉ | 0.029 | — | 1.39 | — |
+| HSIC (median width) | 1.40 | — | — | 6.13ᵈ |
+
+- ᵈ The null approximation or the kernel width rule differs from FastCIT.
+- ᵉ The time does not include the one-time setup. FastCIT and pcalg precompute the correlation matrix. bnlearn computes it in every call.
+- ᶠ The package uses the nominal degrees of freedom. FastCIT uses the adjusted degrees of freedom.
+
+The [benchmarks](benchmarks/) folder explains the method and the total time of one pass. It also shows how to run the benchmark.
+
+## Documentation and contributing
+
+Read the [API documentation](https://giphouse.github.io/Conditional-Independence-Testing/).
+Read [CONTRIBUTING.md](CONTRIBUTING.md) before you open a pull request.
 
 ## License
 
-Licensed under the [MIT License](LICENSE).
+FastCIT uses the [MIT License](LICENSE).
