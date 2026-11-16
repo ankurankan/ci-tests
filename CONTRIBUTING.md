@@ -25,8 +25,8 @@ This document provides guidelines and instructions for contributing to the CI Te
 
 1. **Clone the repository**:
 ```bash
-   git clone https://github.com/pgmpy/ci-tests
-   cd ci-tests
+   git clone https://github.com/pgmpy/FastCIT
+   cd FastCIT
 ```
 
 2. **Build the core crate** (each binding has its own toolchain; see [Testing](#testing)):
@@ -66,7 +66,7 @@ If all commands complete successfully, your environment is ready!
 
 ## Repository Structure
 ```
-ci-tests/
+FastCIT/
 ├── crates/                 # Rust workspace
 │   ├── ci-core/           # Core CI test implementations, Dataset, CITest trait, registry
 │   ├── ci-python/         # Python bindings (PyO3 + maturin)

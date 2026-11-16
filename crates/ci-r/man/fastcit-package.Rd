@@ -18,6 +18,15 @@ Column kinds are inferred from the data.frame: \code{integer}/\code{logical}/\co
 \strong{continuous}. Discrete factor/character columns are coded to integer codes
 on the R side before they reach the Rust core (which only handles numbers).
 }
+\seealso{
+Useful links:
+\itemize{
+  \item \url{https://pgmpy.org/FastCIT/}
+  \item \url{https://github.com/pgmpy/FastCIT}
+  \item Report bugs at \url{https://github.com/pgmpy/FastCIT/issues}
+}
+
+}
 \author{
 \strong{Maintainer}: Ankur Ankan \email{ankurankan@gmail.com}
 

@@ -24,7 +24,7 @@ a categorical variable with K levels is regressed as K−1 indicator columns (a
 linear probability model).
 
 The root
-[README](https://github.com/pgmpy/ci-tests/blob/main/README.md) is the
+[README](https://github.com/pgmpy/FastCIT/blob/main/README.md) is the
 canonical API guide. See the root
-[CONTRIBUTING.md](https://github.com/pgmpy/ci-tests/blob/main/CONTRIBUTING.md)
+[CONTRIBUTING.md](https://github.com/pgmpy/FastCIT/blob/main/CONTRIBUTING.md)
 for development and contribution instructions.

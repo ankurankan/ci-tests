@@ -24,6 +24,11 @@ classifiers = [
   "Operating System :: MacOS",
 ]
 
+[project.urls]
+Homepage = "https://pgmpy.org/FastCIT/"
+Documentation = "https://pgmpy.org/FastCIT/python/fastcit.html"
+Repository = "https://github.com/pgmpy/FastCIT"
+
 [build-system]
 requires = ["maturin>=1.11,<2.0"]
 build-backend = "maturin"

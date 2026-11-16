@@ -4,9 +4,10 @@
   "version": "1.0.0",
   "description": "WebAssembly bindings for data-bound conditional-independence testing",
   "license": "MIT",
+  "homepage": "https://pgmpy.org/FastCIT/",
   "repository": {
     "type": "git",
-    "url": "https://github.com/pgmpy/ci-tests.git"
+    "url": "https://github.com/pgmpy/FastCIT.git"
   },
   "scripts": {
     "test": "vitest run"

@@ -14,13 +14,16 @@ name: Python CI
 
 on:
   push:
-    branches: [master, development]
+    branches: [main]
     paths:
       - 'crates/ci-python/**'
       - 'crates/ci-core/**'
       - 'crates/ci-r/**'
       - 'crates/ci-js/Cargo.toml'
       - 'tests/**'
+      - 'README.md'
+      - 'docs/site/**'
+      - 'benchmarks/**'
       - 'Cargo.toml'
       - 'Cargo.lock'
       - '.github/workflows/python.yml'
@@ -33,6 +36,9 @@ on:
       - 'crates/ci-r/**'
       - 'crates/ci-js/Cargo.toml'
       - 'tests/**'
+      - 'README.md'
+      - 'docs/site/**'
+      - 'benchmarks/**'
       - 'Cargo.toml'
       - 'Cargo.lock'
       - '.github/workflows/python.yml'

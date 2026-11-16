@@ -13,7 +13,7 @@ name: R CI
 
 on:
   push:
-    branches: [master, development]
+    branches: [main]
     paths:
       - 'crates/ci-r/**'
       - 'crates/ci-core/**'

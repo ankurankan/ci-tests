@@ -1,0 +1,3902 @@
+{
+  "source": "benchmarks/summarize.py",
+  "unit": "ms",
+  "quick": false,
+  "ecosystems": [
+    {
+      "key": "python",
+      "label": "Python packages",
+      "meta": {
+        "cpu": "Intel(R) Core(TM) Ultra 5 125U",
+        "logical_cpus": 14,
+        "os": "Linux 6.8.0-147-generic",
+        "python": "3.14.2",
+        "engines": [
+          "fastcit",
+          "fastcit (yates)",
+          "pgmpy",
+          "causal-learn",
+          "gcastle",
+          "tigramite",
+          "pingouin",
+          "hyppo"
+        ],
+        "quick": false,
+        "passes": 5,
+        "versions": {
+          "causal-learn": "0.1.4.5",
+          "fastcit": "0.1.0",
+          "gcastle": "1.0.4",
+          "hyppo": "0.5.2",
+          "pgmpy": "1.1.0",
+          "pingouin": "0.7.0",
+          "tigramite": "5.2.10.1",
+          "numpy": "2.4.1",
+          "pandas": "3.0.0",
+          "scipy": "1.17.0",
+          "scikit-learn": "1.8.0"
+        },
+        "helpers": {
+          "threadpoolctl": "3.6.0",
+          "statsmodels": "0.15.0",
+          "pandas-flavor": "0.8.1",
+          "tabulate": "0.10.0",
+          "xarray": "2026.9.0",
+          "lazy_loader": "0.6",
+          "autograd": "1.9.1",
+          "numba": "0.68.1",
+          "llvmlite": "0.50.0",
+          "patsy": "1.0.3",
+          "future": "1.0.0"
+        },
+        "commits": {
+          "fastcit": "62f2425",
+          "pgmpy": "a67c17d9"
+        },
+        "fastcit_trees": {
+          "crates/ci-core": "272b705c141858b431bc2e572b63cecf9940435d",
+          "crates/ci-python": "2e8e9190b9a2392f5f9f918b838b75b131ca6761"
+        },
+        "threads": {
+          "env": {},
+          "fastcit": "single-threaded (no rayon)",
+          "pools": [
+            "openblas (libscipy_openblas-6cdc3b4a.so), 12 threads",
+            "openblas (libscipy_openblas64_-fdde5778.so), 12 threads",
+            "openmp (libgomp-e985bcbb.so.1.0.0), 12 threads"
+          ]
+        },
+        "affinity": {
+          "cpus_allowed_list": "0-11",
+          "sched_getaffinity": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11
+          ]
+        },
+        "date": "2026-11-16 23:01:25",
+        "runs": [
+          {
+            "file": "python-1.json",
+            "date": "2026-11-16 23:01:25",
+            "seed": 1,
+            "uptime_start": "23:01:25 up  9:22,  1 user,  load average: 1.45, 1.22, 1.00",
+            "uptime_end": "23:04:25 up  9:25,  1 user,  load average: 4.70, 3.59, 1.99",
+            "power": {
+              "ac_online": "1",
+              "profile": "performance",
+              "governor": "powersave",
+              "epp": "performance"
+            },
+            "power_end": {
+              "ac_online": "1",
+              "profile": "performance",
+              "governor": "powersave",
+              "epp": "performance"
+            },
+            "harness_floor_ms": 5.2001269068568945e-05
+          },
+          {
+            "file": "python-2.json",
+            "date": "2026-11-16 23:06:19",
+            "seed": 2,
+            "uptime_start": "23:06:19 up  9:27,  1 user,  load average: 2.42, 2.87, 1.90",
+            "uptime_end": "23:09:06 up  9:30,  1 user,  load average: 4.27, 3.92, 2.48",
+            "power": {
+              "ac_online": "1",
+              "profile": "performance",
+              "governor": "powersave",
+              "epp": "performance"
+            },
+            "power_end": {
+              "ac_online": "1",
+              "profile": "performance",
+              "governor": "powersave",
+              "epp": "performance"
+            },
+            "harness_floor_ms": 5.1000824896618724e-05
+          },
+          {
+            "file": "python-3.json",
+            "date": "2026-11-16 23:11:31",
+            "seed": 3,
+            "uptime_start": "23:11:31 up  9:32,  1 user,  load average: 1.34, 2.78, 2.25",
+            "uptime_end": "23:14:22 up  9:35,  1 user,  load average: 3.63, 3.66, 2.70",
+            "power": {
+              "ac_online": "1",
+              "profile": "performance",
+              "governor": "powersave",
+              "epp": "performance"
+            },
+            "power_end": {
+              "ac_online": "1",
+              "profile": "performance",
+              "governor": "powersave",
+              "epp": "performance"
+            },
+            "harness_floor_ms": 5.00003807246685e-05
+          }
+        ],
+        "other_runs": [
+          {
+            "cpu": "Intel(R) Core(TM) Ultra 5 125U",
+            "logical_cpus": 14,
+            "os": "Linux 6.8.0-147-generic",
+            "python": "3.11.10",
+            "engines": [
+              "dowhy",
+              "fastcit"
+            ],
+            "rows": [
+              "gcm"
+            ],
+            "quick": false,
+            "passes": 5,
+            "versions": {
+              "dowhy": "0.14",
+              "fastcit": "0.1.0",
+              "numpy": "2.4.6",
+              "pandas": "3.1.1",
+              "scipy": "1.15.3",
+              "scikit-learn": "1.9.1"
+            },
+            "helpers": {
+              "threadpoolctl": "3.8.0",
+              "statsmodels": "0.15.0",
+              "numba": "0.68.1",
+              "llvmlite": "0.50.0",
+              "patsy": "1.0.3"
+            },
+            "commits": {
+              "fastcit": "62f2425"
+            },
+            "fastcit_trees": {
+              "crates/ci-core": "272b705c141858b431bc2e572b63cecf9940435d",
+              "crates/ci-python": "2e8e9190b9a2392f5f9f918b838b75b131ca6761"
+            },
+            "threads": {
+              "env": {},
+              "fastcit": "single-threaded (no rayon)",
+              "pools": [
+                "openblas (libscipy_openblas-68440149.so), 12 threads",
+                "openblas (libscipy_openblas64_-32a4b2a6.so), 12 threads",
+                "openmp (libgomp-e985bcbb.so.1.0.0), 12 threads"
+              ]
+            },
+            "affinity": {
+              "cpus_allowed_list": "0-11",
+              "sched_getaffinity": [
+                0,
+                1,
+                2,
+                3,
+                4,
+                5,
+                6,
+                7,
+                8,
+                9,
+                10,
+                11
+              ]
+            },
+            "date": "2026-11-16 23:05:47",
+            "runs": [
+              {
+                "file": "python-dowhy-1.json",
+                "date": "2026-11-16 23:05:47",
+                "seed": 1,
+                "uptime_start": "23:05:47 up  9:27,  1 user,  load average: 1.49, 2.83, 1.85",
+                "uptime_end": "23:05:49 up  9:27,  1 user,  load average: 1.45, 2.80, 1.85",
+                "power": {
+                  "ac_online": "1",
+                  "profile": "performance",
+                  "governor": "powersave",
+                  "epp": "performance"
+                },
+                "power_end": {
+                  "ac_online": "1",
+                  "profile": "performance",
+                  "governor": "powersave",
+                  "epp": "performance"
+                },
+                "harness_floor_ms": 5.6501448852941394e-05
+              },
+              {
+                "file": "python-dowhy-2.json",
+                "date": "2026-11-16 23:10:58",
+                "seed": 2,
+                "uptime_start": "23:10:58 up  9:32,  1 user,  load average: 1.36, 2.96, 2.29",
+                "uptime_end": "23:11:00 up  9:32,  1 user,  load average: 1.33, 2.93, 2.28",
+                "power": {
+                  "ac_online": "1",
+                  "profile": "performance",
+                  "governor": "powersave",
+                  "epp": "performance"
+                },
+                "power_end": {
+                  "ac_online": "1",
+                  "profile": "performance",
+                  "governor": "powersave",
+                  "epp": "performance"
+                },
+                "harness_floor_ms": 5.90007402934134e-05
+              },
+              {
+                "file": "python-dowhy-3.json",
+                "date": "2026-11-16 23:15:24",
+                "seed": 3,
+                "uptime_start": "23:15:24 up  9:36,  1 user,  load average: 1.34, 2.97, 2.52",
+                "uptime_end": "23:15:26 up  9:36,  1 user,  load average: 1.34, 2.97, 2.52",
+                "power": {
+                  "ac_online": "1",
+                  "profile": "performance",
+                  "governor": "powersave",
+                  "epp": "performance"
+                },
+                "power_end": {
+                  "ac_online": "1",
+                  "profile": "performance",
+                  "governor": "powersave",
+                  "epp": "performance"
+                },
+                "harness_floor_ms": 5.6501448852941394e-05
+              }
+            ],
+            "group": "python-dowhy",
+            "only": true,
+            "reference": {
+              "gcm": {
+                "fastcit": {
+                  "label": "GCM",
+                  "package": "FastCIT",
+                  "median_ms": 0.4035060010210145,
+                  "text": "0.404",
+                  "min": 0.40136150164471474,
+                  "max": 0.405281500206911,
+                  "range_text": "0.401–0.405",
+                  "runs": [
+                    0.4035060010210145,
+                    0.405281500206911,
+                    0.40136150164471474
+                  ]
+                }
+              }
+            }
+          }
+        ]
+      },
+      "spread": {
+        "limit": 0.25,
+        "runs": 3,
+        "flagged": []
+      },
+      "per_call": {
+        "title": "Python packages, median time of one call",
+        "columns": [
+          {
+            "key": "fastcit",
+            "label": "FastCIT"
+          },
+          {
+            "key": "pgmpy",
+            "label": "pgmpy dev"
+          },
+          {
+            "key": "causal-learn",
+            "label": "causal-learn"
+          },
+          {
+            "key": "gcastle",
+            "label": "gcastle"
+          },
+          {
+            "key": "tigramite",
+            "label": "tigramite"
+          },
+          {
+            "key": "pingouin",
+            "label": "pingouin"
+          },
+          {
+            "key": "hyppo",
+            "label": "hyppo"
+          },
+          {
+            "key": "dowhy",
+            "label": "dowhy"
+          }
+        ],
+        "rows": [
+          {
+            "key": "chi_square",
+            "label": "χ²",
+            "marks": [],
+            "cells": [
+              {
+                "value": 0.048924001021077856,
+                "text": "0.049",
+                "marks": [],
+                "errors": 0,
+                "nan": 0,
+                "queries": 50,
+                "runs": [
+                  0.05213499935052823,
+                  0.048924001021077856,
+                  0.04843649912800174
+                ],
+                "min": 0.04843649912800174,
+                "max": 0.05213499935052823,
+                "range_text": "0.048–0.052",
+                "spread": 0.07559684705535574,
+                "flagged": false
+              },
+              {
+                "value": 0.0978479984041769,
+                "text": "0.098",
+                "marks": [
+                  "ᵇ"
+                ],
+                "errors": 0,
+                "nan": 0,
+                "queries": 50,
+                "runs": [
+                  0.09972499901778065,
+                  0.0956150015554158,
+                  0.0978479984041769
+                ],
+                "min": 0.0956150015554158,
+                "max": 0.09972499901778065,
+                "range_text": "0.096–0.100",
+                "spread": 0.04200389920484463,
+                "flagged": false
+              },
+              {
+                "value": 0.1282834982703207,
+                "text": "0.128",
+                "marks": [],
+                "errors": 0,
+                "nan": 0,
+                "queries": 50,
+                "runs": [
+                  0.1282834982703207,
+                  0.12606349991983734,
+                  0.13066599967714865
+                ],
+                "min": 0.12606349991983734,
+                "max": 0.13066599967714865,
+                "range_text": "0.126–0.131",
+                "spread": 0.035877566634586605,
+                "flagged": false
+              },
+              {
+                "value": 8.474867001496023,
+                "text": "8.47",
+                "marks": [
+                  "ᵇ"
+                ],
+                "errors": 0,
+                "nan": 0,
+                "queries": 50,
+                "runs": [
+                  8.474867001496023,
+                  8.454056001937715,
+                  8.819376000246848
+                ],
+                "min": 8.454056001937715,
+                "max": 8.819376000246848,
+                "range_text": "8.45–8.82",
+                "spread": 0.04310628098879247,
+                "flagged": false
+              },
+              {
+                "value": null,
+                "text": "—",
+                "marks": []
+              },
+              {
+                "value": null,
+                "text": "—",
+                "marks": []
+              },
+              {
+                "value": null,
+                "text": "—",
+                "marks": []
+              },
+              {
+                "value": null,
+                "text": "—",
+                "marks": []
+              }
+            ]
+          },
+          {
+            "key": "g_sq",
+            "label": "G²",
+            "marks": [],
+            "cells": [
+              {
+                "value": 0.048434001655550674,
+                "text": "0.048",
+                "marks": [],
+                "errors": 0,
+                "nan": 0,
+                "queries": 50,
+                "runs": [
+                  0.048434001655550674,
+                  0.04802750117960386,
+                  0.049041500460589305
+                ],
+                "min": 0.04802750117960386,
+                "max": 0.049041500460589305,
+                "range_text": "0.048–0.049",
+                "spread": 0.020935690761146052,
+                "flagged": false
+              },
+              {
+                "value": 0.0937469994823914,
+                "text": "0.094",
+                "marks": [
+                  "ᵇ",
+                  "*"
+                ],
+                "errors": 0,
+                "nan": 1,
+                "queries": 50,
+                "runs": [
+                  0.09720299931359477,
+                  0.0937469994823914,
+                  0.09374399814987555
+                ],
+                "min": 0.09374399814987555,
+                "max": 0.09720299931359477,
+                "range_text": "0.094–0.097",
+                "spread": 0.036897193326906746,
+                "flagged": false
+              },
+              {
+                "value": 0.1309175004280405,
+                "text": "0.131",
+                "marks": [],
+                "errors": 0,
+                "nan": 0,
+                "queries": 50,
+                "runs": [
+                  0.1309175004280405,
+                  0.12762350161210634,
+                  0.13219600077718496
+                ],
+                "min": 0.12762350161210634,
+                "max": 0.13219600077718496,
+                "range_text": "0.128–0.132",
+                "spread": 0.03492656940537849,
+                "flagged": false
+              },
+              {
+                "value": 8.455012999547762,
+                "text": "8.46",
+                "marks": [
+                  "ᵇ"
+                ],
+                "errors": 0,
+                "nan": 0,
+                "queries": 50,
+                "runs": [
+                  8.366587000637082,
+                  8.455012999547762,
+                  8.573120499931974
+                ],
+                "min": 8.366587000637082,
+                "max": 8.573120499931974,
+                "range_text": "8.37–8.57",
+                "spread": 0.02442734260798167,
+                "flagged": false
+              },
+              {
+                "value": 1.778833500793553,
+                "text": "1.78",
+                "marks": [],
+                "errors": 0,
+                "nan": 0,
+                "queries": 50,
+                "runs": [
+                  1.7741284991643624,
+                  1.778833500793553,
+                  1.7941514997801278
+                ],
+                "min": 1.7741284991643624,
+                "max": 1.7941514997801278,
+                "range_text": "1.77–1.79",
+                "spread": 0.011256253385622042,
+                "flagged": false
+              },
+              {
+                "value": null,
+                "text": "—",
+                "marks": []
+              },
+              {
+                "value": null,
+                "text": "—",
+                "marks": []
+              },
+              {
+                "value": null,
+                "text": "—",
+                "marks": []
+              }
+            ]
+          },
+          {
+            "key": "cressie_read",
+            "label": "Cressie-Read",
+            "marks": [],
+            "cells": [
+              {
+                "value": 0.050152000767411664,
+                "text": "0.050",
+                "marks": [],
+                "errors": 0,
+                "nan": 0,
+                "queries": 50,
+                "runs": [
+                  0.050558997827465646,
+                  0.04991350033378694,
+                  0.050152000767411664
+                ],
+                "min": 0.04991350033378694,
+                "max": 0.050558997827465646,
+                "range_text": "0.050–0.051",
+                "spread": 0.012870822376006634,
+                "flagged": false
+              },
+              {
+                "value": 0.0981639987003291,
+                "text": "0.098",
+                "marks": [
+                  "ᵇ"
+                ],
+                "errors": 0,
+                "nan": 0,
+                "queries": 50,
+                "runs": [
+                  0.10013050086854491,
+                  0.0981639987003291,
+                  0.09807300011743791
+                ],
+                "min": 0.09807300011743791,
+                "max": 0.10013050086854491,
+                "range_text": "0.098–0.100",
+                "spread": 0.020959830267184315,
+                "flagged": false
+              },
+              {
+                "value": null,
+                "text": "—",
+                "marks": []
+              },
+              {
+                "value": 8.631111501017585,
+                "text": "8.63",
+                "marks": [
+                  "ᵇ"
+                ],
+                "errors": 0,
+                "nan": 0,
+                "queries": 50,
+                "runs": [
+                  8.631111501017585,
+                  8.639059500637813,
+                  8.579538998674252
+                ],
+                "min": 8.579538998674252,
+                "max": 8.639059500637813,
+                "range_text": "8.58–8.64",
+                "spread": 0.006896041368083831,
+                "flagged": false
+              },
+              {
+                "value": null,
+                "text": "—",
+                "marks": []
+              },
+              {
+                "value": null,
+                "text": "—",
+                "marks": []
+              },
+              {
+                "value": null,
+                "text": "—",
+                "marks": []
+              },
+              {
+                "value": null,
+                "text": "—",
+                "marks": []
+              }
+            ]
+          },
+          {
+            "key": "freeman_tukey",
+            "label": "Freeman-Tukey",
+            "marks": [],
+            "cells": [
+              {
+                "value": 0.049524998757988214,
+                "text": "0.050",
+                "marks": [],
+                "errors": 0,
+                "nan": 0,
+                "queries": 50,
+                "runs": [
+                  0.04898799852526281,
+                  0.049524998757988214,
+                  0.04961100057698786
+                ],
+                "min": 0.04898799852526281,
+                "max": 0.04961100057698786,
+                "range_text": "0.049–0.050",
+                "spread": 0.012579547043896981,
+                "flagged": false
+              },
+              {
+                "value": 0.09361199772683904,
+                "text": "0.094",
+                "marks": [
+                  "ᵇ",
+                  "*"
+                ],
+                "errors": 0,
+                "nan": 15,
+                "queries": 50,
+                "runs": [
+                  0.09798100290936418,
+                  0.09195500024361536,
+                  0.09361199772683904
+                ],
+                "min": 0.09195500024361536,
+                "max": 0.09798100290936418,
+                "range_text": "0.092–0.098",
+                "spread": 0.06437211908811913,
+                "flagged": false
+              },
+              {
+                "value": null,
+                "text": "—",
+                "marks": []
+              },
+              {
+                "value": 3.6780269983864855,
+                "text": "3.68",
+                "marks": [
+                  "ᵇ",
+                  "*"
+                ],
+                "errors": 0,
+                "nan": 15,
+                "queries": 50,
+                "runs": [
+                  3.6780269983864855,
+                  3.6361259990371764,
+                  3.72727400099393
+                ],
+                "min": 3.6361259990371764,
+                "max": 3.72727400099393,
+                "range_text": "3.64–3.73",
+                "spread": 0.024781765331450576,
+                "flagged": false
+              },
+              {
+                "value": null,
+                "text": "—",
+                "marks": []
+              },
+              {
+                "value": null,
+                "text": "—",
+                "marks": []
+              },
+              {
+                "value": null,
+                "text": "—",
+                "marks": []
+              },
+              {
+                "value": null,
+                "text": "—",
+                "marks": []
+              }
+            ]
+          },
+          {
+            "key": "modified_ll",
+            "label": "Modified log-likelihood",
+            "marks": [],
+            "cells": [
+              {
+                "value": 0.04824899951927364,
+                "text": "0.048",
+                "marks": [],
+                "errors": 0,
+                "nan": 0,
+                "queries": 50,
+                "runs": [
+                  0.04846050069318153,
+                  0.04753050052386243,
+                  0.04824899951927364
+                ],
+                "min": 0.04753050052386243,
+                "max": 0.04846050069318153,
+                "range_text": "0.048–0.048",
+                "spread": 0.019275014582377008,
+                "flagged": false
+              },
+              {
+                "value": 0.09055800182977691,
+                "text": "0.091",
+                "marks": [
+                  "ᵇ",
+                  "*"
+                ],
+                "errors": 0,
+                "nan": 1,
+                "queries": 50,
+                "runs": [
+                  0.09372999920742586,
+                  0.09043400132213719,
+                  0.09055800182977691
+                ],
+                "min": 0.09043400132213719,
+                "max": 0.09372999920742586,
+                "range_text": "0.090–0.094",
+                "spread": 0.0363965394409232,
+                "flagged": false
+              },
+              {
+                "value": null,
+                "text": "—",
+                "marks": []
+              },
+              {
+                "value": 8.668414000567282,
+                "text": "8.67",
+                "marks": [
+                  "ᵇ"
+                ],
+                "errors": 0,
+                "nan": 0,
+                "queries": 50,
+                "runs": [
+                  8.668414000567282,
+                  8.565618498323602,
+                  8.786254500591895
+                ],
+                "min": 8.565618498323602,
+                "max": 8.786254500591895,
+                "range_text": "8.57–8.79",
+                "spread": 0.025452868570173735,
+                "flagged": false
+              },
+              {
+                "value": null,
+                "text": "—",
+                "marks": []
+              },
+              {
+                "value": null,
+                "text": "—",
+                "marks": []
+              },
+              {
+                "value": null,
+                "text": "—",
+                "marks": []
+              },
+              {
+                "value": null,
+                "text": "—",
+                "marks": []
+              }
+            ]
+          },
+          {
+            "key": "fisher_z",
+            "label": "Fisher-z",
+            "marks": [
+              "ᵈ"
+            ],
+            "cells": [
+              {
+                "value": 0.0006849986675661057,
+                "text": "0.001",
+                "marks": [],
+                "errors": 0,
+                "nan": 0,
+                "queries": 50,
+                "runs": [
+                  0.0006849986675661057,
+                  0.0006685004336759448,
+                  0.0006939990271348506
+                ],
+                "min": 0.0006685004336759448,
+                "max": 0.0006939990271348506,
+                "range_text": "0.001–0.001",
+                "spread": 0.03722429643477383,
+                "flagged": false
+              },
+              {
+                "value": 0.9447190004721051,
+                "text": "0.945",
+                "marks": [],
+                "errors": 0,
+                "nan": 0,
+                "queries": 50,
+                "runs": [
+                  0.9447190004721051,
+                  0.9347510022053029,
+                  0.9543244996166322
+                ],
+                "min": 0.9347510022053029,
+                "max": 0.9543244996166322,
+                "range_text": "0.935–0.954",
+                "spread": 0.020718856508176318,
+                "flagged": false
+              },
+              {
+                "value": 0.04281699875718914,
+                "text": "0.043",
+                "marks": [],
+                "errors": 0,
+                "nan": 0,
+                "queries": 50,
+                "runs": [
+                  0.04276300023775548,
+                  0.04281699875718914,
+                  0.04372100011096336
+                ],
+                "min": 0.04276300023775548,
+                "max": 0.04372100011096336,
+                "range_text": "0.043–0.044",
+                "spread": 0.02237428827369714,
+                "flagged": false
+              },
+              {
+                "value": 0.1431279997632373,
+                "text": "0.143",
+                "marks": [],
+                "errors": 0,
+                "nan": 0,
+                "queries": 50,
+                "runs": [
+                  0.14556950009136926,
+                  0.14255700079957023,
+                  0.1431279997632373
+                ],
+                "min": 0.14255700079957023,
+                "max": 0.14556950009136926,
+                "range_text": "0.143–0.146",
+                "spread": 0.021047588849018466,
+                "flagged": false
+              },
+              {
+                "value": null,
+                "text": "—",
+                "marks": []
+              },
+              {
+                "value": null,
+                "text": "—",
+                "marks": []
+              },
+              {
+                "value": null,
+                "text": "—",
+                "marks": []
+              },
+              {
+                "value": null,
+                "text": "—",
+                "marks": []
+              }
+            ]
+          },
+          {
+            "key": "pearson_t",
+            "label": "Pearson t",
+            "marks": [
+              "ᵈ"
+            ],
+            "cells": [
+              {
+                "value": 0.0008614988473709673,
+                "text": "0.001",
+                "marks": [],
+                "errors": 0,
+                "nan": 0,
+                "queries": 50,
+                "runs": [
+                  0.0008855004125507548,
+                  0.0007885009836172685,
+                  0.0008614988473709673
+                ],
+                "min": 0.0007885009836172685,
+                "max": 0.0008855004125507548,
+                "range_text": "0.001–0.001",
+                "spread": 0.11259380001435769,
+                "flagged": false
+              },
+              {
+                "value": 0.8803015007288195,
+                "text": "0.880",
+                "marks": [],
+                "errors": 0,
+                "nan": 0,
+                "queries": 50,
+                "runs": [
+                  0.8680870014359243,
+                  0.8803015007288195,
+                  0.892048999958206
+                ],
+                "min": 0.8680870014359243,
+                "max": 0.892048999958206,
+                "range_text": "0.868–0.892",
+                "spread": 0.027220217734995365,
+                "flagged": false
+              },
+              {
+                "value": null,
+                "text": "—",
+                "marks": []
+              },
+              {
+                "value": null,
+                "text": "—",
+                "marks": []
+              },
+              {
+                "value": 1.649017500312766,
+                "text": "1.65",
+                "marks": [],
+                "errors": 0,
+                "nan": 0,
+                "queries": 50,
+                "runs": [
+                  1.655482499700156,
+                  1.6357429994968697,
+                  1.649017500312766
+                ],
+                "min": 1.6357429994968697,
+                "max": 1.655482499700156,
+                "range_text": "1.64–1.66",
+                "spread": 0.011970461319872193,
+                "flagged": false
+              },
+              {
+                "value": 3.5853155022778083,
+                "text": "3.59",
+                "marks": [],
+                "errors": 0,
+                "nan": 0,
+                "queries": 50,
+                "runs": [
+                  3.5853155022778083,
+                  3.5113885005557677,
+                  3.6054645006515784
+                ],
+                "min": 3.5113885005557677,
+                "max": 3.6054645006515784,
+                "range_text": "3.51–3.61",
+                "spread": 0.02623925287357354,
+                "flagged": false
+              },
+              {
+                "value": null,
+                "text": "—",
+                "marks": []
+              },
+              {
+                "value": null,
+                "text": "—",
+                "marks": []
+              }
+            ]
+          },
+          {
+            "key": "hsic",
+            "label": "HSIC (n = 300)",
+            "marks": [],
+            "cells": [
+              {
+                "value": 1.2116435009374982,
+                "text": "1.21",
+                "marks": [],
+                "errors": 0,
+                "nan": 0,
+                "queries": 28,
+                "runs": [
+                  1.2116435009374982,
+                  1.212980001582764,
+                  1.2076639995939331
+                ],
+                "min": 1.2076639995939331,
+                "max": 1.212980001582764,
+                "range_text": "1.21–1.21",
+                "spread": 0.004387430778704931,
+                "flagged": false
+              },
+              {
+                "value": 1.6606214994681068,
+                "text": "1.66",
+                "marks": [],
+                "errors": 0,
+                "nan": 0,
+                "queries": 28,
+                "runs": [
+                  1.6683465000824071,
+                  1.5934730017761467,
+                  1.6606214994681068
+                ],
+                "min": 1.5934730017761467,
+                "max": 1.6683465000824071,
+                "range_text": "1.59–1.67",
+                "spread": 0.04508763636400122,
+                "flagged": false
+              },
+              {
+                "value": 1.6747795016271994,
+                "text": "1.67",
+                "marks": [
+                  "ᶜ"
+                ],
+                "errors": 0,
+                "nan": 0,
+                "queries": 28,
+                "runs": [
+                  1.6747795016271994,
+                  1.6584514978603693,
+                  1.6890544993657386
+                ],
+                "min": 1.6584514978603693,
+                "max": 1.6890544993657386,
+                "range_text": "1.66–1.69",
+                "spread": 0.018272854113413582,
+                "flagged": false
+              },
+              {
+                "value": null,
+                "text": "—",
+                "marks": []
+              },
+              {
+                "value": null,
+                "text": "—",
+                "marks": []
+              },
+              {
+                "value": null,
+                "text": "—",
+                "marks": []
+              },
+              {
+                "value": 3.670308000437217,
+                "text": "3.67",
+                "marks": [
+                  "ᶜ"
+                ],
+                "errors": 0,
+                "nan": 0,
+                "queries": 28,
+                "runs": [
+                  3.670308000437217,
+                  3.6203665022185305,
+                  3.68629049808078
+                ],
+                "min": 3.6203665022185305,
+                "max": 3.68629049808078,
+                "range_text": "3.62–3.69",
+                "spread": 0.017961434259576102,
+                "flagged": false
+              },
+              {
+                "value": null,
+                "text": "—",
+                "marks": []
+              }
+            ]
+          },
+          {
+            "key": "kci_300",
+            "label": "KCI (n = 300)",
+            "marks": [],
+            "cells": [
+              {
+                "value": 17.298132999712834,
+                "text": "17.3",
+                "marks": [],
+                "errors": 0,
+                "nan": 0,
+                "queries": 30,
+                "runs": [
+                  17.298132999712834,
+                  17.114161000790773,
+                  17.853582499810727
+                ],
+                "min": 17.114161000790773,
+                "max": 17.853582499810727,
+                "range_text": "17.1–17.9",
+                "spread": 0.0427457401924375,
+                "flagged": false
+              },
+              {
+                "value": 16.33114700052829,
+                "text": "16.3",
+                "marks": [],
+                "errors": 0,
+                "nan": 0,
+                "queries": 30,
+                "runs": [
+                  16.33114700052829,
+                  16.070690498963813,
+                  17.145652000181144
+                ],
+                "min": 16.070690498963813,
+                "max": 17.145652000181144,
+                "range_text": "16.1–17.1",
+                "spread": 0.0658227803094637,
+                "flagged": false
+              },
+              {
+                "value": 27.810098999907495,
+                "text": "27.8",
+                "marks": [
+                  "ᶜ"
+                ],
+                "errors": 0,
+                "nan": 0,
+                "queries": 30,
+                "runs": [
+                  27.810098999907495,
+                  25.793390499529778,
+                  28.276520499275648
+                ],
+                "min": 25.793390499529778,
+                "max": 28.276520499275648,
+                "range_text": "25.8–28.3",
+                "spread": 0.08928878677325564,
+                "flagged": false
+              },
+              {
+                "value": null,
+                "text": "—",
+                "marks": []
+              },
+              {
+                "value": null,
+                "text": "—",
+                "marks": []
+              },
+              {
+                "value": null,
+                "text": "—",
+                "marks": []
+              },
+              {
+                "value": null,
+                "text": "—",
+                "marks": []
+              },
+              {
+                "value": null,
+                "text": "—",
+                "marks": []
+              }
+            ]
+          },
+          {
+            "key": "kci_1000",
+            "label": "KCI (n = 1 000)",
+            "marks": [],
+            "cells": [
+              {
+                "value": 503.3646100000624,
+                "text": "503",
+                "marks": [],
+                "errors": 0,
+                "nan": 0,
+                "queries": 10,
+                "runs": [
+                  504.80442049956764,
+                  454.8584905005555,
+                  503.3646100000624
+                ],
+                "min": 454.8584905005555,
+                "max": 504.80442049956764,
+                "range_text": "455–505",
+                "spread": 0.09922415880410416,
+                "flagged": false
+              },
+              {
+                "value": 257.9106225002761,
+                "text": "258",
+                "marks": [],
+                "errors": 0,
+                "nan": 0,
+                "queries": 10,
+                "runs": [
+                  264.8544610001409,
+                  243.12600850134913,
+                  257.9106225002761
+                ],
+                "min": 243.12600850134913,
+                "max": 264.8544610001409,
+                "range_text": "243–265",
+                "spread": 0.08424799369699665,
+                "flagged": false
+              },
+              {
+                "value": 448.89367850009876,
+                "text": "449",
+                "marks": [],
+                "errors": 0,
+                "nan": 0,
+                "queries": 10,
+                "runs": [
+                  459.1508325011091,
+                  417.9489134985488,
+                  448.89367850009876
+                ],
+                "min": 417.9489134985488,
+                "max": 459.1508325011091,
+                "range_text": "418–459",
+                "spread": 0.09178547387931472,
+                "flagged": false
+              },
+              {
+                "value": null,
+                "text": "—",
+                "marks": []
+              },
+              {
+                "value": null,
+                "text": "—",
+                "marks": []
+              },
+              {
+                "value": null,
+                "text": "—",
+                "marks": []
+              },
+              {
+                "value": null,
+                "text": "—",
+                "marks": []
+              },
+              {
+                "value": null,
+                "text": "—",
+                "marks": []
+              }
+            ]
+          },
+          {
+            "key": "gcm",
+            "label": "GCM",
+            "marks": [],
+            "cells": [
+              {
+                "value": 0.4042214986839099,
+                "text": "0.404",
+                "marks": [],
+                "errors": 0,
+                "nan": 0,
+                "queries": 50,
+                "runs": [
+                  0.4000535009254236,
+                  0.4042214986839099,
+                  0.40466700193064753
+                ],
+                "min": 0.4000535009254236,
+                "max": 0.40466700193064753,
+                "range_text": "0.400–0.405",
+                "spread": 0.011413299441630104,
+                "flagged": false
+              },
+              {
+                "value": 4.033642999274889,
+                "text": "4.03",
+                "marks": [],
+                "errors": 0,
+                "nan": 0,
+                "queries": 50,
+                "runs": [
+                  3.939272499337676,
+                  4.033642999274889,
+                  4.080231998159434
+                ],
+                "min": 3.939272499337676,
+                "max": 4.080231998159434,
+                "range_text": "3.94–4.08",
+                "spread": 0.03494595303726617,
+                "flagged": false
+              },
+              {
+                "value": null,
+                "text": "—",
+                "marks": []
+              },
+              {
+                "value": null,
+                "text": "—",
+                "marks": []
+              },
+              {
+                "value": null,
+                "text": "—",
+                "marks": []
+              },
+              {
+                "value": null,
+                "text": "—",
+                "marks": []
+              },
+              {
+                "value": null,
+                "text": "—",
+                "marks": []
+              },
+              {
+                "value": 1.648907998969662,
+                "text": "1.65",
+                "marks": [],
+                "errors": 0,
+                "nan": 0,
+                "queries": 50,
+                "runs": [
+                  1.626310000574449,
+                  1.648907998969662,
+                  1.6524039983778493
+                ],
+                "min": 1.626310000574449,
+                "max": 1.6524039983778493,
+                "range_text": "1.63–1.65",
+                "spread": 0.01582501741740921,
+                "flagged": false
+              }
+            ]
+          },
+          {
+            "key": "pillai",
+            "label": "Pillai",
+            "marks": [],
+            "cells": [
+              {
+                "value": 0.14324000221677125,
+                "text": "0.143",
+                "marks": [],
+                "errors": 0,
+                "nan": 0,
+                "queries": 40,
+                "runs": [
+                  0.14324000221677125,
+                  0.14889500016579404,
+                  0.13662849960383028
+                ],
+                "min": 0.13662849960383028,
+                "max": 0.14889500016579404,
+                "range_text": "0.137–0.149",
+                "spread": 0.08563599812991028,
+                "flagged": false
+              },
+              {
+                "value": 140.83610250054335,
+                "text": "141",
+                "marks": [
+                  "ᵃ"
+                ],
+                "errors": 0,
+                "nan": 0,
+                "queries": 40,
+                "runs": [
+                  140.83610250054335,
+                  137.00408700060507,
+                  143.8652769975306
+                ],
+                "min": 137.00408700060507,
+                "max": 143.8652769975306,
+                "range_text": "137–144",
+                "spread": 0.048717550934065795,
+                "flagged": false
+              },
+              {
+                "value": null,
+                "text": "—",
+                "marks": []
+              },
+              {
+                "value": null,
+                "text": "—",
+                "marks": []
+              },
+              {
+                "value": null,
+                "text": "—",
+                "marks": []
+              },
+              {
+                "value": null,
+                "text": "—",
+                "marks": []
+              },
+              {
+                "value": null,
+                "text": "—",
+                "marks": []
+              },
+              {
+                "value": null,
+                "text": "—",
+                "marks": []
+              }
+            ]
+          }
+        ],
+        "footnotes": [
+          {
+            "mark": "ᵃ",
+            "text": "pgmpy runs a random-forest Pillai test. FastCIT runs a linear Pillai test. The two tests differ."
+          },
+          {
+            "mark": "ᵇ",
+            "text": "pgmpy and gcastle apply the Yates correction on 2 × 2 tables and cannot turn it off. FastCIT runs without it."
+          },
+          {
+            "mark": "ᶜ",
+            "text": "Different null approximation or kernel width rule from FastCIT."
+          },
+          {
+            "mark": "ᵈ",
+            "text": "The time does not include the one-time setup. FastCIT and causal-learn precompute the correlation matrix. FastCIT computes it in the first call and keeps it. The other packages in these rows compute it in every call. See the total-time tables."
+          },
+          {
+            "mark": "*",
+            "text": "The engine raised an error or returned NaN on some queries. See the lists below. The median uses only the queries with a result. Those queries can cost less or more than the excluded ones. Compare such a cell with care."
+          }
+        ]
+      },
+      "total_per_pass": {
+        "title": "Python packages, total time of one pass",
+        "note": "Each pass builds the state of the engine (data conversion, test object, correlation matrix). Then it runs all queries of the group once. Each run keeps its fastest of 5 passes. The table shows the median of the 3 run values.",
+        "columns": [
+          {
+            "key": "fastcit",
+            "label": "FastCIT"
+          },
+          {
+            "key": "pgmpy",
+            "label": "pgmpy dev"
+          },
+          {
+            "key": "causal-learn",
+            "label": "causal-learn"
+          },
+          {
+            "key": "gcastle",
+            "label": "gcastle"
+          },
+          {
+            "key": "tigramite",
+            "label": "tigramite"
+          },
+          {
+            "key": "pingouin",
+            "label": "pingouin"
+          },
+          {
+            "key": "hyppo",
+            "label": "hyppo"
+          },
+          {
+            "key": "dowhy",
+            "label": "dowhy"
+          }
+        ],
+        "rows": [
+          {
+            "key": "chi_square",
+            "label": "χ²",
+            "marks": [],
+            "cells": [
+              {
+                "value": 5.872355992323719,
+                "text": "5.87",
+                "marks": [],
+                "errors": 0,
+                "nan": 0,
+                "queries": 50,
+                "runs": [
+                  5.99395899916999,
+                  5.801057006465271,
+                  5.872355992323719
+                ],
+                "min": 5.801057006465271,
+                "max": 5.99395899916999,
+                "range_text": "5.80–5.99",
+                "spread": 0.032849165302117025,
+                "flagged": false
+              },
+              {
+                "value": 16.43601899559144,
+                "text": "16.4",
+                "marks": [
+                  "ᵇ"
+                ],
+                "errors": 0,
+                "nan": 0,
+                "queries": 50,
+                "runs": [
+                  16.43601899559144,
+                  16.382944006181788,
+                  16.44658000441268
+                ],
+                "min": 16.382944006181788,
+                "max": 16.44658000441268,
+                "range_text": "16.4–16.4",
+                "spread": 0.003871740367783827,
+                "flagged": false
+              },
+              {
+                "value": 10.258213002089178,
+                "text": "10.3",
+                "marks": [],
+                "errors": 0,
+                "nan": 0,
+                "queries": 50,
+                "runs": [
+                  10.258213002089178,
+                  10.203391997492872,
+                  10.469127024407499
+                ],
+                "min": 10.203391997492872,
+                "max": 10.469127024407499,
+                "range_text": "10.2–10.5",
+                "spread": 0.025904611930022022,
+                "flagged": false
+              },
+              {
+                "value": 583.3308540095459,
+                "text": "583",
+                "marks": [
+                  "ᵇ"
+                ],
+                "errors": 0,
+                "nan": 0,
+                "queries": 50,
+                "runs": [
+                  570.2766499998688,
+                  583.3308540095459,
+                  599.1504300145607
+                ],
+                "min": 570.2766499998688,
+                "max": 599.1504300145607,
+                "range_text": "570–599",
+                "spread": 0.04949811897695261,
+                "flagged": false
+              },
+              {
+                "value": null,
+                "text": "—",
+                "marks": []
+              },
+              {
+                "value": null,
+                "text": "—",
+                "marks": []
+              },
+              {
+                "value": null,
+                "text": "—",
+                "marks": []
+              },
+              {
+                "value": null,
+                "text": "—",
+                "marks": []
+              }
+            ]
+          },
+          {
+            "key": "g_sq",
+            "label": "G²",
+            "marks": [],
+            "cells": [
+              {
+                "value": 5.930815004830947,
+                "text": "5.93",
+                "marks": [],
+                "errors": 0,
+                "nan": 0,
+                "queries": 50,
+                "runs": [
+                  5.72558299973025,
+                  5.930815004830947,
+                  5.945893019088544
+                ],
+                "min": 5.72558299973025,
+                "max": 5.945893019088544,
+                "range_text": "5.73–5.95",
+                "spread": 0.03714666857402237,
+                "flagged": false
+              },
+              {
+                "value": 16.35759500641143,
+                "text": "16.4",
+                "marks": [
+                  "ᵇ",
+                  "*"
+                ],
+                "errors": 0,
+                "nan": 1,
+                "queries": 50,
+                "runs": [
+                  16.28097498542047,
+                  16.35759500641143,
+                  16.453240012197057
+                ],
+                "min": 16.28097498542047,
+                "max": 16.453240012197057,
+                "range_text": "16.3–16.5",
+                "spread": 0.010531195246554626,
+                "flagged": false
+              },
+              {
+                "value": 10.515581012441544,
+                "text": "10.5",
+                "marks": [],
+                "errors": 0,
+                "nan": 0,
+                "queries": 50,
+                "runs": [
+                  10.515581012441544,
+                  10.411722996650496,
+                  10.68646499334136
+                ],
+                "min": 10.411722996650496,
+                "max": 10.68646499334136,
+                "range_text": "10.4–10.7",
+                "spread": 0.026127134236881618,
+                "flagged": false
+              },
+              {
+                "value": 581.2192690173106,
+                "text": "581",
+                "marks": [
+                  "ᵇ"
+                ],
+                "errors": 0,
+                "nan": 0,
+                "queries": 50,
+                "runs": [
+                  566.4314749883488,
+                  581.2192690173106,
+                  595.1027469964174
+                ],
+                "min": 566.4314749883488,
+                "max": 595.1027469964174,
+                "range_text": "566–595",
+                "spread": 0.049329527660953554,
+                "flagged": false
+              },
+              {
+                "value": 97.58327998497407,
+                "text": "97.6",
+                "marks": [],
+                "errors": 0,
+                "nan": 0,
+                "queries": 50,
+                "runs": [
+                  97.58327998497407,
+                  96.90084099202068,
+                  98.58432398687
+                ],
+                "min": 96.90084099202068,
+                "max": 98.58432398687,
+                "range_text": "96.9–98.6",
+                "spread": 0.017251756603268015,
+                "flagged": false
+              },
+              {
+                "value": null,
+                "text": "—",
+                "marks": []
+              },
+              {
+                "value": null,
+                "text": "—",
+                "marks": []
+              },
+              {
+                "value": null,
+                "text": "—",
+                "marks": []
+              }
+            ]
+          },
+          {
+            "key": "cressie_read",
+            "label": "Cressie-Read",
+            "marks": [],
+            "cells": [
+              {
+                "value": 5.892876004509162,
+                "text": "5.89",
+                "marks": [],
+                "errors": 0,
+                "nan": 0,
+                "queries": 50,
+                "runs": [
+                  5.892876004509162,
+                  5.742569999711122,
+                  6.022650009981589
+                ],
+                "min": 5.742569999711122,
+                "max": 6.022650009981589,
+                "range_text": "5.74–6.02",
+                "spread": 0.047528576887779915,
+                "flagged": false
+              },
+              {
+                "value": 16.82043300024816,
+                "text": "16.8",
+                "marks": [
+                  "ᵇ"
+                ],
+                "errors": 0,
+                "nan": 0,
+                "queries": 50,
+                "runs": [
+                  16.50331198470667,
+                  16.82043300024816,
+                  16.965775008429773
+                ],
+                "min": 16.50331198470667,
+                "max": 16.965775008429773,
+                "range_text": "16.5–17.0",
+                "spread": 0.027494121210570512,
+                "flagged": false
+              },
+              {
+                "value": null,
+                "text": "—",
+                "marks": []
+              },
+              {
+                "value": 580.8446680021007,
+                "text": "581",
+                "marks": [
+                  "ᵇ"
+                ],
+                "errors": 0,
+                "nan": 0,
+                "queries": 50,
+                "runs": [
+                  580.8446680021007,
+                  579.1348689890583,
+                  594.1940279881237
+                ],
+                "min": 579.1348689890583,
+                "max": 594.1940279881237,
+                "range_text": "579–594",
+                "spread": 0.02592631012842652,
+                "flagged": false
+              },
+              {
+                "value": null,
+                "text": "—",
+                "marks": []
+              },
+              {
+                "value": null,
+                "text": "—",
+                "marks": []
+              },
+              {
+                "value": null,
+                "text": "—",
+                "marks": []
+              },
+              {
+                "value": null,
+                "text": "—",
+                "marks": []
+              }
+            ]
+          },
+          {
+            "key": "freeman_tukey",
+            "label": "Freeman-Tukey",
+            "marks": [],
+            "cells": [
+              {
+                "value": 5.81280498590786,
+                "text": "5.81",
+                "marks": [],
+                "errors": 0,
+                "nan": 0,
+                "queries": 50,
+                "runs": [
+                  5.81280498590786,
+                  5.73417999476078,
+                  5.905040008656215
+                ],
+                "min": 5.73417999476078,
+                "max": 5.905040008656215,
+                "range_text": "5.73–5.91",
+                "spread": 0.029393728898467402,
+                "flagged": false
+              },
+              {
+                "value": 16.372085996408714,
+                "text": "16.4",
+                "marks": [
+                  "ᵇ",
+                  "*"
+                ],
+                "errors": 0,
+                "nan": 15,
+                "queries": 50,
+                "runs": [
+                  16.372085996408714,
+                  16.560054005822167,
+                  16.158717011421686
+                ],
+                "min": 16.158717011421686,
+                "max": 16.560054005822167,
+                "range_text": "16.2–16.6",
+                "spread": 0.024513491713182775,
+                "flagged": false
+              },
+              {
+                "value": null,
+                "text": "—",
+                "marks": []
+              },
+              {
+                "value": 592.7159699967888,
+                "text": "593",
+                "marks": [
+                  "ᵇ",
+                  "*"
+                ],
+                "errors": 0,
+                "nan": 15,
+                "queries": 50,
+                "runs": [
+                  593.7711710066651,
+                  586.8374560013763,
+                  592.7159699967888
+                ],
+                "min": 586.8374560013763,
+                "max": 593.7711710066651,
+                "range_text": "587–594",
+                "spread": 0.011698208511787522,
+                "flagged": false
+              },
+              {
+                "value": null,
+                "text": "—",
+                "marks": []
+              },
+              {
+                "value": null,
+                "text": "—",
+                "marks": []
+              },
+              {
+                "value": null,
+                "text": "—",
+                "marks": []
+              },
+              {
+                "value": null,
+                "text": "—",
+                "marks": []
+              }
+            ]
+          },
+          {
+            "key": "modified_ll",
+            "label": "Modified log-likelihood",
+            "marks": [],
+            "cells": [
+              {
+                "value": 5.738897005358012,
+                "text": "5.74",
+                "marks": [],
+                "errors": 0,
+                "nan": 0,
+                "queries": 50,
+                "runs": [
+                  5.928778013185365,
+                  5.738897005358012,
+                  5.724394017306622
+                ],
+                "min": 5.724394017306622,
+                "max": 5.928778013185365,
+                "range_text": "5.72–5.93",
+                "spread": 0.03561381144981758,
+                "flagged": false
+              },
+              {
+                "value": 16.18169100038358,
+                "text": "16.2",
+                "marks": [
+                  "ᵇ",
+                  "*"
+                ],
+                "errors": 0,
+                "nan": 1,
+                "queries": 50,
+                "runs": [
+                  16.290243987896247,
+                  16.10488501682994,
+                  16.18169100038358
+                ],
+                "min": 16.10488501682994,
+                "max": 16.290243987896247,
+                "range_text": "16.1–16.3",
+                "spread": 0.011454857904647507,
+                "flagged": false
+              },
+              {
+                "value": null,
+                "text": "—",
+                "marks": []
+              },
+              {
+                "value": 582.2272930054169,
+                "text": "582",
+                "marks": [
+                  "ᵇ"
+                ],
+                "errors": 0,
+                "nan": 0,
+                "queries": 50,
+                "runs": [
+                  572.7434499785886,
+                  582.2272930054169,
+                  594.4224969862262
+                ],
+                "min": 572.7434499785886,
+                "max": 594.4224969862262,
+                "range_text": "573–594",
+                "spread": 0.03723468011218064,
+                "flagged": false
+              },
+              {
+                "value": null,
+                "text": "—",
+                "marks": []
+              },
+              {
+                "value": null,
+                "text": "—",
+                "marks": []
+              },
+              {
+                "value": null,
+                "text": "—",
+                "marks": []
+              },
+              {
+                "value": null,
+                "text": "—",
+                "marks": []
+              }
+            ]
+          },
+          {
+            "key": "fisher_z",
+            "label": "Fisher-z",
+            "marks": [],
+            "cells": [
+              {
+                "value": 3.724474001501221,
+                "text": "3.72",
+                "marks": [],
+                "errors": 0,
+                "nan": 0,
+                "queries": 50,
+                "runs": [
+                  3.724474001501221,
+                  3.7265059909259435,
+                  3.6786489908990916
+                ],
+                "min": 3.6786489908990916,
+                "max": 3.7265059909259435,
+                "range_text": "3.68–3.73",
+                "spread": 0.012849331209604955,
+                "flagged": false
+              },
+              {
+                "value": 46.37797800387489,
+                "text": "46.4",
+                "marks": [],
+                "errors": 0,
+                "nan": 0,
+                "queries": 50,
+                "runs": [
+                  46.37797800387489,
+                  46.36961499636527,
+                  46.818213999358704
+                ],
+                "min": 46.36961499636527,
+                "max": 46.818213999358704,
+                "range_text": "46.4–46.8",
+                "spread": 0.009672672727473205,
+                "flagged": false
+              },
+              {
+                "value": 4.461865981284063,
+                "text": "4.46",
+                "marks": [],
+                "errors": 0,
+                "nan": 0,
+                "queries": 50,
+                "runs": [
+                  4.576199993607588,
+                  4.343684991908958,
+                  4.461865981284063
+                ],
+                "min": 4.343684991908958,
+                "max": 4.576199993607588,
+                "range_text": "4.34–4.58",
+                "spread": 0.052111605923160276,
+                "flagged": false
+              },
+              {
+                "value": 8.353944998816587,
+                "text": "8.35",
+                "marks": [],
+                "errors": 0,
+                "nan": 0,
+                "queries": 50,
+                "runs": [
+                  8.353944998816587,
+                  8.1124899952556,
+                  8.408239991695154
+                ],
+                "min": 8.1124899952556,
+                "max": 8.408239991695154,
+                "range_text": "8.11–8.41",
+                "spread": 0.03540243519456371,
+                "flagged": false
+              },
+              {
+                "value": null,
+                "text": "—",
+                "marks": []
+              },
+              {
+                "value": null,
+                "text": "—",
+                "marks": []
+              },
+              {
+                "value": null,
+                "text": "—",
+                "marks": []
+              },
+              {
+                "value": null,
+                "text": "—",
+                "marks": []
+              }
+            ]
+          },
+          {
+            "key": "pearson_t",
+            "label": "Pearson t",
+            "marks": [],
+            "cells": [
+              {
+                "value": 3.691968977364013,
+                "text": "3.69",
+                "marks": [],
+                "errors": 0,
+                "nan": 0,
+                "queries": 50,
+                "runs": [
+                  3.691968977364013,
+                  3.7008569852332585,
+                  3.685672996653011
+                ],
+                "min": 3.685672996653011,
+                "max": 3.7008569852332585,
+                "range_text": "3.69–3.70",
+                "spread": 0.004112707520930588,
+                "flagged": false
+              },
+              {
+                "value": 43.270488997222856,
+                "text": "43.3",
+                "marks": [],
+                "errors": 0,
+                "nan": 0,
+                "queries": 50,
+                "runs": [
+                  42.962696996255545,
+                  43.270488997222856,
+                  43.95780100094271
+                ],
+                "min": 42.962696996255545,
+                "max": 43.95780100094271,
+                "range_text": "43.0–44.0",
+                "spread": 0.022997290480147585,
+                "flagged": false
+              },
+              {
+                "value": null,
+                "text": "—",
+                "marks": []
+              },
+              {
+                "value": null,
+                "text": "—",
+                "marks": []
+              },
+              {
+                "value": 83.36504500039155,
+                "text": "83.4",
+                "marks": [],
+                "errors": 0,
+                "nan": 0,
+                "queries": 50,
+                "runs": [
+                  83.32865098418551,
+                  83.36504500039155,
+                  83.8897590074339
+                ],
+                "min": 83.32865098418551,
+                "max": 83.8897590074339,
+                "range_text": "83.3–83.9",
+                "spread": 0.00673073496506533,
+                "flagged": false
+              },
+              {
+                "value": 182.7783529915905,
+                "text": "183",
+                "marks": [],
+                "errors": 0,
+                "nan": 0,
+                "queries": 50,
+                "runs": [
+                  182.7783529915905,
+                  180.1013380063523,
+                  186.9640749937389
+                ],
+                "min": 180.1013380063523,
+                "max": 186.9640749937389,
+                "range_text": "180–187",
+                "spread": 0.0375467711305088,
+                "flagged": false
+              },
+              {
+                "value": null,
+                "text": "—",
+                "marks": []
+              },
+              {
+                "value": null,
+                "text": "—",
+                "marks": []
+              }
+            ]
+          },
+          {
+            "key": "hsic",
+            "label": "HSIC (n = 300)",
+            "marks": [],
+            "cells": [
+              {
+                "value": 34.92335900227772,
+                "text": "34.9",
+                "marks": [],
+                "errors": 0,
+                "nan": 0,
+                "queries": 28,
+                "runs": [
+                  34.866039008193184,
+                  34.92335900227772,
+                  35.11883100509294
+                ],
+                "min": 34.866039008193184,
+                "max": 35.11883100509294,
+                "range_text": "34.9–35.1",
+                "spread": 0.007238478889824778,
+                "flagged": false
+              },
+              {
+                "value": 54.452336007670965,
+                "text": "54.5",
+                "marks": [],
+                "errors": 0,
+                "nan": 0,
+                "queries": 28,
+                "runs": [
+                  56.90991000665235,
+                  52.50792799051851,
+                  54.452336007670965
+                ],
+                "min": 52.50792799051851,
+                "max": 56.90991000665235,
+                "range_text": "52.5–56.9",
+                "spread": 0.08084101323979405,
+                "flagged": false
+              },
+              {
+                "value": 48.79724801139673,
+                "text": "48.8",
+                "marks": [
+                  "ᶜ"
+                ],
+                "errors": 0,
+                "nan": 0,
+                "queries": 28,
+                "runs": [
+                  48.79724801139673,
+                  48.54320799495326,
+                  49.347399013640825
+                ],
+                "min": 48.54320799495326,
+                "max": 49.347399013640825,
+                "range_text": "48.5–49.3",
+                "spread": 0.016480253527816572,
+                "flagged": false
+              },
+              {
+                "value": null,
+                "text": "—",
+                "marks": []
+              },
+              {
+                "value": null,
+                "text": "—",
+                "marks": []
+              },
+              {
+                "value": null,
+                "text": "—",
+                "marks": []
+              },
+              {
+                "value": 107.21163999551209,
+                "text": "107",
+                "marks": [
+                  "ᶜ"
+                ],
+                "errors": 0,
+                "nan": 0,
+                "queries": 28,
+                "runs": [
+                  107.21163999551209,
+                  104.86076401139144,
+                  107.98462299499079
+                ],
+                "min": 104.86076401139144,
+                "max": 107.98462299499079,
+                "range_text": "105–108",
+                "spread": 0.029137311804297683,
+                "flagged": false
+              },
+              {
+                "value": null,
+                "text": "—",
+                "marks": []
+              }
+            ]
+          },
+          {
+            "key": "kci_300",
+            "label": "KCI (n = 300)",
+            "marks": [],
+            "cells": [
+              {
+                "value": 520.3238960093586,
+                "text": "520",
+                "marks": [],
+                "errors": 0,
+                "nan": 0,
+                "queries": 30,
+                "runs": [
+                  520.3238960093586,
+                  514.8520099901361,
+                  540.52461401443
+                ],
+                "min": 514.8520099901361,
+                "max": 540.52461401443,
+                "range_text": "515–541",
+                "spread": 0.049339659818030124,
+                "flagged": false
+              },
+              {
+                "value": 498.29735000093933,
+                "text": "498",
+                "marks": [],
+                "errors": 0,
+                "nan": 0,
+                "queries": 30,
+                "runs": [
+                  498.29735000093933,
+                  483.6686419985199,
+                  530.9924810062512
+                ],
+                "min": 483.6686419985199,
+                "max": 530.9924810062512,
+                "range_text": "484–531",
+                "spread": 0.09497108304437518,
+                "flagged": false
+              },
+              {
+                "value": 855.4468049915158,
+                "text": "855",
+                "marks": [
+                  "ᶜ"
+                ],
+                "errors": 0,
+                "nan": 0,
+                "queries": 30,
+                "runs": [
+                  882.2049560003506,
+                  782.4954179850465,
+                  855.4468049915158
+                ],
+                "min": 782.4954179850465,
+                "max": 882.2049560003506,
+                "range_text": "782–882",
+                "spread": 0.11655843172655608,
+                "flagged": false
+              },
+              {
+                "value": null,
+                "text": "—",
+                "marks": []
+              },
+              {
+                "value": null,
+                "text": "—",
+                "marks": []
+              },
+              {
+                "value": null,
+                "text": "—",
+                "marks": []
+              },
+              {
+                "value": null,
+                "text": "—",
+                "marks": []
+              },
+              {
+                "value": null,
+                "text": "—",
+                "marks": []
+              }
+            ]
+          },
+          {
+            "key": "kci_1000",
+            "label": "KCI (n = 1 000)",
+            "marks": [],
+            "cells": [
+              {
+                "value": 5052.476124998066,
+                "text": "5 052",
+                "marks": [],
+                "errors": 0,
+                "nan": 0,
+                "queries": 10,
+                "runs": [
+                  5052.476124998066,
+                  4576.15005498883,
+                  5053.435372999957
+                ],
+                "min": 4576.15005498883,
+                "max": 5053.435372999957,
+                "range_text": "4 576–5 053",
+                "spread": 0.0944656256067533,
+                "flagged": false
+              },
+              {
+                "value": 2651.7538790030812,
+                "text": "2 652",
+                "marks": [],
+                "errors": 0,
+                "nan": 0,
+                "queries": 10,
+                "runs": [
+                  2671.7825250016176,
+                  2453.079147002427,
+                  2651.7538790030812
+                ],
+                "min": 2453.079147002427,
+                "max": 2671.7825250016176,
+                "range_text": "2 453–2 672",
+                "spread": 0.08247499126178767,
+                "flagged": false
+              },
+              {
+                "value": 4522.455725011241,
+                "text": "4 522",
+                "marks": [],
+                "errors": 0,
+                "nan": 0,
+                "queries": 10,
+                "runs": [
+                  4681.380944006378,
+                  4242.654574998596,
+                  4522.455725011241
+                ],
+                "min": 4242.654574998596,
+                "max": 4681.380944006378,
+                "range_text": "4 243–4 681",
+                "spread": 0.09701064989568053,
+                "flagged": false
+              },
+              {
+                "value": null,
+                "text": "—",
+                "marks": []
+              },
+              {
+                "value": null,
+                "text": "—",
+                "marks": []
+              },
+              {
+                "value": null,
+                "text": "—",
+                "marks": []
+              },
+              {
+                "value": null,
+                "text": "—",
+                "marks": []
+              },
+              {
+                "value": null,
+                "text": "—",
+                "marks": []
+              }
+            ]
+          },
+          {
+            "key": "gcm",
+            "label": "GCM",
+            "marks": [],
+            "cells": [
+              {
+                "value": 23.42071701059467,
+                "text": "23.4",
+                "marks": [],
+                "errors": 0,
+                "nan": 0,
+                "queries": 50,
+                "runs": [
+                  23.373302014078945,
+                  23.937599999044323,
+                  23.42071701059467
+                ],
+                "min": 23.373302014078945,
+                "max": 23.937599999044323,
+                "range_text": "23.4–23.9",
+                "spread": 0.024093967093753395,
+                "flagged": false
+              },
+              {
+                "value": 209.91705000415095,
+                "text": "210",
+                "marks": [],
+                "errors": 0,
+                "nan": 0,
+                "queries": 50,
+                "runs": [
+                  208.66019201275776,
+                  209.91705000415095,
+                  215.80354699472082
+                ],
+                "min": 208.66019201275776,
+                "max": 215.80354699472082,
+                "range_text": "209–216",
+                "spread": 0.03402941772391429,
+                "flagged": false
+              },
+              {
+                "value": null,
+                "text": "—",
+                "marks": []
+              },
+              {
+                "value": null,
+                "text": "—",
+                "marks": []
+              },
+              {
+                "value": null,
+                "text": "—",
+                "marks": []
+              },
+              {
+                "value": null,
+                "text": "—",
+                "marks": []
+              },
+              {
+                "value": null,
+                "text": "—",
+                "marks": []
+              },
+              {
+                "value": 82.21757700448507,
+                "text": "82.2",
+                "marks": [],
+                "errors": 0,
+                "nan": 0,
+                "queries": 50,
+                "runs": [
+                  81.29045100577059,
+                  82.21757700448507,
+                  82.88161899690749
+                ],
+                "min": 81.29045100577059,
+                "max": 82.88161899690749,
+                "range_text": "81.3–82.9",
+                "spread": 0.019353136508147146,
+                "flagged": false
+              }
+            ]
+          },
+          {
+            "key": "pillai",
+            "label": "Pillai",
+            "marks": [],
+            "cells": [
+              {
+                "value": 6.628291004744824,
+                "text": "6.63",
+                "marks": [],
+                "errors": 0,
+                "nan": 0,
+                "queries": 40,
+                "runs": [
+                  6.628291004744824,
+                  7.0066770022094715,
+                  6.283812988840509
+                ],
+                "min": 6.283812988840509,
+                "max": 7.0066770022094715,
+                "range_text": "6.28–7.01",
+                "spread": 0.1090573743445338,
+                "flagged": false
+              },
+              {
+                "value": 9783.863841010316,
+                "text": "9 784",
+                "marks": [
+                  "ᵃ"
+                ],
+                "errors": 0,
+                "nan": 0,
+                "queries": 40,
+                "runs": [
+                  9783.863841010316,
+                  9742.253853000875,
+                  9794.317328003672
+                ],
+                "min": 9742.253853000875,
+                "max": 9794.317328003672,
+                "range_text": "9 742–9 794",
+                "spread": 0.0053213613607914195,
+                "flagged": false
+              },
+              {
+                "value": null,
+                "text": "—",
+                "marks": []
+              },
+              {
+                "value": null,
+                "text": "—",
+                "marks": []
+              },
+              {
+                "value": null,
+                "text": "—",
+                "marks": []
+              },
+              {
+                "value": null,
+                "text": "—",
+                "marks": []
+              },
+              {
+                "value": null,
+                "text": "—",
+                "marks": []
+              },
+              {
+                "value": null,
+                "text": "—",
+                "marks": []
+              }
+            ]
+          }
+        ],
+        "footnotes": [
+          {
+            "mark": "ᵃ",
+            "text": "pgmpy runs a random-forest Pillai test. FastCIT runs a linear Pillai test. The two tests differ."
+          },
+          {
+            "mark": "ᵇ",
+            "text": "pgmpy and gcastle apply the Yates correction on 2 × 2 tables and cannot turn it off. FastCIT runs without it."
+          },
+          {
+            "mark": "ᶜ",
+            "text": "Different null approximation or kernel width rule from FastCIT."
+          },
+          {
+            "mark": "*",
+            "text": "The engine raised an error or returned NaN on some queries. The total includes the time of those queries."
+          }
+        ]
+      }
+    },
+    {
+      "key": "r",
+      "label": "R packages",
+      "meta": {
+        "cpu": "Intel(R) Core(TM) Ultra 5 125U",
+        "logical_cpus": 14,
+        "os": "Linux 6.8.0-147-generic",
+        "r": "R version 4.5.3 (2026-03-11)",
+        "quick": false,
+        "passes": 5,
+        "versions": {
+          "fastcit": "0.0.0.9000",
+          "pcalg": "2.7.12",
+          "bnlearn": "5.2.1",
+          "dHSIC": "2.2",
+          "Rfast": "2.1.5.2",
+          "ppcor": "1.1",
+          "comets": "0.2.3"
+        },
+        "commits": {
+          "fastcit": "62f2425"
+        },
+        "fastcit_trees": {
+          "crates/ci-core": "272b705c141858b431bc2e572b63cecf9940435d",
+          "crates/ci-r": "b57410fa1638ebb163983513b55d7924b048b5e7"
+        },
+        "threads": {
+          "env": {},
+          "fastcit": "single-threaded (no rayon)",
+          "blas": "/home/ankur/miniconda3/envs/cir-dev/lib/libopenblasp-r0.3.34.so",
+          "lapack": "/home/ankur/miniconda3/envs/cir-dev/lib/libopenblasp-r0.3.34.so"
+        },
+        "affinity": {
+          "cpus_allowed_list": "0-3"
+        },
+        "date": "2026-11-16 23:05:51",
+        "runs": [
+          {
+            "file": "r-1.json",
+            "date": "2026-11-16 23:05:51",
+            "seed": 1,
+            "uptime_start": "23:05:51 up  9:27,  1 user,  load average: 1.45, 2.80, 1.85",
+            "uptime_end": "23:06:18 up  9:27,  1 user,  load average: 1.41, 2.69, 1.84",
+            "power": {
+              "ac_online": "1",
+              "profile": "performance",
+              "governor": "powersave",
+              "epp": "performance"
+            },
+            "power_end": {
+              "ac_online": "1",
+              "profile": "performance",
+              "governor": "powersave",
+              "epp": "performance"
+            },
+            "harness_floor_ms": 0.00429153442382812
+          },
+          {
+            "file": "r-2.json",
+            "date": "2026-11-16 23:11:03",
+            "seed": 2,
+            "uptime_start": "23:11:03 up  9:32,  1 user,  load average: 1.33, 2.93, 2.28",
+            "uptime_end": "23:11:30 up  9:32,  1 user,  load average: 1.34, 2.78, 2.25",
+            "power": {
+              "ac_online": "1",
+              "profile": "performance",
+              "governor": "powersave",
+              "epp": "performance"
+            },
+            "power_end": {
+              "ac_online": "1",
+              "profile": "performance",
+              "governor": "powersave",
+              "epp": "performance"
+            },
+            "harness_floor_ms": 0.00429153442382812
+          },
+          {
+            "file": "r-3.json",
+            "date": "2026-11-16 23:15:28",
+            "seed": 3,
+            "uptime_start": "23:15:28 up  9:36,  1 user,  load average: 1.31, 2.94, 2.51",
+            "uptime_end": "23:15:55 up  9:37,  1 user,  load average: 1.44, 2.85, 2.49",
+            "power": {
+              "ac_online": "1",
+              "profile": "performance",
+              "governor": "powersave",
+              "epp": "performance"
+            },
+            "power_end": {
+              "ac_online": "1",
+              "profile": "performance",
+              "governor": "powersave",
+              "epp": "performance"
+            },
+            "harness_floor_ms": 0.00429153442382812
+          }
+        ]
+      },
+      "spread": {
+        "limit": 0.25,
+        "runs": 3,
+        "flagged": []
+      },
+      "per_call": {
+        "title": "R packages, median time of one call",
+        "columns": [
+          {
+            "key": "fastcit",
+            "label": "FastCIT (R)"
+          },
+          {
+            "key": "pcalg",
+            "label": "pcalg"
+          },
+          {
+            "key": "bnlearn",
+            "label": "bnlearn"
+          },
+          {
+            "key": "dHSIC",
+            "label": "dHSIC"
+          },
+          {
+            "key": "Rfast",
+            "label": "Rfast"
+          },
+          {
+            "key": "ppcor",
+            "label": "ppcor"
+          },
+          {
+            "key": "comets",
+            "label": "comets"
+          }
+        ],
+        "rows": [
+          {
+            "key": "chi_square",
+            "label": "χ²",
+            "marks": [],
+            "cells": [
+              {
+                "value": 0.0674724578857422,
+                "text": "0.067",
+                "marks": [],
+                "errors": 0,
+                "nan": 0,
+                "queries": 50,
+                "runs": [
+                  0.0672340393066406,
+                  0.0674724578857422,
+                  0.0696182250976562
+                ],
+                "min": 0.0672340393066406,
+                "max": 0.0696182250976562,
+                "range_text": "0.067–0.070",
+                "spread": 0.035335689045935974,
+                "flagged": false
+              },
+              {
+                "value": null,
+                "text": "—",
+                "marks": []
+              },
+              {
+                "value": 0.302433967590332,
+                "text": "0.302",
+                "marks": [
+                  "ᵉ",
+                  "ᶠ"
+                ],
+                "errors": 0,
+                "nan": 0,
+                "queries": 50,
+                "runs": [
+                  0.302791595458984,
+                  0.302433967590332,
+                  0.300407409667969
+                ],
+                "min": 0.300407409667969,
+                "max": 0.302791595458984,
+                "range_text": "0.300–0.303",
+                "spread": 0.007883326763892163,
+                "flagged": false
+              },
+              {
+                "value": null,
+                "text": "—",
+                "marks": []
+              },
+              {
+                "value": 0.0339746475219727,
+                "text": "0.034",
+                "marks": [
+                  "ᵉ",
+                  "*"
+                ],
+                "errors": 0,
+                "nan": 6,
+                "queries": 50,
+                "runs": [
+                  0.0339746475219727,
+                  0.0338554382324219,
+                  0.0342130661010742
+                ],
+                "min": 0.0338554382324219,
+                "max": 0.0342130661010742,
+                "range_text": "0.034–0.034",
+                "spread": 0.010526315789472242,
+                "flagged": false
+              },
+              {
+                "value": null,
+                "text": "—",
+                "marks": []
+              },
+              {
+                "value": null,
+                "text": "—",
+                "marks": []
+              }
+            ]
+          },
+          {
+            "key": "g_sq",
+            "label": "G²",
+            "marks": [],
+            "cells": [
+              {
+                "value": 0.0660419464111328,
+                "text": "0.066",
+                "marks": [],
+                "errors": 0,
+                "nan": 0,
+                "queries": 50,
+                "runs": [
+                  0.0667572021484375,
+                  0.0660419464111328,
+                  0.0652074813842773
+                ],
+                "min": 0.0652074813842773,
+                "max": 0.0667572021484375,
+                "range_text": "0.065–0.067",
+                "spread": 0.02346570397111977,
+                "flagged": false
+              },
+              {
+                "value": 5.27322292327881,
+                "text": "5.27",
+                "marks": [
+                  "ᵉ"
+                ],
+                "errors": 0,
+                "nan": 0,
+                "queries": 50,
+                "runs": [
+                  5.3635835647583,
+                  5.27322292327881,
+                  5.04922866821289
+                ],
+                "min": 5.04922866821289,
+                "max": 5.3635835647583,
+                "range_text": "5.05–5.36",
+                "spread": 0.05961342828077312,
+                "flagged": false
+              },
+              {
+                "value": 0.300884246826172,
+                "text": "0.301",
+                "marks": [
+                  "ᵉ",
+                  "ᶠ"
+                ],
+                "errors": 0,
+                "nan": 0,
+                "queries": 50,
+                "runs": [
+                  0.301957130432129,
+                  0.300884246826172,
+                  0.30064582824707
+                ],
+                "min": 0.30064582824707,
+                "max": 0.301957130432129,
+                "range_text": "0.301–0.302",
+                "spread": 0.004358161648178971,
+                "flagged": false
+              },
+              {
+                "value": null,
+                "text": "—",
+                "marks": []
+              },
+              {
+                "value": 0.0407695770263672,
+                "text": "0.041",
+                "marks": [
+                  "ᵉ"
+                ],
+                "errors": 0,
+                "nan": 0,
+                "queries": 50,
+                "runs": [
+                  0.0411272048950195,
+                  0.0407695770263672,
+                  0.0398159027099609
+                ],
+                "min": 0.0398159027099609,
+                "max": 0.0411272048950195,
+                "range_text": "0.040–0.041",
+                "spread": 0.03216374269005847,
+                "flagged": false
+              },
+              {
+                "value": null,
+                "text": "—",
+                "marks": []
+              },
+              {
+                "value": null,
+                "text": "—",
+                "marks": []
+              }
+            ]
+          },
+          {
+            "key": "fisher_z",
+            "label": "Fisher-z",
+            "marks": [
+              "ᵈ"
+            ],
+            "cells": [
+              {
+                "value": 0.0126361846923828,
+                "text": "0.013",
+                "marks": [],
+                "errors": 0,
+                "nan": 0,
+                "queries": 50,
+                "runs": [
+                  0.0123977661132812,
+                  0.0126361846923828,
+                  0.0126361846923828
+                ],
+                "min": 0.0123977661132812,
+                "max": 0.0126361846923828,
+                "range_text": "0.012–0.013",
+                "spread": 0.018867924528304925,
+                "flagged": false
+              },
+              {
+                "value": 0.0320672988891602,
+                "text": "0.032",
+                "marks": [],
+                "errors": 0,
+                "nan": 0,
+                "queries": 50,
+                "runs": [
+                  0.0321865081787109,
+                  0.0320672988891602,
+                  0.0319480895996094
+                ],
+                "min": 0.0319480895996094,
+                "max": 0.0321865081787109,
+                "range_text": "0.032–0.032",
+                "spread": 0.0074349442379162585,
+                "flagged": false
+              },
+              {
+                "value": 0.378012657165527,
+                "text": "0.378",
+                "marks": [
+                  "ᶠ"
+                ],
+                "errors": 0,
+                "nan": 0,
+                "queries": 50,
+                "runs": [
+                  0.380635261535645,
+                  0.378012657165527,
+                  0.377416610717773
+                ],
+                "min": 0.377416610717773,
+                "max": 0.380635261535645,
+                "range_text": "0.377–0.381",
+                "spread": 0.008514664143805573,
+                "flagged": false
+              },
+              {
+                "value": null,
+                "text": "—",
+                "marks": []
+              },
+              {
+                "value": null,
+                "text": "—",
+                "marks": []
+              },
+              {
+                "value": null,
+                "text": "—",
+                "marks": []
+              },
+              {
+                "value": null,
+                "text": "—",
+                "marks": []
+              }
+            ]
+          },
+          {
+            "key": "pearson_t",
+            "label": "Pearson t",
+            "marks": [
+              "ᵈ"
+            ],
+            "cells": [
+              {
+                "value": 0.0128746032714844,
+                "text": "0.013",
+                "marks": [],
+                "errors": 0,
+                "nan": 0,
+                "queries": 50,
+                "runs": [
+                  0.0128746032714844,
+                  0.0127553939819336,
+                  0.0131130218505859
+                ],
+                "min": 0.0127553939819336,
+                "max": 0.0131130218505859,
+                "range_text": "0.013–0.013",
+                "spread": 0.027777777777774224,
+                "flagged": false
+              },
+              {
+                "value": null,
+                "text": "—",
+                "marks": []
+              },
+              {
+                "value": 0.380039215087891,
+                "text": "0.380",
+                "marks": [
+                  "ᶠ"
+                ],
+                "errors": 0,
+                "nan": 0,
+                "queries": 50,
+                "runs": [
+                  0.380039215087891,
+                  0.3814697265625,
+                  0.376343727111816
+                ],
+                "min": 0.376343727111816,
+                "max": 0.3814697265625,
+                "range_text": "0.376–0.381",
+                "spread": 0.013488080301130244,
+                "flagged": false
+              },
+              {
+                "value": null,
+                "text": "—",
+                "marks": []
+              },
+              {
+                "value": null,
+                "text": "—",
+                "marks": []
+              },
+              {
+                "value": 0.781655311584473,
+                "text": "0.782",
+                "marks": [
+                  "ᵍ"
+                ],
+                "errors": 0,
+                "nan": 0,
+                "queries": 50,
+                "runs": [
+                  0.781655311584473,
+                  0.787734985351562,
+                  0.779271125793457
+                ],
+                "min": 0.779271125793457,
+                "max": 0.787734985351562,
+                "range_text": "0.779–0.788",
+                "spread": 0.010828122617049766,
+                "flagged": false
+              },
+              {
+                "value": null,
+                "text": "—",
+                "marks": []
+              }
+            ]
+          },
+          {
+            "key": "hsic",
+            "label": "HSIC (median width)",
+            "marks": [],
+            "cells": [
+              {
+                "value": 1.40893459320068,
+                "text": "1.41",
+                "marks": [],
+                "errors": 0,
+                "nan": 0,
+                "queries": 28,
+                "runs": [
+                  1.40893459320068,
+                  1.41787528991699,
+                  1.39248371124268
+                ],
+                "min": 1.39248371124268,
+                "max": 1.41787528991699,
+                "range_text": "1.39–1.42",
+                "spread": 0.018021829257969923,
+                "flagged": false
+              },
+              {
+                "value": null,
+                "text": "—",
+                "marks": []
+              },
+              {
+                "value": null,
+                "text": "—",
+                "marks": []
+              },
+              {
+                "value": 5.79488277435303,
+                "text": "5.79",
+                "marks": [
+                  "ᶜ"
+                ],
+                "errors": 0,
+                "nan": 0,
+                "queries": 28,
+                "runs": [
+                  5.79488277435303,
+                  5.83672523498535,
+                  5.77521324157715
+                ],
+                "min": 5.77521324157715,
+                "max": 5.83672523498535,
+                "range_text": "5.78–5.84",
+                "spread": 0.010614881405442594,
+                "flagged": false
+              },
+              {
+                "value": null,
+                "text": "—",
+                "marks": []
+              },
+              {
+                "value": null,
+                "text": "—",
+                "marks": []
+              },
+              {
+                "value": null,
+                "text": "—",
+                "marks": []
+              }
+            ]
+          },
+          {
+            "key": "gcm",
+            "label": "GCM",
+            "marks": [],
+            "cells": [
+              {
+                "value": 0.479459762573242,
+                "text": "0.479",
+                "marks": [],
+                "errors": 0,
+                "nan": 0,
+                "queries": 50,
+                "runs": [
+                  0.473499298095703,
+                  0.479459762573242,
+                  0.481963157653809
+                ],
+                "min": 0.473499298095703,
+                "max": 0.481963157653809,
+                "range_text": "0.473–0.482",
+                "spread": 0.017652909000498315,
+                "flagged": false
+              },
+              {
+                "value": null,
+                "text": "—",
+                "marks": []
+              },
+              {
+                "value": null,
+                "text": "—",
+                "marks": []
+              },
+              {
+                "value": null,
+                "text": "—",
+                "marks": []
+              },
+              {
+                "value": null,
+                "text": "—",
+                "marks": []
+              },
+              {
+                "value": null,
+                "text": "—",
+                "marks": []
+              },
+              {
+                "value": 20.7811594009399,
+                "text": "20.8",
+                "marks": [],
+                "errors": 0,
+                "nan": 0,
+                "queries": 50,
+                "runs": [
+                  20.7811594009399,
+                  20.8029747009277,
+                  20.6738710403442
+                ],
+                "min": 20.6738710403442,
+                "max": 20.8029747009277,
+                "range_text": "20.7–20.8",
+                "spread": 0.006212534059945688,
+                "flagged": false
+              }
+            ]
+          }
+        ],
+        "footnotes": [
+          {
+            "mark": "ᶜ",
+            "text": "Different null approximation or kernel width rule from FastCIT."
+          },
+          {
+            "mark": "ᵈ",
+            "text": "The time does not include the one-time setup. FastCIT and pcalg precompute the correlation matrix. FastCIT computes it in the first call and keeps it. bnlearn and ppcor compute it in every call. See the total-time tables."
+          },
+          {
+            "mark": "ᵉ",
+            "text": "Uses the nominal degrees of freedom. FastCIT uses the adjusted degrees of freedom."
+          },
+          {
+            "mark": "ᶠ",
+            "text": "bnlearn ci.test() checks the whole data frame in each call. The benchmark gives it only the columns of the query."
+          },
+          {
+            "mark": "ᵍ",
+            "text": "ppcor needs at least one conditioning variable. For a query with an empty set, the benchmark calls stats::cor.test, which runs the same t-test."
+          },
+          {
+            "mark": "*",
+            "text": "The engine raised an error or returned NaN on some queries. See the lists below. The median uses only the queries with a result. Those queries can cost less or more than the excluded ones. Compare such a cell with care."
+          }
+        ]
+      },
+      "total_per_pass": {
+        "title": "R packages, total time of one pass",
+        "note": "Each run keeps its fastest of 5 passes. The table shows the median of the 3 run values. bnlearn, dHSIC, ppcor and comets have no setup.",
+        "columns": [
+          {
+            "key": "fastcit",
+            "label": "FastCIT (R)"
+          },
+          {
+            "key": "pcalg",
+            "label": "pcalg"
+          },
+          {
+            "key": "bnlearn",
+            "label": "bnlearn"
+          },
+          {
+            "key": "dHSIC",
+            "label": "dHSIC"
+          },
+          {
+            "key": "Rfast",
+            "label": "Rfast"
+          },
+          {
+            "key": "ppcor",
+            "label": "ppcor"
+          },
+          {
+            "key": "comets",
+            "label": "comets"
+          }
+        ],
+        "rows": [
+          {
+            "key": "chi_square",
+            "label": "χ²",
+            "marks": [],
+            "cells": [
+              {
+                "value": 7.18021392822266,
+                "text": "7.18",
+                "marks": [],
+                "errors": 0,
+                "nan": 0,
+                "queries": 50,
+                "runs": [
+                  7.05552101135254,
+                  7.2331428527832,
+                  7.18021392822266
+                ],
+                "min": 7.05552101135254,
+                "max": 7.2331428527832,
+                "range_text": "7.06–7.23",
+                "spread": 0.024737680966927248,
+                "flagged": false
+              },
+              {
+                "value": null,
+                "text": "—",
+                "marks": []
+              },
+              {
+                "value": 14.796257019043,
+                "text": "14.8",
+                "marks": [
+                  "ᵉ",
+                  "ᶠ"
+                ],
+                "errors": 0,
+                "nan": 0,
+                "queries": 50,
+                "runs": [
+                  14.6479606628418,
+                  14.8541927337646,
+                  14.796257019043
+                ],
+                "min": 14.6479606628418,
+                "max": 14.8541927337646,
+                "range_text": "14.6–14.9",
+                "spread": 0.01393812439574254,
+                "flagged": false
+              },
+              {
+                "value": null,
+                "text": "—",
+                "marks": []
+              },
+              {
+                "value": 2.63404846191406,
+                "text": "2.63",
+                "marks": [
+                  "ᵉ",
+                  "*"
+                ],
+                "errors": 0,
+                "nan": 6,
+                "queries": 50,
+                "runs": [
+                  2.62761116027832,
+                  2.63404846191406,
+                  2.6700496673584
+                ],
+                "min": 2.62761116027832,
+                "max": 2.6700496673584,
+                "range_text": "2.63–2.67",
+                "spread": 0.01611151339609065,
+                "flagged": false
+              },
+              {
+                "value": null,
+                "text": "—",
+                "marks": []
+              },
+              {
+                "value": null,
+                "text": "—",
+                "marks": []
+              }
+            ]
+          },
+          {
+            "key": "g_sq",
+            "label": "G²",
+            "marks": [],
+            "cells": [
+              {
+                "value": 7.04741477966309,
+                "text": "7.05",
+                "marks": [],
+                "errors": 0,
+                "nan": 0,
+                "queries": 50,
+                "runs": [
+                  7.04741477966309,
+                  7.18307495117188,
+                  6.97922706604004
+                ],
+                "min": 6.97922706604004,
+                "max": 7.18307495117188,
+                "range_text": "6.98–7.18",
+                "spread": 0.02892520044656511,
+                "flagged": false
+              },
+              {
+                "value": 446.748018264771,
+                "text": "447",
+                "marks": [
+                  "ᵉ"
+                ],
+                "errors": 0,
+                "nan": 0,
+                "queries": 50,
+                "runs": [
+                  446.748018264771,
+                  447.208404541016,
+                  441.579580307007
+                ],
+                "min": 441.579580307007,
+                "max": 447.208404541016,
+                "range_text": "442–447",
+                "spread": 0.01259955053829253,
+                "flagged": false
+              },
+              {
+                "value": 15.082836151123,
+                "text": "15.1",
+                "marks": [
+                  "ᵉ",
+                  "ᶠ"
+                ],
+                "errors": 0,
+                "nan": 0,
+                "queries": 50,
+                "runs": [
+                  15.1407718658447,
+                  15.082836151123,
+                  14.8208141326904
+                ],
+                "min": 14.8208141326904,
+                "max": 15.1407718658447,
+                "range_text": "14.8–15.1",
+                "spread": 0.021213366633998594,
+                "flagged": false
+              },
+              {
+                "value": null,
+                "text": "—",
+                "marks": []
+              },
+              {
+                "value": 2.71320343017578,
+                "text": "2.71",
+                "marks": [
+                  "ᵉ"
+                ],
+                "errors": 0,
+                "nan": 0,
+                "queries": 50,
+                "runs": [
+                  2.71320343017578,
+                  2.84552574157715,
+                  2.70986557006836
+                ],
+                "min": 2.70986557006836,
+                "max": 2.84552574157715,
+                "range_text": "2.71–2.85",
+                "spread": 0.050000000000000516,
+                "flagged": false
+              },
+              {
+                "value": null,
+                "text": "—",
+                "marks": []
+              },
+              {
+                "value": null,
+                "text": "—",
+                "marks": []
+              }
+            ]
+          },
+          {
+            "key": "fisher_z",
+            "label": "Fisher-z",
+            "marks": [],
+            "cells": [
+              {
+                "value": 4.33444976806641,
+                "text": "4.33",
+                "marks": [],
+                "errors": 0,
+                "nan": 0,
+                "queries": 50,
+                "runs": [
+                  4.27389144897461,
+                  4.76765632629395,
+                  4.33444976806641
+                ],
+                "min": 4.27389144897461,
+                "max": 4.76765632629395,
+                "range_text": "4.27–4.77",
+                "spread": 0.11391639163916464,
+                "flagged": false
+              },
+              {
+                "value": 6.31332397460938,
+                "text": "6.31",
+                "marks": [],
+                "errors": 0,
+                "nan": 0,
+                "queries": 50,
+                "runs": [
+                  6.25491142272949,
+                  6.4079761505127,
+                  6.31332397460938
+                ],
+                "min": 6.25491142272949,
+                "max": 6.4079761505127,
+                "range_text": "6.25–6.41",
+                "spread": 0.02424471299093752,
+                "flagged": false
+              },
+              {
+                "value": 19.3362236022949,
+                "text": "19.3",
+                "marks": [
+                  "ᶠ"
+                ],
+                "errors": 0,
+                "nan": 0,
+                "queries": 50,
+                "runs": [
+                  19.5891857147217,
+                  19.3362236022949,
+                  19.0911293029785
+                ],
+                "min": 19.0911293029785,
+                "max": 19.5891857147217,
+                "range_text": "19.1–19.6",
+                "spread": 0.025757687849869933,
+                "flagged": false
+              },
+              {
+                "value": null,
+                "text": "—",
+                "marks": []
+              },
+              {
+                "value": null,
+                "text": "—",
+                "marks": []
+              },
+              {
+                "value": null,
+                "text": "—",
+                "marks": []
+              },
+              {
+                "value": null,
+                "text": "—",
+                "marks": []
+              }
+            ]
+          },
+          {
+            "key": "pearson_t",
+            "label": "Pearson t",
+            "marks": [],
+            "cells": [
+              {
+                "value": 4.40669059753418,
+                "text": "4.41",
+                "marks": [],
+                "errors": 0,
+                "nan": 0,
+                "queries": 50,
+                "runs": [
+                  4.20665740966797,
+                  4.79435920715332,
+                  4.40669059753418
+                ],
+                "min": 4.20665740966797,
+                "max": 4.79435920715332,
+                "range_text": "4.21–4.79",
+                "spread": 0.13336579559595282,
+                "flagged": false
+              },
+              {
+                "value": null,
+                "text": "—",
+                "marks": []
+              },
+              {
+                "value": 19.3407535552979,
+                "text": "19.3",
+                "marks": [
+                  "ᶠ"
+                ],
+                "errors": 0,
+                "nan": 0,
+                "queries": 50,
+                "runs": [
+                  19.3407535552979,
+                  19.5493698120117,
+                  19.3288326263428
+                ],
+                "min": 19.3288326263428,
+                "max": 19.5493698120117,
+                "range_text": "19.3–19.5",
+                "spread": 0.011402719394482548,
+                "flagged": false
+              },
+              {
+                "value": null,
+                "text": "—",
+                "marks": []
+              },
+              {
+                "value": null,
+                "text": "—",
+                "marks": []
+              },
+              {
+                "value": 38.7992858886719,
+                "text": "38.8",
+                "marks": [
+                  "ᵍ"
+                ],
+                "errors": 0,
+                "nan": 0,
+                "queries": 50,
+                "runs": [
+                  38.3310317993164,
+                  40.0125980377197,
+                  38.7992858886719
+                ],
+                "min": 38.3310317993164,
+                "max": 40.0125980377197,
+                "range_text": "38.3–40.0",
+                "spread": 0.04334013371349858,
+                "flagged": false
+              },
+              {
+                "value": null,
+                "text": "—",
+                "marks": []
+              }
+            ]
+          },
+          {
+            "key": "hsic",
+            "label": "HSIC (median width)",
+            "marks": [],
+            "cells": [
+              {
+                "value": 40.3125286102295,
+                "text": "40.3",
+                "marks": [],
+                "errors": 0,
+                "nan": 0,
+                "queries": 28,
+                "runs": [
+                  40.2140617370605,
+                  40.663480758667,
+                  40.3125286102295
+                ],
+                "min": 40.2140617370605,
+                "max": 40.663480758667,
+                "range_text": "40.2–40.7",
+                "spread": 0.011148370918426086,
+                "flagged": false
+              },
+              {
+                "value": null,
+                "text": "—",
+                "marks": []
+              },
+              {
+                "value": null,
+                "text": "—",
+                "marks": []
+              },
+              {
+                "value": 184.181928634644,
+                "text": "184",
+                "marks": [
+                  "ᶜ"
+                ],
+                "errors": 0,
+                "nan": 0,
+                "queries": 28,
+                "runs": [
+                  184.350490570068,
+                  184.181928634644,
+                  182.510614395142
+                ],
+                "min": 182.510614395142,
+                "max": 184.350490570068,
+                "range_text": "183–184",
+                "spread": 0.009989450043037045,
+                "flagged": false
+              },
+              {
+                "value": null,
+                "text": "—",
+                "marks": []
+              },
+              {
+                "value": null,
+                "text": "—",
+                "marks": []
+              },
+              {
+                "value": null,
+                "text": "—",
+                "marks": []
+              }
+            ]
+          },
+          {
+            "key": "gcm",
+            "label": "GCM",
+            "marks": [],
+            "cells": [
+              {
+                "value": 27.7292728424072,
+                "text": "27.7",
+                "marks": [],
+                "errors": 0,
+                "nan": 0,
+                "queries": 50,
+                "runs": [
+                  27.3022651672363,
+                  27.7292728424072,
+                  27.8501510620117
+                ],
+                "min": 27.3022651672363,
+                "max": 27.8501510620117,
+                "range_text": "27.3–27.9",
+                "spread": 0.01975839387816557,
+                "flagged": false
+              },
+              {
+                "value": null,
+                "text": "—",
+                "marks": []
+              },
+              {
+                "value": null,
+                "text": "—",
+                "marks": []
+              },
+              {
+                "value": null,
+                "text": "—",
+                "marks": []
+              },
+              {
+                "value": null,
+                "text": "—",
+                "marks": []
+              },
+              {
+                "value": null,
+                "text": "—",
+                "marks": []
+              },
+              {
+                "value": 1210.81686019897,
+                "text": "1 211",
+                "marks": [],
+                "errors": 0,
+                "nan": 0,
+                "queries": 50,
+                "runs": [
+                  1205.40571212769,
+                  1210.81686019897,
+                  1215.17372131348
+                ],
+                "min": 1205.40571212769,
+                "max": 1215.17372131348,
+                "range_text": "1 205–1 215",
+                "spread": 0.00806728870969366,
+                "flagged": false
+              }
+            ]
+          }
+        ],
+        "footnotes": [
+          {
+            "mark": "ᶜ",
+            "text": "Different null approximation or kernel width rule from FastCIT."
+          },
+          {
+            "mark": "ᵉ",
+            "text": "Uses the nominal degrees of freedom. FastCIT uses the adjusted degrees of freedom."
+          },
+          {
+            "mark": "ᶠ",
+            "text": "bnlearn ci.test() checks the whole data frame in each call. The benchmark gives it only the columns of the query."
+          },
+          {
+            "mark": "ᵍ",
+            "text": "ppcor needs at least one conditioning variable. For a query with an empty set, the benchmark calls stats::cor.test, which runs the same t-test."
+          },
+          {
+            "mark": "*",
+            "text": "The engine raised an error or returned NaN on some queries. The total includes the time of those queries."
+          }
+        ]
+      }
+    }
+  ]
+}

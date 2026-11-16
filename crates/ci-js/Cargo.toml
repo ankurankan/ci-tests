@@ -5,7 +5,8 @@ edition = "2021"
 authors = ["Ankur Ankan <ankurankan@gmail.com>"]
 license = "MIT"
 description = "FastCIT: Fast Conditional Independence Tests"
-repository = "https://github.com/pgmpy/ci-tests"
+repository = "https://github.com/pgmpy/FastCIT"
+homepage = "https://pgmpy.org/FastCIT/"
 
 [lib]
 crate-type = ["cdylib"]

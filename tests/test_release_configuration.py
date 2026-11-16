@@ -268,7 +268,8 @@ def test_published_crates_declare_license_and_repository() -> None:
     ):
         package = tomllib.loads((REPO_ROOT / relative).read_text())["package"]
         assert package["license"] == "MIT"
-        assert package["repository"] == "https://github.com/pgmpy/ci-tests"
+        assert package["repository"] == "https://github.com/pgmpy/FastCIT"
+        assert package["homepage"] == "https://pgmpy.org/FastCIT/"
         assert "Your Team" not in " ".join(package.get("authors", []))
 
 
