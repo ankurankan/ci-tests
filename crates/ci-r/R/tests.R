@@ -1,14 +1,14 @@
-#' Build a `cir_test` wrapper around a constructed extendr test handle.
+#' Build a `fastcit_test` wrapper around a constructed extendr test handle.
 #'
 #' @param handle The external-pointer test handle from `<Class>$new(...)`.
-#' @param ds The bound `cir_dataset` (carries column names for pcalg mapping).
+#' @param ds The bound `fastcit_dataset` (carries column names for pcalg mapping).
 #' @param name The test's stable name (e.g. `"chi_squared"`).
-#' @return An object of class `cir_test`.
+#' @return An object of class `fastcit_test`.
 #' @keywords internal
-.cir_make_test <- function(handle, ds, name) {
+.fastcit_make_test <- function(handle, ds, name) {
   structure(
     list(handle = handle, dataset = ds, name = name),
-    class = "cir_test"
+    class = "fastcit_test"
   )
 }
 
@@ -17,15 +17,15 @@
 #' @param data A [dataset()] result or a data.frame.
 #' @param yates Whether to apply Yates' continuity correction on 2x2
 #'   sub-tables (default `TRUE`, the scipy/pgmpy convention).
-#' @return A `cir_test` bound to `data`.
+#' @return A `fastcit_test` bound to `data`.
 #' @examples
 #' df <- data.frame(A = sample(0:1, 80, TRUE), B = sample(0:1, 80, TRUE))
 #' chi <- chi_squared(dataset(df))
 #' run_test(chi, "A", "B")
 #' @export
 chi_squared <- function(data, yates = TRUE) {
-  ds <- .cir_as_dataset(data)
-  .cir_make_test(
+  ds <- .fastcit_as_dataset(data)
+  .fastcit_make_test(
     ChiSquared$new(ds$ptr, yates), # nolint: object_usage_linter.
     ds,
     "chi_squared"
@@ -35,11 +35,11 @@ chi_squared <- function(data, yates = TRUE) {
 #' Log-likelihood / G-test (lambda = 0) discrete CI test.
 #'
 #' @inheritParams chi_squared
-#' @return A `cir_test` bound to `data`.
+#' @return A `fastcit_test` bound to `data`.
 #' @export
 log_likelihood <- function(data, yates = TRUE) {
-  ds <- .cir_as_dataset(data)
-  .cir_make_test(
+  ds <- .fastcit_as_dataset(data)
+  .fastcit_make_test(
     LogLikelihood$new(ds$ptr, yates), # nolint: object_usage_linter.
     ds,
     "log_likelihood"
@@ -49,11 +49,11 @@ log_likelihood <- function(data, yates = TRUE) {
 #' Cressie-Read (lambda = 2/3) discrete CI test.
 #'
 #' @inheritParams chi_squared
-#' @return A `cir_test` bound to `data`.
+#' @return A `fastcit_test` bound to `data`.
 #' @export
 cressie_read <- function(data, yates = TRUE) {
-  ds <- .cir_as_dataset(data)
-  .cir_make_test(
+  ds <- .fastcit_as_dataset(data)
+  .fastcit_make_test(
     CressieRead$new(ds$ptr, yates), # nolint: object_usage_linter.
     ds,
     "cressie_read"
@@ -63,11 +63,11 @@ cressie_read <- function(data, yates = TRUE) {
 #' Freeman-Tukey (lambda = -1/2) discrete CI test.
 #'
 #' @inheritParams chi_squared
-#' @return A `cir_test` bound to `data`.
+#' @return A `fastcit_test` bound to `data`.
 #' @export
 freeman_tukey <- function(data, yates = TRUE) {
-  ds <- .cir_as_dataset(data)
-  .cir_make_test(
+  ds <- .fastcit_as_dataset(data)
+  .fastcit_make_test(
     FreemanTukey$new(ds$ptr, yates), # nolint: object_usage_linter.
     ds,
     "freeman_tukey"
@@ -77,11 +77,11 @@ freeman_tukey <- function(data, yates = TRUE) {
 #' Modified log-likelihood (lambda = -1) discrete CI test.
 #'
 #' @inheritParams chi_squared
-#' @return A `cir_test` bound to `data`.
+#' @return A `fastcit_test` bound to `data`.
 #' @export
 modified_likelihood <- function(data, yates = TRUE) {
-  ds <- .cir_as_dataset(data)
-  .cir_make_test(
+  ds <- .fastcit_as_dataset(data)
+  .fastcit_make_test(
     ModifiedLikelihood$new(ds$ptr, yates), # nolint: object_usage_linter.
     ds,
     "modified_likelihood"
@@ -91,11 +91,11 @@ modified_likelihood <- function(data, yates = TRUE) {
 #' Pearson partial-correlation continuous CI test.
 #'
 #' @param data A [dataset()] result or a data.frame.
-#' @return A `cir_test` bound to `data`.
+#' @return A `fastcit_test` bound to `data`.
 #' @export
 pearson_correlation <- function(data) {
-  ds <- .cir_as_dataset(data)
-  .cir_make_test(
+  ds <- .fastcit_as_dataset(data)
+  .fastcit_make_test(
     PearsonCorrelation$new(ds$ptr), # nolint: object_usage_linter.
     ds,
     "pearson_correlation"
@@ -110,11 +110,11 @@ pearson_correlation <- function(data) {
 #' de-facto standard continuous CI test in constraint-based causal discovery.
 #'
 #' @param data A [dataset()] result or a data.frame.
-#' @return A `cir_test` bound to `data`.
+#' @return A `fastcit_test` bound to `data`.
 #' @export
 fisher_z <- function(data) {
-  ds <- .cir_as_dataset(data)
-  .cir_make_test(
+  ds <- .fastcit_as_dataset(data)
+  .fastcit_make_test(
     FisherZ$new(ds$ptr), # nolint: object_usage_linter.
     ds,
     "fisher_z"
@@ -132,7 +132,7 @@ fisher_z <- function(data) {
 #' raise a degenerate-data error, whereas pgmpy fits them by least squares.
 #'
 #' @param data A [dataset()] result or a data.frame.
-#' @return A `cir_test` bound to `data`.
+#' @return A `fastcit_test` bound to `data`.
 #' @examples
 #' set.seed(1)
 #' df <- data.frame(Z = rnorm(100))
@@ -141,8 +141,8 @@ fisher_z <- function(data) {
 #' run_test(gcm(df), "X", "Y", "Z")
 #' @export
 gcm <- function(data) {
-  ds <- .cir_as_dataset(data)
-  .cir_make_test(
+  ds <- .fastcit_as_dataset(data)
+  .fastcit_make_test(
     GCM$new(ds$ptr), # nolint: object_usage_linter.
     ds,
     "gcm"
@@ -165,7 +165,7 @@ gcm <- function(data) {
 #' does.
 #'
 #' @param data A [dataset()] result or a data.frame.
-#' @return A `cir_test` bound to `data`.
+#' @return A `fastcit_test` bound to `data`.
 #' @examples
 #' set.seed(1)
 #' df <- data.frame(
@@ -176,8 +176,8 @@ gcm <- function(data) {
 #' run_test(pillai(df), "X", "Y", "Z")
 #' @export
 pillai <- function(data) {
-  ds <- .cir_as_dataset(data)
-  .cir_make_test(
+  ds <- .fastcit_as_dataset(data)
+  .fastcit_make_test(
     Pillai$new(ds$ptr), # nolint: object_usage_linter.
     ds,
     "pillai"
@@ -193,11 +193,11 @@ pillai <- function(data) {
 #' @param data A [dataset()] result or a data.frame.
 #' @param delta_threshold Equivalence margin on the correlation scale
 #'   (default `0.1`).
-#' @return A `cir_test` bound to `data`.
+#' @return A `fastcit_test` bound to `data`.
 #' @export
 pearson_equivalence <- function(data, delta_threshold = 0.1) {
-  ds <- .cir_as_dataset(data)
-  .cir_make_test(
+  ds <- .fastcit_as_dataset(data)
+  .fastcit_make_test(
     # extendr generates this constructor in a separate source file.
     PearsonEquivalence$new( # nolint: object_usage_linter.
       ds$ptr, delta_threshold
@@ -210,7 +210,7 @@ pearson_equivalence <- function(data, delta_threshold = 0.1) {
 #' Radial-basis-function (Gaussian) kernel specification.
 #'
 #' @param length_scale Positive, finite length scale of the kernel.
-#' @return A `cir_kernel` object for use as the `kernel` argument of [hsic()]
+#' @return A `fastcit_kernel` object for use as the `kernel` argument of [hsic()]
 #'   and [kci()].
 #' @examples
 #' rbf_kernel(2)
@@ -226,44 +226,44 @@ rbf_kernel <- function(length_scale) {
   }
   structure(
     list(type = "rbf", length_scale = as.double(length_scale)),
-    class = "cir_kernel"
+    class = "fastcit_kernel"
   )
 }
 
 #' Linear kernel specification.
 #'
-#' @return A `cir_kernel` object for use as the `kernel` argument of [hsic()]
+#' @return A `fastcit_kernel` object for use as the `kernel` argument of [hsic()]
 #'   and [kci()].
 #' @examples
 #' linear_kernel()
 #' @export
 linear_kernel <- function() {
-  structure(list(type = "linear"), class = "cir_kernel")
+  structure(list(type = "linear"), class = "fastcit_kernel")
 }
 
 #' @export
-print.cir_kernel <- function(x, ...) {
+print.fastcit_kernel <- function(x, ...) {
   if (identical(x$type, "rbf")) {
     cat(sprintf(
-      "<cir_kernel: rbf, length_scale = %s>\n",
+      "<fastcit_kernel: rbf, length_scale = %s>\n",
       format(x$length_scale)
     ))
   } else {
-    cat("<cir_kernel: linear>\n")
+    cat("<fastcit_kernel: linear>\n")
   }
   invisible(x)
 }
 
 #' Flatten a `kernel` argument for the extendr layer.
 #'
-#' @param kernel `NULL`, one `cir_kernel`, or a named list of `cir_kernel`.
+#' @param kernel `NULL`, one `fastcit_kernel`, or a named list of `fastcit_kernel`.
 #' @return A list with `mode`, `names`, `types` and `length_scales`.
 #' @keywords internal
-.cir_flatten_kernel <- function(kernel) {
+.fastcit_flatten_kernel <- function(kernel) {
   flat <- function(k) {
-    if (!inherits(k, "cir_kernel")) {
+    if (!inherits(k, "fastcit_kernel")) {
       stop(
-        "`kernel` must be NULL, a cir_kernel, or a named list of cir_kernel",
+        "`kernel` must be NULL, a fastcit_kernel, or a named list of fastcit_kernel",
         call. = FALSE
       )
     }
@@ -286,7 +286,7 @@ print.cir_kernel <- function(x, ...) {
       length_scales = double()
     ))
   }
-  if (inherits(kernel, "cir_kernel")) {
+  if (inherits(kernel, "fastcit_kernel")) {
     return(pack("all", "", list(flat(kernel))))
   }
   nms <- names(kernel)
@@ -294,7 +294,7 @@ print.cir_kernel <- function(x, ...) {
   bad <- bad || anyNA(nms) || any(!nzchar(nms)) || anyDuplicated(nms) > 0L
   if (bad) {
     stop(
-      "`kernel` must be NULL, a cir_kernel, or a named list of cir_kernel",
+      "`kernel` must be NULL, a fastcit_kernel, or a named list of fastcit_kernel",
       call. = FALSE
     )
   }
@@ -316,7 +316,7 @@ print.cir_kernel <- function(x, ...) {
 #'   with the gamma null but always validated.
 #' @param seed Permutation seed (whole number, 0 to 2^53); unused with the
 #'   gamma null.
-#' @return A `cir_test` bound to `data`.
+#' @return A `fastcit_test` bound to `data`.
 #' @examples
 #' df <- data.frame(X = rnorm(50), Y = rnorm(50))
 #' run_test(hsic(dataset(df)), "X", "Y")
@@ -329,13 +329,13 @@ hsic <- function(
   n_permutations = 100L,
   seed = 0
 ) {
-  ds <- .cir_as_dataset(data)
-  k <- .cir_flatten_kernel(kernel)
-  .cir_make_test(
+  ds <- .fastcit_as_dataset(data)
+  k <- .fastcit_flatten_kernel(kernel)
+  .fastcit_make_test(
     HSIC$new( # nolint: object_usage_linter.
       ds$ptr, k$mode, k$names, k$types, k$length_scales,
-      bandwidth, null_dist, .cir_as_count(n_permutations, "n_permutations"),
-      .cir_as_count(seed, "seed")
+      bandwidth, null_dist, .fastcit_as_count(n_permutations, "n_permutations"),
+      .fastcit_as_count(seed, "seed")
     ),
     ds,
     "hsic"
@@ -346,7 +346,7 @@ hsic <- function(
 #'
 #' @inheritParams hsic
 #' @param epsilon Positive regularisation parameter (default `1e-3`).
-#' @return A `cir_test` bound to `data`.
+#' @return A `fastcit_test` bound to `data`.
 #' @examples
 #' df <- data.frame(X = rnorm(50), Y = rnorm(50), Z = rnorm(50))
 #' run_test(kci(dataset(df)), "X", "Y", "Z")
@@ -357,9 +357,9 @@ kci <- function(
   bandwidth = "heuristic",
   epsilon = 1e-3
 ) {
-  ds <- .cir_as_dataset(data)
-  k <- .cir_flatten_kernel(kernel)
-  .cir_make_test(
+  ds <- .fastcit_as_dataset(data)
+  k <- .fastcit_flatten_kernel(kernel)
+  .fastcit_make_test(
     KCI$new( # nolint: object_usage_linter.
       ds$ptr, k$mode, k$names, k$types, k$length_scales,
       bandwidth, epsilon
@@ -375,7 +375,7 @@ kci <- function(
 #' @param name Argument name for the error message.
 #' @return A length-1 double (range and wholeness are checked in Rust).
 #' @keywords internal
-.cir_as_count <- function(x, name) {
+.fastcit_as_count <- function(x, name) {
   if (!is.numeric(x) || length(x) != 1L) {
     stop(sprintf("`%s` must be a single number", name), call. = FALSE)
   }
@@ -383,8 +383,8 @@ kci <- function(
 }
 
 #' @export
-print.cir_test <- function(x, ...) {
-  cat(sprintf("<cir_test: %s>\n", x$name))
+print.fastcit_test <- function(x, ...) {
+  cat(sprintf("<fastcit_test: %s>\n", x$name))
   invisible(x)
 }
 
@@ -394,7 +394,7 @@ print.cir_test <- function(x, ...) {
 
 #' Run a conditional-independence test.
 #'
-#' @param test A `cir_test` from one of the factory functions.
+#' @param test A `fastcit_test` from one of the factory functions.
 #' @param x,y Column **names** (length-1 character) for the two variables.
 #' @param z Character vector of conditioning column names (default: none).
 #' @return A named list `list(statistic, p_value, dof, effect_size)`; absent
@@ -404,8 +404,8 @@ print.cir_test <- function(x, ...) {
 #' run_test(chi_squared(dataset(df)), "A", "B")
 #' @export
 run_test <- function(test, x, y, z = character()) {
-  stopifnot(inherits(test, "cir_test"))
-  test$handle$run_test(x, y, .cir_as_names(z))
+  stopifnot(inherits(test, "fastcit_test"))
+  test$handle$run_test(x, y, .fastcit_as_names(z))
 }
 
 #' Decide conditional independence at a significance level.
@@ -414,7 +414,7 @@ run_test <- function(test, x, y, z = character()) {
 #' standard tests, and the inverted `p < significance_level` for
 #' [pearson_equivalence()].
 #'
-#' @param test A `cir_test` from one of the factory functions.
+#' @param test A `fastcit_test` from one of the factory functions.
 #' @param x,y Column names for the two variables.
 #' @param z Character vector of conditioning column names (default: none).
 #' @param significance_level Significance level alpha (default `0.05`).
@@ -427,8 +427,8 @@ is_independent <- function(
   z = character(),
   significance_level = 0.05
 ) {
-  stopifnot(inherits(test, "cir_test"))
-  test$handle$is_independent(x, y, .cir_as_names(z), significance_level)
+  stopifnot(inherits(test, "fastcit_test"))
+  test$handle$is_independent(x, y, .fastcit_as_names(z), significance_level)
 }
 
 #' Normalize a conditioning-set argument to a character vector.
@@ -438,7 +438,7 @@ is_independent <- function(
 #' @param z The `z` argument as supplied by the caller.
 #' @return A character vector (possibly empty).
 #' @keywords internal
-.cir_as_names <- function(z) {
+.fastcit_as_names <- function(z) {
   if (is.null(z)) {
     character()
   } else if (is.character(z)) {

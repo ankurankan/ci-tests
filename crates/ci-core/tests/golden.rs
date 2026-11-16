@@ -18,14 +18,14 @@
 
 use std::collections::BTreeMap;
 
-use ci_core::ci_tests::{
+use fastcit_core::ci_tests::{
     chi_squared::ChiSquared, cressie_read::CressieRead, freeman_tukey::FreemanTukey,
     log_likelihood::LogLikelihood, modified_likelihood::ModifiedLikelihood, FisherZ, Gcm, Hsic,
     Kci, NullDistribution, PearsonCorrelation, PearsonEquivalence, Pillai,
 };
-use ci_core::dataset::{ColumnKind, Dataset};
-use ci_core::kernel::{Bandwidth, Kernel, KernelChoice};
-use ci_core::strategy::{CITest, CiResult, DataType};
+use fastcit_core::dataset::{ColumnKind, Dataset};
+use fastcit_core::kernel::{Bandwidth, Kernel, KernelChoice};
+use fastcit_core::strategy::{CITest, CiResult, DataType};
 use serde::Deserialize;
 
 const TOL: f64 = 1e-7;

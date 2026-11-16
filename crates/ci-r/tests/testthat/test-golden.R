@@ -7,7 +7,7 @@
 # values within a tight tolerance. This is the binding's numeric parity gate
 # against the scipy/pgmpy reference.
 
-library(cir)
+library(fastcit)
 
 tol <- 1e-7
 
@@ -35,7 +35,7 @@ load_cases <- function() {
   jsonlite::fromJSON(find_golden(), simplifyVector = FALSE)
 }
 
-# Build a `cir_dataset` from a fixture case's `columns` map. Discrete columns
+# Build a `fastcit_dataset` from a fixture case's `columns` map. Discrete columns
 # are coerced to integer (so `dataset()` infers "discrete"); continuous columns
 # stay double ("continuous").
 build_dataset <- function(columns) {
@@ -51,7 +51,7 @@ build_dataset <- function(columns) {
   dataset(df)
 }
 
-# Translate a fixture kernel spec into `NULL`, a `cir_kernel`, or a named list.
+# Translate a fixture kernel spec into `NULL`, a `fastcit_kernel`, or a named list.
 parse_kernel <- function(spec) {
   if (is.null(spec)) {
     return(NULL)

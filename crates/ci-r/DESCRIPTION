@@ -1,5 +1,5 @@
-Package: cir
-Title: Conditional Independence Testing
+Package: fastcit
+Title: Fast Conditional Independence Tests
 Version: 0.0.0.9000
 Authors@R:
     person("GIP", "House", email = "giphouse@example.com", role = c("aut", "cre"))

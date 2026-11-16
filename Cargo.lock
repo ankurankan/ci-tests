@@ -62,38 +62,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9330f8b2ff13f34540b44e946ef35111825727b38d33286ef986142615121801"
 
 [[package]]
-name = "ci_core"
-version = "0.1.0"
-dependencies = [
- "faer",
- "serde",
- "serde_json",
- "statrs",
- "thiserror 2.0.18",
-]
-
-[[package]]
-name = "ci_js"
-version = "0.1.0"
-dependencies = [
- "ci_core",
- "console_error_panic_hook",
- "js-sys",
- "serde",
- "serde-wasm-bindgen",
- "wasm-bindgen",
-]
-
-[[package]]
-name = "ci_python"
-version = "0.1.0"
-dependencies = [
- "ci_core",
- "numpy",
- "pyo3",
-]
-
-[[package]]
 name = "console_error_panic_hook"
 version = "0.1.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -214,6 +182,38 @@ dependencies = [
  "pulp",
  "qd",
  "reborrow",
+]
+
+[[package]]
+name = "fastcit"
+version = "0.1.0"
+dependencies = [
+ "console_error_panic_hook",
+ "fastcit-core",
+ "js-sys",
+ "serde",
+ "serde-wasm-bindgen",
+ "wasm-bindgen",
+]
+
+[[package]]
+name = "fastcit-core"
+version = "0.1.0"
+dependencies = [
+ "faer",
+ "serde",
+ "serde_json",
+ "statrs",
+ "thiserror 2.0.18",
+]
+
+[[package]]
+name = "fastcit-python"
+version = "0.1.0"
+dependencies = [
+ "fastcit-core",
+ "numpy",
+ "pyo3",
 ]
 
 [[package]]

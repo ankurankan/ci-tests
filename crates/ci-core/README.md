@@ -1,6 +1,6 @@
-# ci-core
+# fastcit-core
 
-`ci-core` is the dependency-light Rust implementation of data-bound
+`fastcit-core` is the dependency-light Rust implementation of data-bound
 conditional-independence testing.
 
 ## API

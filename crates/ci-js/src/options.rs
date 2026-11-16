@@ -2,8 +2,8 @@
 
 use std::collections::BTreeMap;
 
-use ci_core::ci_tests::{Hsic, Kci, NullDistribution};
-use ci_core::kernel::{Bandwidth, Kernel, KernelChoice};
+use fastcit_core::ci_tests::{Hsic, Kci, NullDistribution};
+use fastcit_core::kernel::{Bandwidth, Kernel, KernelChoice};
 use serde::{de::DeserializeOwned, Deserialize};
 use wasm_bindgen::prelude::*;
 

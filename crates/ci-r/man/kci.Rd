@@ -18,7 +18,7 @@ keyed by column name.}
 \item{epsilon}{Positive regularisation parameter (default \code{1e-3}).}
 }
 \value{
-A \code{cir_test} bound to \code{data}.
+A \code{fastcit_test} bound to \code{data}.
 }
 \description{
 Kernel-based conditional independence (KCI) test.

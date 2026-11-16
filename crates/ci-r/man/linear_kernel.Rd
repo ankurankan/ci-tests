@@ -7,7 +7,7 @@
 linear_kernel()
 }
 \value{
-A \code{cir_kernel} object for use as the \code{kernel} argument of \code{\link[=hsic]{hsic()}}
+A \code{fastcit_kernel} object for use as the \code{kernel} argument of \code{\link[=hsic]{hsic()}}
 and \code{\link[=kci]{kci()}}.
 }
 \description{

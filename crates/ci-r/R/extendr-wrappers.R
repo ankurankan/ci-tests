@@ -2,7 +2,7 @@
 # nolint start
 
 #' @usage NULL
-#' @useDynLib cir, .registration = TRUE
+#' @useDynLib fastcit, .registration = TRUE
 NULL
 
 #' A named, typed, immutable table of columns shared by the test handles.

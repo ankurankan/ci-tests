@@ -7,7 +7,7 @@
 ci_test(test, x, y, z = character())
 }
 \arguments{
-\item{test}{A \code{cir_test} from one of the factory functions.}
+\item{test}{A \code{fastcit_test} from one of the factory functions.}
 
 \item{x, y}{Column names for the two variables.}
 

@@ -2,12 +2,12 @@
 % Please edit documentation in R/adapters.R
 \name{as_pcalg}
 \alias{as_pcalg}
-\title{Adapt a \code{cir_test} into a \pkg{pcalg} \code{indepTest} callback.}
+\title{Adapt a \code{fastcit_test} into a \pkg{pcalg} \code{indepTest} callback.}
 \usage{
 as_pcalg(test)
 }
 \arguments{
-\item{test}{A \code{cir_test} from one of the factory functions. Must be a
+\item{test}{A \code{fastcit_test} from one of the factory functions. Must be a
 standard null-of-independence test; \code{\link[=pearson_equivalence]{pearson_equivalence()}} is rejected
 because its inverted decision rule (independence when \code{p < alpha}) would be
 interpreted backwards by \pkg{pcalg}.}

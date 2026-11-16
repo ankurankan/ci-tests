@@ -6,7 +6,7 @@ name: JS CI
 #
 # Build: a *real* wasm-pack (installed via jetli/wasm-pack-action) plus the
 # wasm32-unknown-unknown target build the package into crates/ci-js/pkg, which
-# the vitest suite imports as ../pkg/ci_js.js. `wasm-opt` is disabled via the
+# the vitest suite imports as ../pkg/fastcit.js. `wasm-opt` is disabled via the
 # crate's package metadata (crates/ci-js/Cargo.toml) because the locally
 # installed wasm-opt is too old to parse the modern wasm the core emits; it only
 # shrinks the binary, so disabling it does not affect correctness. CI may
@@ -99,7 +99,7 @@ jobs:
           version: v0.15.0
 
       # Verified locally: builds into crates/ci-js/pkg (wasm-opt disabled via the
-      # crate's package metadata). The vitest suite imports ../pkg/ci_js.js.
+      # crate's package metadata). The vitest suite imports ../pkg/fastcit.js.
       - name: Build WASM package
         run: wasm-pack build crates/ci-js --target nodejs
 

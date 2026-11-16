@@ -8,7 +8,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from ci_python import (
+from fastcit import (
     GCM,
     HSIC,
     KCI,

@@ -1,6 +1,6 @@
 //! R bindings for the data-bound conditional-independence testing core.
 //!
-//! The surface mirrors `ci_core`'s redesigned contract: a [`Dataset`] is built
+//! The surface mirrors `fastcit_core`'s redesigned contract: a [`Dataset`] is built
 //! once from named, typed columns, and each test is a *data-bound* handle that
 //! captures the dataset (plus its own configuration) and then answers
 //! `run_test(x, y, z)` / `is_independent(...)` queries by column **name**.
@@ -13,7 +13,7 @@
 //! Discrete columns must already be numeric when they reach Rust: the R side
 //! factor/character → integer coding happens before [`Dataset::new`], so the
 //! core only ever sees `f64` values (which it factorizes into contiguous codes).
-//! Core [`ci_core::error::CiError`]s and Rust panics surface as R errors via
+//! Core [`fastcit_core::error::CiError`]s and Rust panics surface as R errors via
 //! extendr's `Result` support.
 
 // Every fallible export returns `extendr_api::Result<_>`, which extendr turns
@@ -24,10 +24,10 @@
 
 use std::sync::Arc;
 
-use ci_core::dataset::{ColumnKind, Dataset as CoreDataset};
-use ci_core::strategy::{CITest, CiResult as CoreResult, IndependenceRule};
 use extendr_api::prelude::*;
 use extendr_api::Result;
+use fastcit_core::dataset::{ColumnKind, Dataset as CoreDataset};
+use fastcit_core::strategy::{CITest, CiResult as CoreResult, IndependenceRule};
 
 mod util;
 
@@ -237,69 +237,69 @@ macro_rules! ci_test_handle {
 
 ci_test_handle!(
     ChiSquared,
-    ci_core::ci_tests::ChiSquared,
-    new(yates: bool) { Ok(ci_core::ci_tests::ChiSquared { yates }) }
+    fastcit_core::ci_tests::ChiSquared,
+    new(yates: bool) { Ok(fastcit_core::ci_tests::ChiSquared { yates }) }
 );
 
 ci_test_handle!(
     LogLikelihood,
-    ci_core::ci_tests::LogLikelihood,
-    new(yates: bool) { Ok(ci_core::ci_tests::LogLikelihood { yates }) }
+    fastcit_core::ci_tests::LogLikelihood,
+    new(yates: bool) { Ok(fastcit_core::ci_tests::LogLikelihood { yates }) }
 );
 
 ci_test_handle!(
     CressieRead,
-    ci_core::ci_tests::CressieRead,
-    new(yates: bool) { Ok(ci_core::ci_tests::CressieRead { yates }) }
+    fastcit_core::ci_tests::CressieRead,
+    new(yates: bool) { Ok(fastcit_core::ci_tests::CressieRead { yates }) }
 );
 
 ci_test_handle!(
     FreemanTukey,
-    ci_core::ci_tests::FreemanTukey,
-    new(yates: bool) { Ok(ci_core::ci_tests::FreemanTukey { yates }) }
+    fastcit_core::ci_tests::FreemanTukey,
+    new(yates: bool) { Ok(fastcit_core::ci_tests::FreemanTukey { yates }) }
 );
 
 ci_test_handle!(
     ModifiedLikelihood,
-    ci_core::ci_tests::ModifiedLikelihood,
-    new(yates: bool) { Ok(ci_core::ci_tests::ModifiedLikelihood { yates }) }
+    fastcit_core::ci_tests::ModifiedLikelihood,
+    new(yates: bool) { Ok(fastcit_core::ci_tests::ModifiedLikelihood { yates }) }
 );
 
 ci_test_handle!(
     PearsonCorrelation,
-    ci_core::ci_tests::PearsonCorrelation,
-    new() { Ok(ci_core::ci_tests::PearsonCorrelation::new()) }
+    fastcit_core::ci_tests::PearsonCorrelation,
+    new() { Ok(fastcit_core::ci_tests::PearsonCorrelation::new()) }
 );
 
 ci_test_handle!(
     FisherZ,
-    ci_core::ci_tests::FisherZ,
-    new() { Ok(ci_core::ci_tests::FisherZ::new()) }
+    fastcit_core::ci_tests::FisherZ,
+    new() { Ok(fastcit_core::ci_tests::FisherZ::new()) }
 );
 
 ci_test_handle!(
     GCM,
-    ci_core::ci_tests::Gcm,
-    new() { Ok(ci_core::ci_tests::Gcm::new()) }
+    fastcit_core::ci_tests::Gcm,
+    new() { Ok(fastcit_core::ci_tests::Gcm::new()) }
 );
 
 ci_test_handle!(
     Pillai,
-    ci_core::ci_tests::Pillai,
-    new() { Ok(ci_core::ci_tests::Pillai::new()) }
+    fastcit_core::ci_tests::Pillai,
+    new() { Ok(fastcit_core::ci_tests::Pillai::new()) }
 );
 
 ci_test_handle!(
     PearsonEquivalence,
-    ci_core::ci_tests::PearsonEquivalence,
+    fastcit_core::ci_tests::PearsonEquivalence,
     new(delta_threshold: f64) {
-        Ok(ci_core::ci_tests::PearsonEquivalence { delta_threshold })
+        Ok(fastcit_core::ci_tests::PearsonEquivalence { delta_threshold })
     }
 );
 
 ci_test_handle!(
     HSIC,
-    ci_core::ci_tests::Hsic,
+    fastcit_core::ci_tests::Hsic,
     new(
         kernel_mode: &str,
         kernel_names: Strings,
@@ -315,8 +315,8 @@ ci_test_handle!(
         let n_permutations = whole_number(n_permutations, "n_permutations", 1.0, MAX_SAFE)?;
         let seed = whole_number(seed, "seed", 0.0, MAX_SAFE)?;
         let null_dist = match null_dist {
-            "gamma" => ci_core::ci_tests::NullDistribution::Gamma,
-            "permutation" => ci_core::ci_tests::NullDistribution::Permutation {
+            "gamma" => fastcit_core::ci_tests::NullDistribution::Gamma,
+            "permutation" => fastcit_core::ci_tests::NullDistribution::Permutation {
                 // Whole and within 2^53, so the casts are exact.
                 n_permutations: n_permutations as usize,
                 seed: seed as u64,
@@ -327,7 +327,7 @@ ci_test_handle!(
                 )))
             }
         };
-        Ok(ci_core::ci_tests::Hsic {
+        Ok(fastcit_core::ci_tests::Hsic {
             kernel: parse_kernel_choice(
                 kernel_mode,
                 &kernel_names,
@@ -342,7 +342,7 @@ ci_test_handle!(
 
 ci_test_handle!(
     KCI,
-    ci_core::ci_tests::Kci,
+    fastcit_core::ci_tests::Kci,
     new(
         kernel_mode: &str,
         kernel_names: Strings,
@@ -351,7 +351,7 @@ ci_test_handle!(
         bandwidth: &str,
         epsilon: f64
     ) {
-        Ok(ci_core::ci_tests::Kci {
+        Ok(fastcit_core::ci_tests::Kci {
             kernel: parse_kernel_choice(
                 kernel_mode,
                 &kernel_names,
@@ -365,7 +365,7 @@ ci_test_handle!(
 );
 
 extendr_module! {
-    mod cir;
+    mod fastcit;
     impl Dataset;
     impl ChiSquared;
     impl LogLikelihood;

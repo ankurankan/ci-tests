@@ -1,4 +1,4 @@
-# Type stubs for the native `ci_python._ci_python` extension module.
+# Type stubs for the native `fastcit._fastcit` extension module.
 # Hand-maintained to match `crates/ci-python/src/lib.rs`.
 # ruff: noqa: D101, D102, D107, PYI021, ANN401
 

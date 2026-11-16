@@ -28,9 +28,9 @@
 //! # Usage
 //!
 //! ```rust
-//! use ci_core::ci_tests::ChiSquared;
-//! use ci_core::dataset::{ColumnKind, Dataset};
-//! use ci_core::strategy::CITest;
+//! use fastcit_core::ci_tests::ChiSquared;
+//! use fastcit_core::dataset::{ColumnKind, Dataset};
+//! use fastcit_core::strategy::CITest;
 //!
 //! let data = Dataset::from_columns(vec![
 //!     ("x".into(), ColumnKind::Discrete, vec![1., 1., 2., 2.]),

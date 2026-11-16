@@ -1,7 +1,7 @@
 //! JavaScript / WebAssembly bindings for the data-bound conditional-independence
 //! testing core.
 //!
-//! The surface mirrors `ci_core`'s redesigned contract: a [`Dataset`] is built
+//! The surface mirrors `fastcit_core`'s redesigned contract: a [`Dataset`] is built
 //! once from named, typed columns, and each test is a *data-bound* class that
 //! takes the dataset (plus its own configuration) in its constructor and then
 //! answers `runTest(x, y, z)` / `isIndependent(...)` queries.
@@ -11,7 +11,7 @@
 //! values } }` for one-shot usage.
 //!
 //! ```js
-//! import { Dataset, ChiSquared, PearsonCorrelation, FisherZ } from "../pkg/ci_js.js";
+//! import { Dataset, ChiSquared, PearsonCorrelation, FisherZ } from "../pkg/fastcit.js";
 //!
 //! // Option A: shared Dataset (preferred when reusing across tests)
 //! const data = new Dataset({
@@ -48,9 +48,11 @@ mod options;
 
 use std::rc::Rc;
 
-use ci_core::dataset::{ColumnKind, Dataset as CoreDataset};
-use ci_core::error::CiError as CoreError;
-use ci_core::strategy::{CITest, CiResult as CoreResult, DataType, IndependenceRule, TestMeta};
+use fastcit_core::dataset::{ColumnKind, Dataset as CoreDataset};
+use fastcit_core::error::CiError as CoreError;
+use fastcit_core::strategy::{
+    CITest, CiResult as CoreResult, DataType, IndependenceRule, TestMeta,
+};
 use wasm_bindgen::convert::TryFromJsValue;
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
@@ -436,71 +438,71 @@ macro_rules! ci_test_class {
 ci_test_class!(
     "ChiSquared",
     ChiSquared,
-    ci_core::ci_tests::ChiSquared,
+    fastcit_core::ci_tests::ChiSquared,
     DiscreteConfig,
     cfg,
     "DiscreteOptions | undefined",
-    ci_core::ci_tests::ChiSquared { yates: cfg.yates }
+    fastcit_core::ci_tests::ChiSquared { yates: cfg.yates }
 );
 
 ci_test_class!(
     "LogLikelihood",
     LogLikelihood,
-    ci_core::ci_tests::LogLikelihood,
+    fastcit_core::ci_tests::LogLikelihood,
     DiscreteConfig,
     cfg,
     "DiscreteOptions | undefined",
-    ci_core::ci_tests::LogLikelihood { yates: cfg.yates }
+    fastcit_core::ci_tests::LogLikelihood { yates: cfg.yates }
 );
 
 ci_test_class!(
     "CressieRead",
     CressieRead,
-    ci_core::ci_tests::CressieRead,
+    fastcit_core::ci_tests::CressieRead,
     DiscreteConfig,
     cfg,
     "DiscreteOptions | undefined",
-    ci_core::ci_tests::CressieRead { yates: cfg.yates }
+    fastcit_core::ci_tests::CressieRead { yates: cfg.yates }
 );
 
 ci_test_class!(
     "FreemanTukey",
     FreemanTukey,
-    ci_core::ci_tests::FreemanTukey,
+    fastcit_core::ci_tests::FreemanTukey,
     DiscreteConfig,
     cfg,
     "DiscreteOptions | undefined",
-    ci_core::ci_tests::FreemanTukey { yates: cfg.yates }
+    fastcit_core::ci_tests::FreemanTukey { yates: cfg.yates }
 );
 
 ci_test_class!(
     "ModifiedLikelihood",
     ModifiedLikelihood,
-    ci_core::ci_tests::ModifiedLikelihood,
+    fastcit_core::ci_tests::ModifiedLikelihood,
     DiscreteConfig,
     cfg,
     "DiscreteOptions | undefined",
-    ci_core::ci_tests::ModifiedLikelihood { yates: cfg.yates }
+    fastcit_core::ci_tests::ModifiedLikelihood { yates: cfg.yates }
 );
 
 ci_test_class!(
     "PearsonCorrelation",
     PearsonCorrelation,
-    ci_core::ci_tests::PearsonCorrelation,
+    fastcit_core::ci_tests::PearsonCorrelation,
     EmptyConfig,
     _cfg,
     "Record<string, never> | undefined",
-    ci_core::ci_tests::PearsonCorrelation::new()
+    fastcit_core::ci_tests::PearsonCorrelation::new()
 );
 
 ci_test_class!(
     "PearsonEquivalence",
     PearsonEquivalence,
-    ci_core::ci_tests::PearsonEquivalence,
+    fastcit_core::ci_tests::PearsonEquivalence,
     EquivalenceConfig,
     cfg,
     "EquivalenceOptions | undefined",
-    ci_core::ci_tests::PearsonEquivalence {
+    fastcit_core::ci_tests::PearsonEquivalence {
         delta_threshold: cfg.delta_threshold
     }
 );
@@ -508,37 +510,37 @@ ci_test_class!(
 ci_test_class!(
     "FisherZ",
     FisherZ,
-    ci_core::ci_tests::FisherZ,
+    fastcit_core::ci_tests::FisherZ,
     EmptyConfig,
     _cfg,
     "Record<string, never> | undefined",
-    ci_core::ci_tests::FisherZ::new()
+    fastcit_core::ci_tests::FisherZ::new()
 );
 
 ci_test_class!(
     "GCM",
     Gcm,
-    ci_core::ci_tests::Gcm,
+    fastcit_core::ci_tests::Gcm,
     EmptyConfig,
     _cfg,
     "Record<string, never> | undefined",
-    ci_core::ci_tests::Gcm::new()
+    fastcit_core::ci_tests::Gcm::new()
 );
 
 ci_test_class!(
     "PillaiTrace",
     PillaiTrace,
-    ci_core::ci_tests::Pillai,
+    fastcit_core::ci_tests::Pillai,
     EmptyConfig,
     _cfg,
     "Record<string, never> | undefined",
-    ci_core::ci_tests::Pillai::new()
+    fastcit_core::ci_tests::Pillai::new()
 );
 
 ci_test_class!(
     "HSIC",
     Hsic,
-    ci_core::ci_tests::Hsic,
+    fastcit_core::ci_tests::Hsic,
     HsicConfig,
     cfg,
     "HsicOptions | undefined",
@@ -548,7 +550,7 @@ ci_test_class!(
 ci_test_class!(
     "KCI",
     Kci,
-    ci_core::ci_tests::Kci,
+    fastcit_core::ci_tests::Kci,
     KciConfig,
     cfg,
     "KciOptions | undefined",

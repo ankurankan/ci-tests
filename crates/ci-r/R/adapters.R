@@ -1,4 +1,4 @@
-#' Adapt a `cir_test` into a \pkg{pcalg} `indepTest` callback.
+#' Adapt a `fastcit_test` into a \pkg{pcalg} `indepTest` callback.
 #'
 #' Returns a closure `function(x, y, S, suffStat)` matching the interface
 #' [pcalg::pc()] / [pcalg::skeleton()] expect: `x` and `y` are **1-based**
@@ -9,7 +9,7 @@
 #' driver. `suffStat` is accepted for interface compatibility and ignored (the
 #' data is already captured in `test`); pass `suffStat = list()`.
 #'
-#' @param test A `cir_test` from one of the factory functions. Must be a
+#' @param test A `fastcit_test` from one of the factory functions. Must be a
 #'   standard null-of-independence test; [pearson_equivalence()] is rejected
 #'   because its inverted decision rule (independence when `p < alpha`) would be
 #'   interpreted backwards by \pkg{pcalg}.
@@ -23,7 +23,7 @@
 #' }
 #' @export
 as_pcalg <- function(test) {
-  stopifnot(inherits(test, "cir_test"))
+  stopifnot(inherits(test, "fastcit_test"))
   # pcalg interprets the returned p-value with the standard convention: remove
   # an edge / declare independence when p >= alpha. A test whose own rule is
   # inverted -- independence when p < alpha, i.e. the core's
@@ -62,13 +62,13 @@ as_pcalg <- function(test) {
 #' carries the `statistic` and the `parameter` (degrees of freedom) alongside
 #' the `p.value`.
 #'
-#' @param test A `cir_test` from one of the factory functions.
+#' @param test A `fastcit_test` from one of the factory functions.
 #' @param x,y Column names for the two variables.
 #' @param z Character vector of conditioning column names (default: none).
 #' @return An object of class `htest`.
 #' @export
 ci_test <- function(test, x, y, z = character()) {
-  stopifnot(inherits(test, "cir_test"))
+  stopifnot(inherits(test, "fastcit_test"))
   res <- run_test(test, x, y, z)
 
   statistic <- res$statistic
@@ -81,7 +81,7 @@ ci_test <- function(test, x, y, z = character()) {
     names(parameter) <- "df"
   }
 
-  znames <- .cir_as_names(z)
+  znames <- .fastcit_as_names(z)
   zlab <- if (length(znames) > 0L) {
     paste0(" | ", paste(znames, collapse = ", "))
   } else {
@@ -98,7 +98,7 @@ ci_test <- function(test, x, y, z = character()) {
       } else {
         c(effect_size = res$effect_size)
       },
-      method = sprintf("cir %s conditional independence test", test$name),
+      method = sprintf("fastcit %s conditional independence test", test$name),
       data.name = sprintf("%s vs %s%s", x, y, zlab)
     ),
     class = "htest"

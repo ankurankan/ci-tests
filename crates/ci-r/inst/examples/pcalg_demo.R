@@ -1,13 +1,13 @@
-# pcalg integration demo for the cir package.
+# pcalg integration demo for the fastcit package.
 #
 # Builds a continuous dataset with a known chain structure X -> Y -> Z, adapts a
-# cir Pearson-correlation test into a pcalg `indepTest` callback via as_pcalg(),
+# fastcit Pearson-correlation test into a pcalg `indepTest` callback via as_pcalg(),
 # and runs pcalg::pc() to recover the skeleton/CPDAG. Run with:
 #
 #   conda run -n expert Rscript crates/ci-r/inst/examples/pcalg_demo.R
 #
 # (load_all is used so the demo works straight from the source tree; once the
-# package is installed, `library(cir)` is enough.)
+# package is installed, `library(fastcit)` is enough.)
 
 if (
   requireNamespace("devtools", quietly = TRUE) &&
@@ -15,7 +15,7 @@ if (
 ) {
   suppressMessages(devtools::load_all("crates/ci-r", quiet = TRUE))
 } else {
-  library(cir)
+  library(fastcit)
 }
 
 stopifnot(requireNamespace("pcalg", quietly = TRUE))

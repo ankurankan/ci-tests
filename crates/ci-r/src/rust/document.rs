@@ -7,13 +7,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         # nolint start\n\
         \n\
         #' @usage NULL\n\
-        #' @useDynLib cir, .registration = TRUE\n\
+        #' @useDynLib fastcit, .registration = TRUE\n\
         NULL\n\
         \n\
     ";
     let footer = "# nolint end\n";
-    let wrappers = cir::get_cir_metadata()
-        .make_r_wrappers(true, "cir")
+    let wrappers = fastcit::get_fastcit_metadata()
+        .make_r_wrappers(true, "fastcit")
         .map_err(|e| format!("failed to generate wrappers: {e}"))?;
     std::fs::write(&wrapper_path, format!("{header}{wrappers}{footer}"))
         .map_err(|e| format!("failed to write {}: {e}", wrapper_path.display()))?;

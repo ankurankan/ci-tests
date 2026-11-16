@@ -1,6 +1,6 @@
-# cir — conditional-independence tests for R
+# FastCIT: Fast Conditional Independence Tests (R)
 
-R bindings for the `ci-core` Rust library: data-bound conditional-independence
+R bindings for the `fastcit-core` Rust library: data-bound conditional-independence
 (CI) tests with one uniform surface. Bind a data.frame once, then run any
 number of `X ⟂ Y | Z` queries against it. See the
 [repository README](../../README.md) for the cross-language story.
@@ -16,12 +16,12 @@ devtools::install("crates/ci-r")
 
 > Benchmarking note: `devtools::load_all()` / `rextendr::document()` compile a
 > **debug** build. For benchmarks, install a release build:
-> `NOT_CRAN=true R CMD INSTALL crates/ci-r` and `library(cir)`.
+> `NOT_CRAN=true R CMD INSTALL crates/ci-r` and `library(fastcit)`.
 
 ## Quick start
 
 ```r
-library(cir)
+library(fastcit)
 
 set.seed(0)
 df <- data.frame(
@@ -101,7 +101,7 @@ devtools::check_built(archive, args = "--no-manual", error_on = "warning")
 ```
 
 The source package includes locked, vendored Rust dependencies plus synchronized
-copies of `ci-core` and the golden fixture. From the repository root, refresh and
+copies of `fastcit-core` and the golden fixture. From the repository root, refresh and
 verify those project-owned copies with:
 
 ```bash

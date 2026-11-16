@@ -11,7 +11,7 @@
 #' @param col A single data.frame column.
 #' @return A scalar string, `"discrete"` or `"continuous"`.
 #' @keywords internal
-.cir_infer_kind <- function(col) {
+.fastcit_infer_kind <- function(col) {
   if (
     is.factor(col) || is.character(col) || is.logical(col) || is.integer(col)
   ) {
@@ -35,7 +35,7 @@
 #' @param col A single data.frame column.
 #' @return A numeric vector the same length as `col`.
 #' @keywords internal
-.cir_code_column <- function(col) {
+.fastcit_code_column <- function(col) {
   if (is.factor(col)) {
     as.numeric(as.integer(col))
   } else if (is.character(col)) {
@@ -46,7 +46,7 @@
   }
 }
 
-#' Bind a data.frame as a `cir` dataset.
+#' Bind a data.frame as a `fastcit` dataset.
 #'
 #' Builds the data-bound dataset shared by the test factories. Column kinds are
 #' inferred from the column classes (integer/logical/factor/character ->
@@ -59,12 +59,12 @@
 #' `na.omit(df)`) before binding.
 #'
 #' @param df A data.frame (or object coercible to one).
-#' @return An object of class `cir_dataset` wrapping the bound dataset and its
+#' @return An object of class `fastcit_dataset` wrapping the bound dataset and its
 #'   column names.
 #' @examples
 #' df <- data.frame(A = sample(0:1, 50, TRUE), X = rnorm(50))
 #' data <- dataset(df)
-#' @name cir_dataset
+#' @name fastcit_dataset
 #' @export
 dataset <- function(df) {
   df <- as.data.frame(df)
@@ -72,8 +72,8 @@ dataset <- function(df) {
     stop("`df` must have at least one column", call. = FALSE)
   }
   names_vec <- colnames(df)
-  kinds <- vapply(df, .cir_infer_kind, character(1), USE.NAMES = FALSE)
-  coded <- lapply(df, .cir_code_column)
+  kinds <- vapply(df, .fastcit_infer_kind, character(1), USE.NAMES = FALSE)
+  coded <- lapply(df, .fastcit_code_column)
   values <- matrix(
     as.numeric(unlist(coded, use.names = FALSE)),
     nrow = nrow(df),
@@ -84,30 +84,30 @@ dataset <- function(df) {
   )
   structure(
     list(ptr = ptr, names = names_vec, kinds = kinds),
-    class = "cir_dataset"
+    class = "fastcit_dataset"
   )
 }
 
 #' @export
-print.cir_dataset <- function(x, ...) {
+print.fastcit_dataset <- function(x, ...) {
   cat(sprintf(
-    "<cir_dataset: %d columns x %d rows>\n",
+    "<fastcit_dataset: %d columns x %d rows>\n",
     x$ptr$n_cols(), x$ptr$n_rows()
   ))
   cat("  columns:", paste(x$names, collapse = ", "), "\n")
   invisible(x)
 }
 
-#' Coerce a `dataset()` result or a data.frame into a `cir_dataset`.
+#' Coerce a `dataset()` result or a data.frame into a `fastcit_dataset`.
 #'
 #' Lets every test factory accept either a pre-built [dataset()] or a raw
 #' data.frame uniformly.
 #'
-#' @param data A `cir_dataset` or a data.frame.
-#' @return A `cir_dataset`.
+#' @param data A `fastcit_dataset` or a data.frame.
+#' @return A `fastcit_dataset`.
 #' @keywords internal
-.cir_as_dataset <- function(data) {
-  if (inherits(data, "cir_dataset")) {
+.fastcit_as_dataset <- function(data) {
+  if (inherits(data, "fastcit_dataset")) {
     data
   } else {
     dataset(data)

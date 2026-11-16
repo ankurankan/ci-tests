@@ -236,8 +236,8 @@ def test_ci_omits_unused_openblas_and_redundant_core_build() -> None:
     rust = load_workflow("rust.yml")
     steps = rust["jobs"]["rust_test"]["steps"]
     commands = [step.get("run", "") for step in steps if isinstance(step, dict)]
-    assert not any("cargo build -p ci_core" in command for command in commands)
-    assert any("cargo test -p ci_core" in command for command in commands)
+    assert not any("cargo build -p fastcit-core" in command for command in commands)
+    assert any("cargo test -p fastcit-core" in command for command in commands)
 
 
 def test_rust_distribution_dependency_tree_is_minimal() -> None:

@@ -1,10 +1,10 @@
 [package]
-name = "ci_core"
+name = "fastcit-core"
 version = "0.1.0"
 edition = "2021"
 authors = ["Ankur Ankan <ankurankan@gmail.com>"]
 license = "MIT"
-description = "Conditional Independence Testing"
+description = "FastCIT: Fast Conditional Independence Tests"
 repository = "https://github.com/pgmpy/ci-tests"
 keywords = ["statistics", "causal-inference", "conditional-independence"]
 categories = ["science"]

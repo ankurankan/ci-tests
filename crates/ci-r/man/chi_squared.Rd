@@ -13,7 +13,7 @@ chi_squared(data, yates = TRUE)
 sub-tables (default \code{TRUE}, the scipy/pgmpy convention).}
 }
 \value{
-A \code{cir_test} bound to \code{data}.
+A \code{fastcit_test} bound to \code{data}.
 }
 \description{
 Chi-squared (Pearson, lambda = 1) discrete CI test.

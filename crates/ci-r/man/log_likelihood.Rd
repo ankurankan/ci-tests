@@ -13,7 +13,7 @@ log_likelihood(data, yates = TRUE)
 sub-tables (default \code{TRUE}, the scipy/pgmpy convention).}
 }
 \value{
-A \code{cir_test} bound to \code{data}.
+A \code{fastcit_test} bound to \code{data}.
 }
 \description{
 Log-likelihood / G-test (lambda = 0) discrete CI test.

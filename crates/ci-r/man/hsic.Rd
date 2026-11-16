@@ -31,7 +31,7 @@ with the gamma null but always validated.}
 gamma null.}
 }
 \value{
-A \code{cir_test} bound to \code{data}.
+A \code{fastcit_test} bound to \code{data}.
 }
 \description{
 A kernel independence test for \code{x} and \code{y} with no conditioning set;

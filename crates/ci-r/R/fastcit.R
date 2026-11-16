@@ -1,4 +1,4 @@
-#' cir: data-bound conditional-independence tests
+#' FastCIT: Fast Conditional Independence Tests
 #'
 #' A small, function-style R surface over the Rust core. Bind a data.frame once
 #' with [dataset()], construct a test with one of the factory functions

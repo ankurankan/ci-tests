@@ -1,4 +1,4 @@
-# ci-python
+# FastCIT: Fast Conditional Independence Tests (Python)
 
 Python bindings for the [Conditional Independence Testing](../../README.md) library.
 Wraps the data-bound Rust core via [PyO3](https://pyo3.rs).
@@ -33,7 +33,7 @@ equivalence report `None`.
 ### GCM and PillaiTrace
 
 ```python
-from ci_python import GCM, PillaiTrace
+from fastcit import GCM, PillaiTrace
 
 GCM(data).run_test("X", "Y", ["Z"])  # continuous columns only
 PillaiTrace(df).run_test("X", "Y", ["Z", "G"])  # mixed discrete/continuous
@@ -54,7 +54,7 @@ does.
 ### Kernel tests (HSIC and KCI)
 
 ```python
-from ci_python import Dataset, HSIC, KCI, RBF, Linear
+from fastcit import Dataset, HSIC, KCI, RBF, Linear
 
 # Marginal independence (HSIC takes no conditioning set) and conditional (KCI).
 hsic = HSIC(data, kernel=RBF(1.0), null_dist="permutation", n_permutations=200, seed=1)
@@ -94,7 +94,7 @@ maturin develop -m crates/ci-python/Cargo.toml
 
 ```python
 import numpy as np
-from ci_python import Dataset, ChiSquared, FisherZ, PearsonEquivalence
+from fastcit import Dataset, ChiSquared, FisherZ, PearsonEquivalence
 
 data = Dataset(
     {
@@ -126,7 +126,7 @@ eqv.is_independent("X", "Y", ["Z"], significance_level=0.05)  # -> bool (p < alp
   sequence of names/indices (default: empty conditioning set).
 - A test constructor accepts either a `Dataset` or a raw
   `{name: (kind, values)}` mapping.
-- Core errors (degenerate data, wrong column kind, …) raise `ci_python.CiError`;
+- Core errors (degenerate data, wrong column kind, …) raise `fastcit.CiError`;
   unknown columns / out-of-range indices raise `ValueError`.
 
 ### From a pandas DataFrame
@@ -137,7 +137,7 @@ dependency of the package.
 
 ```python
 import pandas as pd
-from ci_python import Dataset, ChiSquared
+from fastcit import Dataset, ChiSquared
 
 df = pd.DataFrame({"A": [0, 1, 0, 1], "B": [1, 1, 0, 0]})
 ChiSquared(Dataset.from_pandas(df)).run_test("A", "B")

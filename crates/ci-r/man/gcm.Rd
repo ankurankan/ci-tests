@@ -10,7 +10,7 @@ gcm(data)
 \item{data}{A \code{\link[=dataset]{dataset()}} result or a data.frame.}
 }
 \value{
-A \code{cir_test} bound to \code{data}.
+A \code{fastcit_test} bound to \code{data}.
 }
 \description{
 Residualizes \code{X} and \code{Y} on the conditioning variables with linear

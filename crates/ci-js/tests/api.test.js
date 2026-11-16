@@ -3,7 +3,7 @@
 // NaN policy, query validation, and fisher_z.
 
 import { describe, test, expect, beforeAll } from "vitest";
-import pkg from "../pkg/ci_js.js";
+import pkg from "../pkg/fastcit.js";
 const {
   Dataset,
   ChiSquared,

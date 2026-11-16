@@ -4,7 +4,7 @@ Build a :class:`Dataset` once from named, typed columns, then construct any of
 the twelve tests bound to that data and query ``run_test`` / ``is_independent``::
 
     import numpy as np
-    from ci_python import Dataset, ChiSquared, PearsonEquivalence
+    from fastcit import Dataset, ChiSquared, PearsonEquivalence
 
     data = Dataset({
         "A": ("discrete", np.array([0, 1, 0, 1], dtype=float)),
@@ -25,7 +25,7 @@ from typing import TYPE_CHECKING, Any
 
 import numpy as np
 
-from ci_python._ci_python import (
+from fastcit._fastcit import (
     GCM,
     HSIC,
     KCI,
@@ -43,7 +43,7 @@ from ci_python._ci_python import (
     PearsonEquivalence,
     PillaiTrace,
 )
-from ci_python._ci_python import (
+from fastcit._fastcit import (
     Dataset as _Dataset,
 )
 
@@ -118,7 +118,7 @@ def _column_from_pandas(series: pd.Series[Any]) -> tuple[str, NDArray[np.float64
 class Dataset(_Dataset):
     """A named, typed, immutable table shared by the test classes.
 
-    See the native :class:`ci_python._ci_python.Dataset` for the primary
+    See the native :class:`fastcit._fastcit.Dataset` for the primary
     constructor (a ``{name: (kind, values)}`` mapping). This subclass adds the
     pure-Python :meth:`from_pandas` convenience.
     """

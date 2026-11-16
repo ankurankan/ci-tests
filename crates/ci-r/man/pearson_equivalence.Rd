@@ -13,7 +13,7 @@ pearson_equivalence(data, delta_threshold = 0.1)
 (default \code{0.1}).}
 }
 \value{
-A \code{cir_test} bound to \code{data}.
+A \code{fastcit_test} bound to \code{data}.
 }
 \description{
 Declares independence when the partial correlation is within the equivalence

@@ -2,11 +2,11 @@
 
 use std::collections::BTreeMap;
 
-use ci_core::error::CiError as CoreError;
-use ci_core::kernel::{Bandwidth, Kernel, KernelChoice};
-use ci_core::strategy::CiResult as CoreResult;
 use extendr_api::prelude::*;
 use extendr_api::Result;
+use fastcit_core::error::CiError as CoreError;
+use fastcit_core::kernel::{Bandwidth, Kernel, KernelChoice};
+use fastcit_core::strategy::CiResult as CoreResult;
 
 /// Map a core [`CoreError`] onto an extendr [`Error`], which extendr raises as
 /// an R error at the call site.

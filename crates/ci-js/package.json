@@ -1,5 +1,5 @@
 {
-  "name": "ci-js",
+  "name": "fastcit-dev",
   "type": "module",
   "version": "1.0.0",
   "description": "WebAssembly bindings for data-bound conditional-independence testing",

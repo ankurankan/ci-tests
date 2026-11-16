@@ -1,8 +1,8 @@
 # Crates
 
 This directory contains the Rust core and language bindings for conditional
-independence testing. The root Cargo workspace contains `ci-core`, `ci-python`,
-and `ci-js`; `ci-r` is a standalone source-package workspace so that the R
+independence testing. The root Cargo workspace contains the `ci-core` (`fastcit-core`), `ci-python` (`fastcit-python`),
+and `ci-js` (`fastcit`) crates; `ci-r` is a standalone source-package workspace so that the R
 package can build outside this repository.
 
 ## Packages

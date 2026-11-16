@@ -13,7 +13,7 @@ modified_likelihood(data, yates = TRUE)
 sub-tables (default \code{TRUE}, the scipy/pgmpy convention).}
 }
 \value{
-A \code{cir_test} bound to \code{data}.
+A \code{fastcit_test} bound to \code{data}.
 }
 \description{
 Modified log-likelihood (lambda = -1) discrete CI test.

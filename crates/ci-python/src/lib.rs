@@ -1,13 +1,13 @@
 //! Python bindings for the data-bound conditional-independence testing core.
 //!
-//! The surface mirrors `ci_core`'s redesigned contract: a [`Dataset`] is built
+//! The surface mirrors `fastcit_core`'s redesigned contract: a [`Dataset`] is built
 //! once from named, typed columns, and each test is a *data-bound* class that
 //! takes the dataset (plus its own configuration) in its constructor and then
 //! answers `run_test(x, y, z)` / `is_independent(...)` queries.
 //!
 //! Column references (`x`, `y`, and the entries of `z`) accept either a column
 //! name (`str`) or an integer index, resolved against the bound dataset via
-//! [`Dataset::index_of`]. Core [`ci_core::error::CiError`]s surface as the
+//! [`Dataset::index_of`]. Core [`fastcit_core::error::CiError`]s surface as the
 //! Python [`CiError`] exception; no Rust panic is allowed to escape.
 //!
 //! # Exposed tests
@@ -22,17 +22,19 @@
 use std::collections::BTreeMap;
 use std::sync::Arc;
 
-use ci_core::dataset::{ColumnKind, Dataset as CoreDataset};
-use ci_core::error::CiError as CoreError;
-use ci_core::kernel::{Bandwidth, Kernel, KernelChoice};
-use ci_core::strategy::{CITest, CiResult as CoreResult, DataType, IndependenceRule, TestMeta};
+use fastcit_core::dataset::{ColumnKind, Dataset as CoreDataset};
+use fastcit_core::error::CiError as CoreError;
+use fastcit_core::kernel::{Bandwidth, Kernel, KernelChoice};
+use fastcit_core::strategy::{
+    CITest, CiResult as CoreResult, DataType, IndependenceRule, TestMeta,
+};
 use numpy::PyReadonlyArray1;
 use pyo3::exceptions::{PyTypeError, PyValueError};
 use pyo3::prelude::*;
 use pyo3::types::{PyDict, PySequence, PyString, PyTuple};
 
 pyo3::create_exception!(
-    _ci_python,
+    _fastcit,
     CiError,
     pyo3::exceptions::PyException,
     "Raised when the core conditional-independence engine reports an error."
@@ -115,9 +117,9 @@ fn resolve_xyz(
 
 /// The numeric outcome of a conditional-independence test.
 ///
-/// Mirrors [`ci_core::strategy::CiResult`]: `statistic`, `dof`, and
+/// Mirrors [`fastcit_core::strategy::CiResult`]: `statistic`, `dof`, and
 /// `effect_size` are `None` when the test does not define them.
-#[pyclass(name = "CiResult", module = "ci_python._ci_python", frozen)]
+#[pyclass(name = "CiResult", module = "fastcit._fastcit", frozen)]
 #[derive(Clone)]
 pub struct PyCiResult {
     #[pyo3(get)]
@@ -158,7 +160,7 @@ impl PyCiResult {
 /// sequence of numbers, or — for discrete columns — a sequence of strings.
 /// Alternatively, pass a `pandas.DataFrame` and kinds are inferred from
 /// dtypes. Discrete columns are factorized into integer codes inside the core.
-#[pyclass(name = "Dataset", module = "ci_python._ci_python", frozen, subclass)]
+#[pyclass(name = "Dataset", module = "fastcit._fastcit", frozen, subclass)]
 #[derive(Clone)]
 pub struct PyDataset {
     inner: Arc<CoreDataset>,
@@ -301,7 +303,7 @@ impl PyDataset {
             // inference lives in one place; pandas stays a soft dependency
             // (this branch only runs when a DataFrame was passed).
             let py = obj.py();
-            let dataset_cls = PyModule::import(py, "ci_python")?.getattr("Dataset")?;
+            let dataset_cls = PyModule::import(py, "fastcit")?.getattr("Dataset")?;
             let built = dataset_cls.call_method1("from_pandas", (obj,))?;
             let ds = built.extract::<PyRef<'_, PyDataset>>()?;
             Ok(Arc::clone(&ds.inner))
@@ -338,7 +340,7 @@ fn meta_to_py(py: Python<'_>, meta: &TestMeta) -> PyResult<Py<PyDict>> {
 }
 
 /// Gaussian (RBF) kernel with a fixed length scale.
-#[pyclass(name = "RBF", module = "ci_python._ci_python", frozen)]
+#[pyclass(name = "RBF", module = "fastcit._fastcit", frozen)]
 #[derive(Clone)]
 pub struct PyRbf {
     #[pyo3(get)]
@@ -358,7 +360,7 @@ impl PyRbf {
 }
 
 /// Linear kernel.
-#[pyclass(name = "Linear", module = "ci_python._ci_python", frozen)]
+#[pyclass(name = "Linear", module = "fastcit._fastcit", frozen)]
 #[derive(Clone)]
 pub struct PyLinear;
 
@@ -434,7 +436,7 @@ macro_rules! ci_test_class {
         new($($arg:ident : $arg_ty:ty = $default:expr),* $(,)?) $ctor:block
     ) => {
         #[doc = concat!("Data-bound `", $py_name, "` conditional-independence test.")]
-        #[pyclass(name = $py_name, module = "ci_python._ci_python", frozen)]
+        #[pyclass(name = $py_name, module = "fastcit._fastcit", frozen)]
         pub struct $wrapper {
             data: Arc<CoreDataset>,
             inner: $core,
@@ -505,97 +507,97 @@ macro_rules! ci_test_class {
 ci_test_class!(
     "ChiSquared",
     PyChiSquared,
-    ci_core::ci_tests::ChiSquared,
+    fastcit_core::ci_tests::ChiSquared,
     new(yates: bool = true) {
-        ci_core::ci_tests::ChiSquared { yates }
+        fastcit_core::ci_tests::ChiSquared { yates }
     }
 );
 
 ci_test_class!(
     "LogLikelihood",
     PyLogLikelihood,
-    ci_core::ci_tests::LogLikelihood,
+    fastcit_core::ci_tests::LogLikelihood,
     new(yates: bool = true) {
-        ci_core::ci_tests::LogLikelihood { yates }
+        fastcit_core::ci_tests::LogLikelihood { yates }
     }
 );
 
 ci_test_class!(
     "CressieRead",
     PyCressieRead,
-    ci_core::ci_tests::CressieRead,
+    fastcit_core::ci_tests::CressieRead,
     new(yates: bool = true) {
-        ci_core::ci_tests::CressieRead { yates }
+        fastcit_core::ci_tests::CressieRead { yates }
     }
 );
 
 ci_test_class!(
     "FreemanTukey",
     PyFreemanTukey,
-    ci_core::ci_tests::FreemanTukey,
+    fastcit_core::ci_tests::FreemanTukey,
     new(yates: bool = true) {
-        ci_core::ci_tests::FreemanTukey { yates }
+        fastcit_core::ci_tests::FreemanTukey { yates }
     }
 );
 
 ci_test_class!(
     "ModifiedLikelihood",
     PyModifiedLikelihood,
-    ci_core::ci_tests::ModifiedLikelihood,
+    fastcit_core::ci_tests::ModifiedLikelihood,
     new(yates: bool = true) {
-        ci_core::ci_tests::ModifiedLikelihood { yates }
+        fastcit_core::ci_tests::ModifiedLikelihood { yates }
     }
 );
 
 ci_test_class!(
     "PearsonCorrelation",
     PyPearsonCorrelation,
-    ci_core::ci_tests::PearsonCorrelation,
+    fastcit_core::ci_tests::PearsonCorrelation,
     new() {
-        ci_core::ci_tests::PearsonCorrelation::new()
+        fastcit_core::ci_tests::PearsonCorrelation::new()
     }
 );
 
 ci_test_class!(
     "FisherZ",
     PyFisherZ,
-    ci_core::ci_tests::FisherZ,
+    fastcit_core::ci_tests::FisherZ,
     new() {
-        ci_core::ci_tests::FisherZ::new()
+        fastcit_core::ci_tests::FisherZ::new()
     }
 );
 
 ci_test_class!(
     "GCM",
     PyGcm,
-    ci_core::ci_tests::Gcm,
+    fastcit_core::ci_tests::Gcm,
     new() {
-        ci_core::ci_tests::Gcm::new()
+        fastcit_core::ci_tests::Gcm::new()
     }
 );
 
 ci_test_class!(
     "PillaiTrace",
     PyPillaiTrace,
-    ci_core::ci_tests::Pillai,
+    fastcit_core::ci_tests::Pillai,
     new() {
-        ci_core::ci_tests::Pillai::new()
+        fastcit_core::ci_tests::Pillai::new()
     }
 );
 
 ci_test_class!(
     "PearsonEquivalence",
     PyPearsonEquivalence,
-    ci_core::ci_tests::PearsonEquivalence,
+    fastcit_core::ci_tests::PearsonEquivalence,
     new(delta_threshold: f64 = 0.1) {
-        ci_core::ci_tests::PearsonEquivalence { delta_threshold }
+        fastcit_core::ci_tests::PearsonEquivalence { delta_threshold }
     }
 );
 
 ci_test_class!(
     "HSIC",
     PyHsic,
-    ci_core::ci_tests::Hsic,
+    fastcit_core::ci_tests::Hsic,
     new(
         kernel: Option<Bound<'_, PyAny>> = None,
         bandwidth: &str = "heuristic",
@@ -609,8 +611,8 @@ ci_test_class!(
             )));
         }
         let null_dist = match null_dist {
-            "gamma" => ci_core::ci_tests::NullDistribution::Gamma,
-            "permutation" => ci_core::ci_tests::NullDistribution::Permutation {
+            "gamma" => fastcit_core::ci_tests::NullDistribution::Gamma,
+            "permutation" => fastcit_core::ci_tests::NullDistribution::Permutation {
                 n_permutations,
                 seed,
             },
@@ -620,7 +622,7 @@ ci_test_class!(
                 )))
             }
         };
-        ci_core::ci_tests::Hsic {
+        fastcit_core::ci_tests::Hsic {
             kernel: parse_kernel_choice(kernel.as_ref())?,
             bandwidth: parse_bandwidth(bandwidth)?,
             null_dist,
@@ -631,13 +633,13 @@ ci_test_class!(
 ci_test_class!(
     "KCI",
     PyKci,
-    ci_core::ci_tests::Kci,
+    fastcit_core::ci_tests::Kci,
     new(
         kernel: Option<Bound<'_, PyAny>> = None,
         bandwidth: &str = "heuristic",
         epsilon: f64 = 1e-3,
     ) {
-        ci_core::ci_tests::Kci {
+        fastcit_core::ci_tests::Kci {
             kernel: parse_kernel_choice(kernel.as_ref())?,
             bandwidth: parse_bandwidth(bandwidth)?,
             epsilon,
@@ -645,10 +647,10 @@ ci_test_class!(
     }
 );
 
-/// The native extension module (`ci_python._ci_python`).
+/// The native extension module (`fastcit._fastcit`).
 #[pymodule]
-#[pyo3(name = "_ci_python")]
-fn ci_python(m: &Bound<'_, PyModule>) -> PyResult<()> {
+#[pyo3(name = "_fastcit")]
+fn fastcit(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add("CiError", m.py().get_type::<CiError>())?;
     m.add_class::<PyDataset>()?;
     m.add_class::<PyCiResult>()?;

@@ -1,14 +1,14 @@
 [package]
-name = "ci_python"
+name = "fastcit-python"
 version = "0.1.0"
 edition = "2021"
 authors = ["Ankur Ankan <ankurankan@gmail.com>"]
 license = "MIT"
-description = "PyO3 bindings for Conditional Independence Testing"
+description = "FastCIT: Fast Conditional Independence Tests (Python bindings)"
 repository = "https://github.com/pgmpy/ci-tests"
 
 [dependencies]
-ci_core = { path = "../ci-core" }
+fastcit-core = { path = "../ci-core" }
 numpy = { version = "0.24" }
 pyo3 = { version = "0.24", features = ["extension-module", "abi3-py310"] }
 
@@ -16,5 +16,5 @@ pyo3 = { version = "0.24", features = ["extension-module", "abi3-py310"] }
 workspace = true
 
 [lib]
-name = "ci_python"
+name = "fastcit_python"
 crate-type = ["cdylib", "rlib"]

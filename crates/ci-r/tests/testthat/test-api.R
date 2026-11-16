@@ -2,7 +2,7 @@
 # factor coding, the equivalence decision inversion, error handling, the htest
 # adapter, and the pcalg closure.
 
-library(cir)
+library(fastcit)
 
 discrete_df <- function() {
   set.seed(0)
@@ -24,7 +24,7 @@ continuous_df <- function() {
 
 test_that("dataset() infers kinds and reports shape / index", {
   data <- dataset(discrete_df())
-  expect_s3_class(data, "cir_dataset")
+  expect_s3_class(data, "fastcit_dataset")
   expect_equal(data$ptr$n_rows(), 200L)
   expect_equal(data$ptr$n_cols(), 3L)
   expect_equal(data$ptr$index_of("A"), 1L) # 1-based
@@ -111,7 +111,7 @@ test_that("pearson_correlation takes no config", {
 
 test_that("factory functions accept a raw data.frame", {
   chi <- chi_squared(discrete_df())
-  expect_s3_class(chi, "cir_test")
+  expect_s3_class(chi, "fastcit_test")
   expect_true(is.numeric(run_test(chi, "A", "B")$p_value))
 })
 
@@ -215,7 +215,7 @@ test_that("NA values error at dataset construction", {
   expect_error(dataset(df2), "missing data")
   df3 <- data.frame(A = factor(c("u", NA, "v")), X = c(0.1, 0.2, 0.3))
   expect_error(dataset(df3), "missing data")
-  # Character columns are coded via a separate branch of .cir_code_column.
+  # Character columns are coded via a separate branch of .fastcit_code_column.
   df4 <- data.frame(
     A = c("u", NA, "v"), X = c(0.1, 0.2, 0.3),
     stringsAsFactors = FALSE
@@ -245,9 +245,9 @@ kernel_df <- function() {
   data.frame(X = x, Y = x^2 + rnorm(60, sd = 0.3), Z = rnorm(60))
 }
 
-test_that("kernel constructors build cir_kernel objects", {
+test_that("kernel constructors build fastcit_kernel objects", {
   rbf <- rbf_kernel(2)
-  expect_s3_class(rbf, "cir_kernel")
+  expect_s3_class(rbf, "fastcit_kernel")
   expect_equal(rbf$type, "rbf")
   expect_equal(rbf$length_scale, 2)
   expect_equal(linear_kernel()$type, "linear")
@@ -263,8 +263,8 @@ test_that("hsic and kci report meta; hsic is symmetric", {
   data <- dataset(kernel_df())
   h <- hsic(data)
   k <- kci(data)
-  expect_s3_class(h, "cir_test")
-  expect_s3_class(k, "cir_test")
+  expect_s3_class(h, "fastcit_test")
+  expect_s3_class(k, "fastcit_test")
   expect_equal(h$name, "hsic")
   expect_equal(k$name, "kci")
   expect_equal(h$handle$decision_rule(), "p_value_ge")
@@ -330,7 +330,7 @@ test_that("gcm and pillai expose names and decision rule", {
   data <- dataset(continuous_df())
   for (factory in list(gcm, pillai)) {
     test <- factory(data)
-    expect_s3_class(test, "cir_test")
+    expect_s3_class(test, "fastcit_test")
     res <- run_test(test, "X", "Y", c("Z"))
     expect_null(res$dof)
     expect_true(res$p_value >= 0 && res$p_value <= 1)

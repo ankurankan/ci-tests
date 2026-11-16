@@ -1,4 +1,4 @@
 library(testthat)
-library(cir)
+library(fastcit)
 
-test_check("cir")
+test_check("fastcit")

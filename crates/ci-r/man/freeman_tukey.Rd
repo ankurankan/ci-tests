@@ -13,7 +13,7 @@ freeman_tukey(data, yates = TRUE)
 sub-tables (default \code{TRUE}, the scipy/pgmpy convention).}
 }
 \value{
-A \code{cir_test} bound to \code{data}.
+A \code{fastcit_test} bound to \code{data}.
 }
 \description{
 Freeman-Tukey (lambda = -1/2) discrete CI test.

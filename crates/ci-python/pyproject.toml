@@ -1,5 +1,6 @@
 [project]
-name = "ci-python"
+name = "fastcit"
+description = "FastCIT: Fast Conditional Independence Tests"
 version = "0.1.0"
 requires-python = ">=3.10,<3.15"
 dependencies = [
@@ -21,7 +22,7 @@ requires = ["maturin>=1.11,<2.0"]
 build-backend = "maturin"
 
 [tool.maturin]
-module-name = "ci_python._ci_python"
+module-name = "fastcit._fastcit"
 python-source = "."
 
 [project.optional-dependencies]
@@ -41,7 +42,7 @@ line-length = 120
 
 # The hand-maintained native stubs use their own compact formatting.
 extend-exclude = [
-    "ci_python/_ci_python",
+    "fastcit/_fastcit",
 ]
 
 [tool.ruff.lint]

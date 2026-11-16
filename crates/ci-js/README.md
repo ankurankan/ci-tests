@@ -1,4 +1,4 @@
-# ci-js
+# FastCIT: Fast Conditional Independence Tests (JavaScript/WASM)
 
 WebAssembly bindings for the data-bound conditional-independence API.
 
@@ -11,7 +11,7 @@ wasm-pack build crates/ci-js --target nodejs
 ```
 
 ```js
-import { Dataset, PearsonCorrelation } from "./pkg/ci_js.js";
+import { Dataset, PearsonCorrelation } from "./pkg/fastcit.js";
 
 const data = new Dataset({
   X: { kind: "continuous", values: [0.2, 0.8, 1.4, 2.1, 2.7] },
@@ -23,7 +23,7 @@ const result = new PearsonCorrelation(data).runTest("X", "Y", []);
 ### Kernel tests (HSIC, KCI)
 
 ```js
-import { Dataset, HSIC, KCI } from "./pkg/ci_js.js";
+import { Dataset, HSIC, KCI } from "./pkg/fastcit.js";
 
 const hsic = new HSIC(data, {
   kernel: { type: "rbf", lengthScale: 1.0 }, // or `kernels: { X: {...}, Y: {...} }`
@@ -43,7 +43,7 @@ kci.runTest("X", "Y", ["Z"]);
 ### Residual-based tests (GCM, PillaiTrace)
 
 ```js
-import { Dataset, GCM, PillaiTrace } from "./pkg/ci_js.js";
+import { Dataset, GCM, PillaiTrace } from "./pkg/fastcit.js";
 
 new GCM(data).runTest("X", "Y", ["Z"]); // continuous columns only
 new PillaiTrace(data).runTest("X", "Y", ["Z"]); // mixed discrete/continuous
