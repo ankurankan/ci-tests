@@ -10,6 +10,8 @@ const {
   FisherZ,
   PearsonCorrelation,
   PearsonEquivalence,
+  HSIC,
+  KCI,
   init,
 } = pkg;
 
@@ -297,5 +299,97 @@ describe("isIndependent", () => {
     expect(() => chi.isIndependent("A", "B", [], NaN)).toThrow(/finite/);
     expect(() => chi.isIndependent("A", "B", [], Infinity)).toThrow(/finite/);
     expect(() => chi.isIndependent("A", "B", [], -Infinity)).toThrow(/finite/);
+  });
+});
+
+describe("HSIC and KCI", () => {
+  const n = 40;
+  const xs = Array.from({ length: n }, (_, i) => Math.sin(i * 0.7) + i / n);
+  const ys = xs.map((x, i) => x * x + Math.cos(i * 1.3) * 0.3);
+  const zs = Array.from({ length: n }, (_, i) => Math.cos(i * 0.4));
+  const COLS = {
+    X: { kind: "continuous", values: xs },
+    Y: { kind: "continuous", values: ys },
+    Z: { kind: "continuous", values: zs },
+  };
+  const rbf = { type: "rbf", lengthScale: 1.5 };
+
+  test("meta and symmetry", () => {
+    const h = new HSIC(COLS);
+    const m = h.meta();
+    expect(m.name).toBe("hsic");
+    expect(m.dataTypes).toEqual(["continuous"]);
+    expect(m.symmetric).toBe(true);
+    expect(m.rule).toBe("p_value_ge");
+    expect(h.runTest("X", "Y", []).pValue).toBeCloseTo(
+      h.runTest("Y", "X", []).pValue,
+      12,
+    );
+    const k = new KCI(COLS);
+    expect(k.meta().name).toBe("kci");
+    expect(k.meta().symmetric).toBe(false);
+    const r = k.runTest("X", "Y", ["Z"]);
+    expect(Number.isFinite(r.pValue)).toBe(true);
+    expect(typeof k.isIndependent("X", "Y", ["Z"], 0.05)).toBe("boolean");
+  });
+
+  test("kernel and kernels with the same spec are equivalent", () => {
+    const a = new HSIC(COLS, { kernel: rbf }).runTest("X", "Y", []);
+    const b = new HSIC(COLS, { kernels: { X: rbf, Y: rbf } }).runTest(
+      "X",
+      "Y",
+      [],
+    );
+    expect(b.pValue).toBeCloseTo(a.pValue, 12);
+    expect(b.statistic).toBeCloseTo(a.statistic, 12);
+  });
+
+  test("permutation null is seed-reproducible", () => {
+    const opts = { nullDist: "permutation", nPermutations: 20, seed: 3 };
+    const a = new HSIC(COLS, opts).runTest("X", "Y", []);
+    const b = new HSIC(COLS, opts).runTest("X", "Y", []);
+    expect(a.pValue).toBe(b.pValue);
+  });
+
+  test("kernel together with kernels throws", () => {
+    for (const C of [HSIC, KCI]) {
+      expect(() => new C(COLS, { kernel: rbf, kernels: { X: rbf } })).toThrow();
+    }
+  });
+
+  test("a kernels column absent from the dataset throws", () => {
+    for (const C of [HSIC, KCI]) {
+      expect(() => new C(COLS, { kernels: { Nope: rbf } })).toThrow(/Nope/);
+    }
+  });
+
+  test.each([
+    ["bad kernel type", { kernel: { type: "poly" } }],
+    ["lengthScale 0", { kernel: { type: "rbf", lengthScale: 0 } }],
+    ["bad bandwidth", { bandwidth: "mean" }],
+    ["bad nullDist", { nullDist: "boot" }],
+    ["seed -1", { seed: -1 }],
+    ["seed 1.5", { seed: 1.5 }],
+    ["seed 2**53", { seed: 2 ** 53 }],
+    ["nPermutations 0", { nPermutations: 0 }],
+    ["nPermutations 0 with gamma", { nullDist: "gamma", nPermutations: 0 }],
+    ["nPermutations 1.5", { nPermutations: 1.5 }],
+    ["unknown key", { nope: 1 }],
+  ])("HSIC rejects %s", (_label, options) => {
+    expect(() => new HSIC(COLS, options)).toThrow();
+  });
+
+  test.each([
+    ["bad kernel type", { kernel: { type: "poly" } }],
+    ["lengthScale 0", { kernel: { type: "rbf", lengthScale: 0 } }],
+    ["epsilon 0", { epsilon: 0 }],
+    ["unknown key", { nope: 1 }],
+    ["HSIC-only key", { nullDist: "gamma" }],
+  ])("KCI rejects %s", (_label, options) => {
+    expect(() => new KCI(COLS, options)).toThrow();
+  });
+
+  test("HSIC with a non-empty z throws at runTest", () => {
+    expect(() => new HSIC(COLS).runTest("X", "Y", ["Z"])).toThrow();
   });
 });

@@ -1,7 +1,7 @@
 # Golden parity test for the data-bound R bindings.
 #
 # Loads the packaged copy of the shared cross-language golden fixture and, for
-# each of the eight tests, builds a `dataset()` from the case's columns,
+# each of the ten tests, builds a `dataset()` from the case's columns,
 # constructs the test with the case's parameters, runs it, and asserts that
 # `statistic` / `p_value` / `dof` / `effect_size` match the recorded `expected`
 # values within a tight tolerance. This is the binding's numeric parity gate
@@ -20,7 +20,9 @@ test_factories <- list(
   modified_likelihood = modified_likelihood,
   pearson_correlation = pearson_correlation,
   fisher_z = fisher_z,
-  pearson_equivalence = pearson_equivalence
+  pearson_equivalence = pearson_equivalence,
+  hsic = hsic,
+  kci = kci
 )
 
 find_golden <- function() {
@@ -47,14 +49,38 @@ build_dataset <- function(columns) {
   dataset(df)
 }
 
+# Translate a fixture kernel spec into `NULL`, a `cir_kernel`, or a named list.
+parse_kernel <- function(spec) {
+  if (is.null(spec)) {
+    return(NULL)
+  }
+  if (!is.null(spec$columns)) {
+    return(lapply(spec$columns, parse_kernel))
+  }
+  if (identical(spec$type, "rbf")) {
+    rbf_kernel(spec$length_scale)
+  } else {
+    linear_kernel()
+  }
+}
+
 construct_test <- function(name, data, params) {
+  if ("kernel" %in% names(params)) {
+    kernel <- parse_kernel(params$kernel)
+    params$kernel <- NULL
+    if (!is.null(kernel)) {
+      params$kernel <- kernel
+    }
+  }
+  # JSON nulls (e.g. gamma cases' seed) must not override factory defaults.
+  params <- Filter(Negate(is.null), params)
   factory <- test_factories[[name]]
   do.call(factory, c(list(data = data), params))
 }
 
 # Compare one numeric field against its expected value. Null expectations
 # require a NULL result; Inf / NaN are matched defensively.
-assert_close <- function(actual, expected, field, case_id) {
+assert_close <- function(actual, expected, field, case_id, rel_tol = NULL) {
   if (is.null(expected)) {
     expect_null(actual,
       label = sprintf("%s: expected %s=NULL, got %s", case_id, field, actual)
@@ -78,6 +104,12 @@ assert_close <- function(actual, expected, field, case_id) {
         label = sprintf("%s: %s inf sign mismatch", case_id, field)
       )
     }
+    return(invisible())
+  }
+  if (!is.null(rel_tol)) {
+    expect_lte(abs(act - exp), max(1e-300, rel_tol * abs(exp)),
+      label = sprintf("%s: %s got %s, expected %s", case_id, field, act, exp)
+    )
     return(invisible())
   }
   expect_equal(act, exp,
@@ -112,17 +144,27 @@ test_that("each golden case reproduces its complete recorded result", {
     result <- run_test(test, case$x, case$y, z)
     expected <- case$expected
 
-    assert_close(result$statistic, expected$statistic, "statistic", case_id)
+    assert_close(
+      result$statistic, expected$statistic, "statistic", case_id,
+      rel_tol = case$rel_tol
+    )
 
-    assert_close(result$p_value, expected$p_value, "p_value", case_id)
+    assert_close(
+      result$p_value, expected$p_value, "p_value", case_id,
+      rel_tol = case$rel_tol
+    )
 
     dof_actual <- if (is.null(result$dof)) NULL else as.numeric(result$dof)
-    assert_close(dof_actual, expected$dof, "dof", case_id)
+    assert_close(
+      dof_actual, expected$dof, "dof", case_id,
+      rel_tol = case$rel_tol
+    )
     assert_close(
       result$effect_size,
       expected$effect_size,
       "effect_size",
-      case_id
+      case_id,
+      rel_tol = case$rel_tol
     )
   }
 })

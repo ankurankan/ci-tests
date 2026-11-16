@@ -7,7 +7,18 @@ import threading
 import numpy as np
 import pytest
 
-from ci_python import ChiSquared, CiError, Dataset, FisherZ, PearsonCorrelation, PearsonEquivalence
+from ci_python import (
+    HSIC,
+    KCI,
+    RBF,
+    ChiSquared,
+    CiError,
+    Dataset,
+    FisherZ,
+    Linear,
+    PearsonCorrelation,
+    PearsonEquivalence,
+)
 
 
 def _discrete_data() -> Dataset:
@@ -307,3 +318,91 @@ def test_from_pandas_string_dtype_column() -> None:
     data = Dataset.from_pandas(df)
     res = ChiSquared(data).run_test("A", "B")
     assert 0.0 <= res.p_value <= 1.0
+
+
+def _xyz_data() -> Dataset:
+    rng = np.random.default_rng(3)
+    x = rng.standard_normal(30)
+    return Dataset(
+        {
+            "X": ("continuous", x),
+            "Y": ("continuous", x + 0.5 * rng.standard_normal(30)),
+            "Z": ("continuous", rng.standard_normal(30)),
+        }
+    )
+
+
+def test_hsic_kci_defaults_and_meta() -> None:
+    data = _xyz_data()
+    hm = HSIC(data).meta()
+    km = KCI(data).meta()
+    assert hm["name"] == "hsic"
+    assert km["name"] == "kci"
+    assert hm["symmetric"] is True
+    assert km["symmetric"] is False
+    assert 0.0 <= HSIC(data).run_test("X", "Y").p_value <= 1.0
+    assert 0.0 <= KCI(data).run_test("X", "Y", ["Z"]).p_value <= 1.0
+
+
+def test_kernel_objects_repr_and_equality_of_results() -> None:
+    assert repr(RBF(2.0)) == "RBF(length_scale=2.0)"
+    assert repr(Linear()) == "Linear()"
+    assert RBF(2.0).length_scale == 2.0
+    data = _xyz_data()
+    a = HSIC(data, kernel=RBF(2.0)).run_test("X", "Y")
+    b = HSIC(data, kernel={"X": RBF(2.0), "Y": RBF(2.0)}).run_test("X", "Y")
+    assert a.p_value == b.p_value
+    assert a.statistic == b.statistic
+
+
+def test_kernel_dict_unknown_column_raises_at_construction() -> None:
+    with pytest.raises(CiError):
+        HSIC(_xyz_data(), kernel={"nope": RBF(1.0)})
+    with pytest.raises(CiError):
+        KCI(_xyz_data(), kernel={"nope": Linear()})
+
+
+@pytest.mark.parametrize(
+    ("cls", "kwargs", "exc"),
+    [
+        (HSIC, {"bandwidth": "x"}, ValueError),
+        (HSIC, {"null_dist": "x"}, ValueError),
+        (HSIC, {"null_dist": "permutation", "n_permutations": 0}, ValueError),
+        (HSIC, {"n_permutations": 0}, ValueError),
+        (HSIC, {"seed": -1}, (OverflowError, ValueError)),
+        (HSIC, {"seed": 2**64}, (OverflowError, ValueError)),
+        (KCI, {"bandwidth": "x"}, ValueError),
+        (KCI, {"epsilon": 0.0}, CiError),
+        (KCI, {"epsilon": float("nan")}, CiError),
+        (HSIC, {"kernel": RBF(0.0)}, CiError),
+        (KCI, {"kernel": RBF(0.0)}, CiError),
+        (HSIC, {"kernel": "rbf"}, TypeError),
+        (KCI, {"kernel": "rbf"}, TypeError),
+    ],
+)
+def test_invalid_hsic_kci_options_raise(cls: type, kwargs: dict, exc: type | tuple) -> None:
+    with pytest.raises(exc):
+        cls(_xyz_data(), **kwargs)
+
+
+def test_hsic_rejects_z() -> None:
+    with pytest.raises(CiError):
+        HSIC(_xyz_data()).run_test("X", "Y", ["Z"])
+
+
+def test_kci_concurrent_calls_are_safe() -> None:
+    kci = KCI(_xyz_data())
+    expected = kci.run_test("X", "Y", ["Z"]).p_value
+    per_thread: list[list[float]] = [[] for _ in range(4)]
+
+    def worker(bucket: list[float]) -> None:
+        bucket.extend(kci.run_test("X", "Y", ["Z"]).p_value for _ in range(5))
+
+    threads = [threading.Thread(target=worker, args=(b,)) for b in per_thread]
+    for t in threads:
+        t.start()
+    for t in threads:
+        t.join()
+    results = [p for bucket in per_thread for p in bucket]
+    assert len(results) == 20
+    assert all(r == expected for r in results)

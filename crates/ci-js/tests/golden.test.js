@@ -1,10 +1,11 @@
 // Golden parity test for the data-bound JavaScript / WebAssembly bindings.
 //
 // Loads the shared cross-language fixture `tests/fixtures/golden.json` (at the
-// repository root) and, for each of the eight tests, builds a `Dataset` from the
+// repository root) and, for each of the ten tests, builds a `Dataset` from the
 // case's columns, constructs the test with the case's parameters, runs it, and
 // asserts that `statistic` / `pValue` / `dof` / `effectSize` match the recorded
-// `expected` values within 1e-7. This is the binding's numeric parity gate
+// `expected` values within 1e-7 (hsic/kci cases carry a `rel_tol` and use a relative
+// tolerance instead). This is the binding's numeric parity gate
 // against the scipy/pgmpy reference, mirroring the Rust
 // (`crates/ci-core/tests/golden.rs`) and Python
 // (`crates/ci-python/test/test_golden.py`) gates.
@@ -28,6 +29,8 @@ const {
   PearsonCorrelation,
   PearsonEquivalence,
   FisherZ,
+  HSIC,
+  KCI,
   init,
 } = pkg;
 
@@ -43,6 +46,8 @@ const TEST_CLASSES = {
   pearson_correlation: PearsonCorrelation,
   pearson_equivalence: PearsonEquivalence,
   fisher_z: FisherZ,
+  hsic: HSIC,
+  kci: KCI,
 };
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -73,24 +78,41 @@ function buildDataset(columns) {
   return new Dataset(spec);
 }
 
+/** Map a fixture kernel JSON object to the binding's `KernelSpec`. */
+function kernelSpec(k) {
+  return k.type === "rbf"
+    ? { type: "rbf", lengthScale: k.length_scale }
+    : { type: "linear" };
+}
+
 /** Construct the test class for `name`, bound to `data`, with the case params. */
 function construct(name, data, params) {
   const cls = TEST_CLASSES[name];
-  const options = Object.fromEntries(
-    Object.entries(params).map(([key, value]) => [
-      key === "delta_threshold" ? "deltaThreshold" : key,
-      value,
-    ]),
-  );
+  const options = {};
+  for (const [key, value] of Object.entries(params)) {
+    if (value === null || value === undefined) continue;
+    if (key === "delta_threshold") options.deltaThreshold = value;
+    else if (key === "null_dist") options.nullDist = value;
+    else if (key === "n_permutations") options.nPermutations = value;
+    else if (key === "kernel") {
+      if (value.columns) {
+        options.kernels = Object.fromEntries(
+          Object.entries(value.columns).map(([c, k]) => [c, kernelSpec(k)]),
+        );
+      } else {
+        options.kernel = kernelSpec(value);
+      }
+    } else options[key] = value;
+  }
   return new cls(data, options);
 }
 
 /**
- * Assert `actual` matches `expected` for `field` within TOL. Null/undefined
+ * Assert `actual` matches `expected` for `field` within TOL (or `relTol` relative, when given). Null/undefined
  * expectations require an absent result. Infinity / NaN are handled exactly
  * (none appear in the current fixture, but be defensive).
  */
-function assertClose(actual, expected, field, caseId) {
+function assertClose(actual, expected, field, caseId, relTol = null) {
   if (expected === null || expected === undefined) {
     expect(
       actual === null || actual === undefined,
@@ -116,10 +138,12 @@ function assertClose(actual, expected, field, caseId) {
     }
     return;
   }
+  const bound =
+    relTol === null ? TOL : Math.max(1e-300, relTol * Math.abs(exp));
   expect(
     Math.abs(actual - exp),
     `${caseId}: ${field} mismatch: got ${actual}, expected ${exp}`,
-  ).toBeLessThanOrEqual(TOL);
+  ).toBeLessThanOrEqual(bound);
 }
 
 describe("golden fixture parity", () => {
@@ -138,10 +162,17 @@ describe("golden fixture parity", () => {
       const test_ = construct(testCase.test, data, testCase.params);
       const result = test_.runTest(testCase.x, testCase.y, testCase.z);
       const expected = testCase.expected;
+      const relTol = testCase.rel_tol ?? null;
 
-      assertClose(result.statistic, expected.statistic, "statistic", caseId);
+      assertClose(
+        result.statistic,
+        expected.statistic,
+        "statistic",
+        caseId,
+        relTol,
+      );
 
-      assertClose(result.pValue, expected.p_value, "pValue", caseId);
+      assertClose(result.pValue, expected.p_value, "pValue", caseId, relTol);
 
       assertClose(
         result.dof,

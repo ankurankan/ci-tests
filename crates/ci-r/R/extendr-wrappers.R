@@ -331,4 +331,74 @@ PearsonEquivalence$decision_rule <- function() .Call(wrap__PearsonEquivalence__d
 #' @export
 `[[.PearsonEquivalence` <- `$.PearsonEquivalence`
 
+#'
+#' @section Methods:
+#'\subsection{Method `new`}{
+#'Construct the handle bound to `data` with the given config.
+#'}
+#'
+#'\subsection{Method `run_test`}{
+#'Run the test for `x ⟂ y | z` (column names; `z` a character
+#'vector), returning `list(statistic, p_value, dof, effect_size)`.
+#'}
+#'
+#'\subsection{Method `is_independent`}{
+#'Decide independence at `significance_level` using the test's rule.
+#'}
+#'
+#'\subsection{Method `decision_rule`}{
+#'Internal decision rule used by the R adapters.
+#'}
+#'
+HSIC <- new.env(parent = emptyenv())
+
+HSIC$new <- function(data, kernel_mode, kernel_names, kernel_types, kernel_length_scales, bandwidth, null_dist, n_permutations, seed) .Call(wrap__HSIC__new, data, kernel_mode, kernel_names, kernel_types, kernel_length_scales, bandwidth, null_dist, n_permutations, seed)
+
+HSIC$run_test <- function(x, y, z) .Call(wrap__HSIC__run_test, self, x, y, z)
+
+HSIC$is_independent <- function(x, y, z, significance_level) .Call(wrap__HSIC__is_independent, self, x, y, z, significance_level)
+
+HSIC$decision_rule <- function() .Call(wrap__HSIC__decision_rule, self)
+
+#' @export
+`$.HSIC` <- function (self, name) { func <- HSIC[[name]]; environment(func) <- environment(); func }
+
+#' @export
+`[[.HSIC` <- `$.HSIC`
+
+#'
+#' @section Methods:
+#'\subsection{Method `new`}{
+#'Construct the handle bound to `data` with the given config.
+#'}
+#'
+#'\subsection{Method `run_test`}{
+#'Run the test for `x ⟂ y | z` (column names; `z` a character
+#'vector), returning `list(statistic, p_value, dof, effect_size)`.
+#'}
+#'
+#'\subsection{Method `is_independent`}{
+#'Decide independence at `significance_level` using the test's rule.
+#'}
+#'
+#'\subsection{Method `decision_rule`}{
+#'Internal decision rule used by the R adapters.
+#'}
+#'
+KCI <- new.env(parent = emptyenv())
+
+KCI$new <- function(data, kernel_mode, kernel_names, kernel_types, kernel_length_scales, bandwidth, epsilon) .Call(wrap__KCI__new, data, kernel_mode, kernel_names, kernel_types, kernel_length_scales, bandwidth, epsilon)
+
+KCI$run_test <- function(x, y, z) .Call(wrap__KCI__run_test, self, x, y, z)
+
+KCI$is_independent <- function(x, y, z, significance_level) .Call(wrap__KCI__is_independent, self, x, y, z, significance_level)
+
+KCI$decision_rule <- function() .Call(wrap__KCI__decision_rule, self)
+
+#' @export
+`$.KCI` <- function (self, name) { func <- KCI[[name]]; environment(func) <- environment(); func }
+
+#' @export
+`[[.KCI` <- `$.KCI`
+
 # nolint end

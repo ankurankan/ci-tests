@@ -13,6 +13,28 @@ R_RUST = R_PACKAGE / "src" / "rust"
 VENDOR_ARCHIVE = R_RUST / "vendor.tar.xz"
 THIRD_PARTY_NOTICE = R_PACKAGE / "THIRD-PARTY-NOTICES"
 EXTENDR_CRATES = {"extendr-api", "extendr-ffi", "extendr-macros"}
+# Crates unused on every supported R platform; vendored as empty stubs.
+PLATFORM_STUBBED_CRATES = {
+    "bytemuck_derive",
+    "crunchy",
+    "gemm-f16",
+    "half",
+    "hermit-abi",
+    "itoa",
+    "memchr",
+    "same-file",
+    "serde",
+    "serde_core",
+    "serde_derive",
+    "serde_json",
+    "walkdir",
+    "winapi-util",
+    "windows-link",
+    "windows-sys",
+    "zerocopy",
+    "zerocopy-derive",
+    "zmij",
+}
 
 
 def registry_crates_from_lockfile() -> set[tuple[str, str]]:
@@ -58,14 +80,15 @@ def test_r_msrv_is_advertised_preflighted_and_exercised() -> None:
     manifest = tomllib.loads(
         (REPO_ROOT / "crates" / "ci-r" / "src" / "rust" / "Cargo.toml").read_text()
     )
-    assert manifest["package"]["rust-version"] == "1.81"
+    assert manifest["package"]["rust-version"] == "1.85"
 
     description = (REPO_ROOT / "crates" / "ci-r" / "DESCRIPTION").read_text()
-    assert "rustc >= 1.81.0" in description
+    assert "rustc >= 1.85.0" in description
 
     workflow = load_workflow("r.yml")
     rust_step = named_step(workflow, "r-test", "Install Rust MSRV")
-    assert rust_step["with"] == {"toolchain": "1.81.0"}
+    assert rust_step["with"] == {"toolchain": "1.85.0"}
+    assert "Requires Rust 1.85" in (R_PACKAGE / "README.md").read_text()
     windows_target = named_step(workflow, "r-test", "Install Windows GNU Rust target")
     assert windows_target["if"] == "runner.os == 'Windows'"
     assert windows_target["run"] == "rustup target add x86_64-pc-windows-gnu"
@@ -148,6 +171,8 @@ def test_r_vendor_archive_matches_the_locked_crate_set_and_declares_licenses() -
     with tarfile.open(VENDOR_ARCHIVE, "r:xz") as archive:
         members = {member.name for member in archive.getmembers()}
     for (name, _), manifest in manifests.items():
+        if name in PLATFORM_STUBBED_CRATES:
+            continue
         license_expression = manifest.get("license", "")
         license_file = manifest.get("license-file", "")
         assert isinstance(license_expression, str)
@@ -155,6 +180,19 @@ def test_r_vendor_archive_matches_the_locked_crate_set_and_declares_licenses() -
         assert license_expression.strip() or license_file.strip()
         if license_file:
             assert f"vendor/{name}/{license_file}" in members
+
+
+def test_r_vendor_script_is_reproducible() -> None:
+    script = (R_PACKAGE / "tools" / "vendor_crates.sh").read_text()
+    assert "cargo vendor-filterer" in script
+    for platform in (
+        "x86_64-unknown-linux-gnu",
+        "aarch64-unknown-linux-gnu",
+        "x86_64-apple-darwin",
+        "aarch64-apple-darwin",
+        "x86_64-pc-windows-gnu",
+    ):
+        assert platform in script
 
 
 def test_r_package_includes_the_upstream_extendr_mit_notice() -> None:
@@ -208,6 +246,12 @@ def test_rust_distribution_dependency_tree_is_minimal() -> None:
     expected = {"version": "0.18.0", "default-features": False}
     assert root["workspace"]["dependencies"]["statrs"] == expected
     assert r_rust["workspace"]["dependencies"]["statrs"] == expected
+    faer = {"version": "0.24", "default-features": False, "features": ["std", "linalg"]}
+    assert root["workspace"]["dependencies"]["faer"] == faer
+    assert r_rust["workspace"]["dependencies"]["faer"] == faer
+    core = tomllib.loads((REPO_ROOT / "crates" / "ci-core" / "Cargo.toml").read_text())
+    for forbidden in ("rayon", "rand", "getrandom"):
+        assert forbidden not in core["dependencies"]
 
     js = tomllib.loads((REPO_ROOT / "crates" / "ci-js" / "Cargo.toml").read_text())
     assert "getrandom" not in js["dependencies"]

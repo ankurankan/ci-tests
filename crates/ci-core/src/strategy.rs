@@ -120,8 +120,21 @@ pub trait CITest: Send + Sync {
         z: &[usize],
     ) -> Result<CiResult, CiError>;
 
+    /// Check the test's own configuration against `data` (e.g. kernel
+    /// parameters, column names). The default accepts everything. Bindings call
+    /// this at construction so a bad configuration fails early; the provided
+    /// [`CITest::test`] also runs it on every call.
+    ///
+    /// # Errors
+    ///
+    /// Returns a [`CiError`] (typically [`CiError::InvalidConfig`] or
+    /// [`CiError::UnknownColumn`]) describing the invalid setting.
+    fn validate(&self, _data: &Dataset) -> Result<(), CiError> {
+        Ok(())
+    }
+
     /// Run the test for `x ⊥ y | z` after validating the query
-    /// (see [`validate_query`]).
+    /// (see [`validate_query`]) and the configuration ([`CITest::validate`]).
     ///
     /// Implementors should not override this method; implement
     /// [`CITest::test_impl`] instead, so the uniform validation is preserved.
@@ -132,6 +145,7 @@ pub trait CITest: Send + Sync {
     /// malformed query, or any error from [`CITest::test_impl`].
     fn test(&self, data: &Dataset, x: usize, y: usize, z: &[usize]) -> Result<CiResult, CiError> {
         validate_query(data, x, y, z)?;
+        self.validate(data)?;
         self.test_impl(data, x, y, z)
     }
 

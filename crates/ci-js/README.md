@@ -20,6 +20,26 @@ const data = new Dataset({
 const result = new PearsonCorrelation(data).runTest("X", "Y", []);
 ```
 
+### Kernel tests (HSIC, KCI)
+
+```js
+import { Dataset, HSIC, KCI } from "./pkg/ci_js.js";
+
+const hsic = new HSIC(data, {
+  kernel: { type: "rbf", lengthScale: 1.0 }, // or `kernels: { X: {...}, Y: {...} }`
+  bandwidth: "median", // "heuristic" (default) | "median"
+  nullDist: "permutation", // "gamma" (default) | "permutation"
+  nPermutations: 200, // positive safe integer (default 100)
+  seed: 7, // safe integer >= 0 (default 0)
+});
+hsic.runTest("X", "Y", []); // HSIC takes no conditioning set
+
+const kci = new KCI(data, { epsilon: 1e-3 });
+kci.runTest("X", "Y", ["Z"]);
+```
+
+`kernel` and `kernels` are mutually exclusive; invalid options throw.
+
 Run the JavaScript checks from the package directory:
 
 ```sh

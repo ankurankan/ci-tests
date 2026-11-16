@@ -8,8 +8,8 @@ from copy import deepcopy
 from pathlib import Path
 from types import ModuleType
 
+import numpy as np
 import pytest
-
 
 FIXTURE_DIR = Path(__file__).resolve().parent
 GENERATOR_PATH = FIXTURE_DIR / "generate_golden.py"
@@ -24,7 +24,11 @@ EXPECTED_COUNTS = {
     "pearson_correlation": 7,
     "pearson_equivalence": 6,
     "fisher_z": 7,
+    "hsic": 13,
+    "kci": 12,
 }
+
+PINNED_SHUFFLE_SEED0_N10 = [6, 3, 2, 9, 8, 1, 4, 7, 0, 5]
 
 
 def load_generator() -> ModuleType:
@@ -45,9 +49,9 @@ def test_reference_catalog_has_the_approved_contract() -> None:
     cases = generator.build_cases()
     generator.validate_cases(cases)
 
-    assert len(cases) == 80
+    assert len(cases) == 105
     assert Counter(case["test"] for case in cases) == Counter(EXPECTED_COUNTS)
-    assert len({case["id"] for case in cases}) == 80
+    assert len({case["id"] for case in cases}) == 105
 
     balanced = by_id(cases, "discrete-balanced-2x2-yates-chi-squared")
     assert balanced["expected"] == {
@@ -73,6 +77,18 @@ def test_reference_catalog_has_the_approved_contract() -> None:
     assert boundary["expected"]["statistic"] == pytest.approx(
         math.atanh(0.999999), abs=1e-9
     )
+
+    assert by_id(cases, "hsic-tiny-sample")["expected"]["p_value"] == 1.0
+    assert by_id(cases, "hsic-permutation-dependent")["expected"][
+        "p_value"
+    ] == pytest.approx(1 / 51)
+    assert 1e-80 < by_id(cases, "hsic-tiny-p-value")["expected"]["p_value"] < 1e-30
+    for case in cases:
+        if case["test"] in {"hsic", "kci"}:
+            assert case["rel_tol"] == 1e-9, case["id"]
+            assert case["expected"]["dof"] is None, case["id"]
+        else:
+            assert "rel_tol" not in case, case["id"]
 
 
 def test_validation_rejects_duplicate_ids() -> None:
@@ -123,7 +139,7 @@ def test_render_cases_is_strict_and_deterministic() -> None:
     assert "NaN" not in first
     assert "Infinity" not in first
     decoded = json.loads(first)
-    assert len(decoded) == 80
+    assert len(decoded) == 105
     positive = by_id(decoded, "pearson-correlation-positive-unconditional")
     assert positive["expected"]["statistic"] == 0.8
 
@@ -232,3 +248,99 @@ def test_committed_fixture_matches_generator() -> None:
     assert generator.check_fixture(GOLDEN_PATH, rendered), (
         "golden.json is stale; run python tests/fixtures/generate_golden.py"
     )
+
+
+def test_hsic_linear_reference_matches_closed_form() -> None:
+    generator = load_generator()
+    case = by_id(generator.build_cases(), "hsic-linear-all")
+    x = np.asarray(case["columns"]["X"]["values"])
+    y = np.asarray(case["columns"]["Y"]["values"])
+    n = len(x)
+    r = float(np.corrcoef(x, y)[0, 1])
+
+    assert case["expected"]["statistic"] == pytest.approx(((n - 1) * r) ** 2, rel=1e-12)
+    assert case["expected"]["effect_size"] == pytest.approx(r * r, rel=1e-12)
+
+
+def test_splitmix64_port_matches_reference_stream() -> None:
+    generator = load_generator()
+    rng = generator._SplitMix64(0)
+
+    assert [rng.next_u64() for _ in range(3)] == [
+        0xE220A8397B1DCDAF,
+        0x6E789E6AA1B965F4,
+        0x06C45D188009454F,
+    ]
+    # Pinned in crates/ci-core/src/rng.rs as `shuffle_seed0_n10_is_pinned`.
+    assert generator._SplitMix64(0).shuffle_identity(10) == PINNED_SHUFFLE_SEED0_N10
+
+
+def test_validation_rejects_bad_hsic_kci_params_and_rel_tol() -> None:
+    generator = load_generator()
+    cases = generator.build_cases()
+
+    def mutated(case_id: str, mutate) -> list[dict]:
+        copy = deepcopy(cases)
+        mutate(by_id(copy, case_id))
+        return copy
+
+    bad = {
+        "unknown kernel type": mutated(
+            "hsic-rbf-all",
+            lambda c: c["params"].update(kernel={"type": "laplace"}),
+        ),
+        "bad bandwidth": mutated(
+            "hsic-median-bandwidth", lambda c: c["params"].update(bandwidth="mean")
+        ),
+        "bad null_dist": mutated(
+            "hsic-median-bandwidth", lambda c: c["params"].update(null_dist="exact")
+        ),
+        "extra hsic param": mutated(
+            "hsic-median-bandwidth", lambda c: c["params"].update(epsilon=1e-3)
+        ),
+        "bad epsilon": mutated(
+            "kci-epsilon", lambda c: c["params"].update(epsilon=0.0)
+        ),
+        "rel_tol on pearson": mutated(
+            "pearson-correlation-positive-unconditional",
+            lambda c: c.update(rel_tol=1e-9),
+        ),
+        "missing rel_tol": mutated("hsic-rbf-all", lambda c: c.pop("rel_tol")),
+        "wrong rel_tol": mutated("kci-epsilon", lambda c: c.update(rel_tol=1e-6)),
+    }
+    for name, candidate in bad.items():
+        with pytest.raises(ValueError):
+            generator.validate_cases(candidate)
+        assert name
+
+
+def test_check_fixture_honours_relative_tolerance(tmp_path: Path) -> None:
+    generator = load_generator()
+    cases = deepcopy(generator.build_cases())
+    target = by_id(cases, "hsic-independent-small")
+    target["expected"]["p_value"] = 1e-60
+    target["expected"]["statistic"] = 5000.0
+    rendered = generator.render_cases(cases)
+    output = tmp_path / "golden.json"
+
+    changed = json.loads(rendered)
+    by_id(changed, "hsic-independent-small")["expected"]["p_value"] = 0.0
+    output.write_text(json.dumps(changed), encoding="utf-8")
+    assert generator.check_fixture(output, rendered) is False
+
+    changed = json.loads(rendered)
+    by_id(changed, "hsic-independent-small")["expected"]["statistic"] = 5000.0 + 1e-7
+    output.write_text(json.dumps(changed), encoding="utf-8")
+    assert generator.check_fixture(output, rendered) is True
+
+    changed = json.loads(rendered)
+    by_id(changed, "hsic-independent-small")["expected"]["statistic"] = 5000.0 + 1e-5
+    output.write_text(json.dumps(changed), encoding="utf-8")
+    assert generator.check_fixture(output, rendered) is False
+
+
+def test_fixture_growth_within_budget() -> None:
+    generator = load_generator()
+    rendered = generator.render_cases(generator.build_cases())
+
+    assert len(rendered.encode()) <= 143_771 + 250_000

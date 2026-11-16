@@ -37,4 +37,8 @@ pub enum CiError {
     /// duplicate entries in z).
     #[error("invalid query: {0}")]
     InvalidQuery(String),
+
+    /// A configuration value (e.g. a kernel length scale) is invalid.
+    #[error("invalid configuration: {0}")]
+    InvalidConfig(String),
 }

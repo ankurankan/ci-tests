@@ -3,7 +3,7 @@ name = 'cir'
 publish = false
 version = '0.1.0'
 edition = '2021'
-rust-version = '1.81'
+rust-version = '1.85'
 
 [workspace]
 members = [ 'ci-core' ]
@@ -11,6 +11,7 @@ resolver = '2'
 
 [workspace.dependencies]
 statrs = { version = '0.18.0', default-features = false }
+faer = { version = "0.24", default-features = false, features = ["std", "linalg"] }
 
 [workspace.lints.rust]
 unsafe_code = 'forbid'

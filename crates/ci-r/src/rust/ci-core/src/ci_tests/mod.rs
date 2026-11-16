@@ -4,7 +4,8 @@
 //! [`CressieRead`], [`FreemanTukey`], [`ModifiedLikelihood`]) share the
 //! λ-parameterized [`crate::discrete`] engine; three continuous
 //! tests ([`PearsonCorrelation`], [`FisherZ`], [`PearsonEquivalence`]) cover the
-//! partial-correlation path.
+//! partial-correlation path. Two continuous kernel tests, [`Hsic`] (unconditional) and
+//! [`Kci`] (conditional), compare dense kernel matrices.
 
 mod power_divergence;
 
@@ -17,6 +18,8 @@ pub mod cressie_read {
     pub use super::power_divergence::CressieRead;
 }
 pub mod fisher_z;
+pub mod hsic;
+pub mod kci;
 /// Freeman-Tukey conditional-independence test (power divergence, λ = −1/2).
 pub mod freeman_tukey {
     pub use super::power_divergence::FreemanTukey;
@@ -37,6 +40,8 @@ pub use chi_squared::ChiSquared;
 pub use cressie_read::CressieRead;
 pub use fisher_z::FisherZ;
 pub use freeman_tukey::FreemanTukey;
+pub use hsic::{Hsic, NullDistribution};
+pub use kci::Kci;
 pub use log_likelihood::LogLikelihood;
 pub use modified_likelihood::ModifiedLikelihood;
 pub use pearson_correlation::PearsonCorrelation;

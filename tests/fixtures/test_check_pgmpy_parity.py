@@ -264,3 +264,54 @@ def test_non_declared_dof_mismatch_remains_a_failure() -> None:
 
     assert errors == ["pearson-equivalence-unconditional: dof expected None, got 14"]
     assert divergences == []
+
+
+def test_hsic_permutation_case_is_an_intentional_skip() -> None:
+    checker = load_checker()
+    case = {"test": "hsic", "params": {"null_dist": "permutation"}}
+    assert (
+        checker.should_skip(case) == "permutation null uses a different RNG than pgmpy"
+    )
+
+
+def test_hsic_gamma_case_is_not_skipped() -> None:
+    checker = load_checker()
+    case = {"test": "hsic", "params": {"null_dist": "gamma"}}
+    assert checker.should_skip(case) is None
+
+
+def test_kernel_params_map_to_sklearn_kernels() -> None:
+    from sklearn.gaussian_process.kernels import RBF, DotProduct
+
+    checker = load_checker()
+    assert checker.build_kernel(None) is None
+    assert checker.build_kernel({"type": "rbf", "length_scale": 0.5}) == RBF(0.5)
+    assert checker.build_kernel({"type": "linear"}) == DotProduct()
+    mapped = checker.build_kernel(
+        {
+            "columns": {
+                "X": {"type": "rbf", "length_scale": 0.5},
+                "Y": {"type": "linear"},
+            }
+        }
+    )
+    assert mapped == {"X": RBF(0.5), "Y": DotProduct()}
+
+
+def test_relative_tolerance_applies_to_rel_tol_cases() -> None:
+    checker = load_checker()
+    case = {
+        "id": "hsic-rel",
+        "rel_tol": 1e-9,
+        "expected": {"statistic": 1e6},
+    }
+    inside = {"statistic": 1e6 + 1e-4}
+    outside = {"statistic": 1e6 + 1e-2}
+    assert checker.compare_actual_fields(case, inside, 1e-7) == ([], [])
+    assert checker.compare_actual_fields(case, outside, 1e-7)[0] == [
+        f"hsic-rel: statistic expected 1000000.0, got {1e6 + 1e-2}"
+    ]
+    # Tiny expected values are not rescued by the absolute tolerance.
+    tiny = {"id": "t", "rel_tol": 1e-9, "expected": {"p_value": 1e-20}}
+    assert checker.compare_actual_fields(tiny, {"p_value": 2e-20}, 1e-7)[0]
+    assert not checker.compare_actual_fields(tiny, {"p_value": 1e-20}, 1e-7)[0]

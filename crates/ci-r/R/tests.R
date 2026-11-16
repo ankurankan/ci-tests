@@ -144,6 +144,181 @@ pearson_equivalence <- function(data, delta_threshold = 0.1) {
   )
 }
 
+#' Radial-basis-function (Gaussian) kernel specification.
+#'
+#' @param length_scale Positive, finite length scale of the kernel.
+#' @return A `cir_kernel` object for use as the `kernel` argument of [hsic()]
+#'   and [kci()].
+#' @examples
+#' rbf_kernel(2)
+#' @export
+rbf_kernel <- function(length_scale) {
+  bad <- !is.numeric(length_scale) || length(length_scale) != 1L
+  bad <- bad || !is.finite(length_scale) || length_scale <= 0
+  if (bad) {
+    stop(
+      "`length_scale` must be a single positive finite number",
+      call. = FALSE
+    )
+  }
+  structure(
+    list(type = "rbf", length_scale = as.double(length_scale)),
+    class = "cir_kernel"
+  )
+}
+
+#' Linear kernel specification.
+#'
+#' @return A `cir_kernel` object for use as the `kernel` argument of [hsic()]
+#'   and [kci()].
+#' @examples
+#' linear_kernel()
+#' @export
+linear_kernel <- function() {
+  structure(list(type = "linear"), class = "cir_kernel")
+}
+
+#' @export
+print.cir_kernel <- function(x, ...) {
+  if (identical(x$type, "rbf")) {
+    cat(sprintf(
+      "<cir_kernel: rbf, length_scale = %s>\n",
+      format(x$length_scale)
+    ))
+  } else {
+    cat("<cir_kernel: linear>\n")
+  }
+  invisible(x)
+}
+
+#' Flatten a `kernel` argument for the extendr layer.
+#'
+#' @param kernel `NULL`, one `cir_kernel`, or a named list of `cir_kernel`.
+#' @return A list with `mode`, `names`, `types` and `length_scales`.
+#' @keywords internal
+.cir_flatten_kernel <- function(kernel) {
+  flat <- function(k) {
+    if (!inherits(k, "cir_kernel")) {
+      stop(
+        "`kernel` must be NULL, a cir_kernel, or a named list of cir_kernel",
+        call. = FALSE
+      )
+    }
+    list(
+      type = k$type,
+      length_scale = if (identical(k$type, "rbf")) k$length_scale else NA_real_
+    )
+  }
+  pack <- function(mode, names, ks) {
+    list(
+      mode = mode,
+      names = as.character(names),
+      types = vapply(ks, function(k) k$type, character(1)),
+      length_scales = vapply(ks, function(k) k$length_scale, double(1))
+    )
+  }
+  if (is.null(kernel)) {
+    return(list(
+      mode = "auto", names = character(), types = character(),
+      length_scales = double()
+    ))
+  }
+  if (inherits(kernel, "cir_kernel")) {
+    return(pack("all", "", list(flat(kernel))))
+  }
+  nms <- names(kernel)
+  bad <- !is.list(kernel) || length(kernel) == 0L || is.null(nms)
+  bad <- bad || anyNA(nms) || any(!nzchar(nms)) || anyDuplicated(nms) > 0L
+  if (bad) {
+    stop(
+      "`kernel` must be NULL, a cir_kernel, or a named list of cir_kernel",
+      call. = FALSE
+    )
+  }
+  pack("per_column", nms, lapply(unname(kernel), flat))
+}
+
+#' Hilbert-Schmidt Independence Criterion (HSIC) CI test.
+#'
+#' A kernel independence test for `x` and `y` with no conditioning set;
+#' [run_test()] errors if `z` is non-empty (use [kci()] to condition).
+#'
+#' @param data A [dataset()] result or a data.frame.
+#' @param kernel `NULL` (default RBF kernel), one [rbf_kernel()] /
+#'   [linear_kernel()] used for every column, or a named list of such kernels
+#'   keyed by column name.
+#' @param bandwidth Bandwidth rule, `"heuristic"` (default) or `"median"`.
+#' @param null_dist Null distribution, `"gamma"` (default) or `"permutation"`.
+#' @param n_permutations Number of permutations (whole number >= 1); unused
+#'   with the gamma null but always validated.
+#' @param seed Permutation seed (whole number, 0 to 2^53); unused with the
+#'   gamma null.
+#' @return A `cir_test` bound to `data`.
+#' @examples
+#' df <- data.frame(X = rnorm(50), Y = rnorm(50))
+#' run_test(hsic(dataset(df)), "X", "Y")
+#' @export
+hsic <- function(
+  data,
+  kernel = NULL,
+  bandwidth = "heuristic",
+  null_dist = "gamma",
+  n_permutations = 100L,
+  seed = 0
+) {
+  ds <- .cir_as_dataset(data)
+  k <- .cir_flatten_kernel(kernel)
+  .cir_make_test(
+    HSIC$new( # nolint: object_usage_linter.
+      ds$ptr, k$mode, k$names, k$types, k$length_scales,
+      bandwidth, null_dist, .cir_as_count(n_permutations, "n_permutations"),
+      .cir_as_count(seed, "seed")
+    ),
+    ds,
+    "hsic"
+  )
+}
+
+#' Kernel-based conditional independence (KCI) test.
+#'
+#' @inheritParams hsic
+#' @param epsilon Positive regularisation parameter (default `1e-3`).
+#' @return A `cir_test` bound to `data`.
+#' @examples
+#' df <- data.frame(X = rnorm(50), Y = rnorm(50), Z = rnorm(50))
+#' run_test(kci(dataset(df)), "X", "Y", "Z")
+#' @export
+kci <- function(
+  data,
+  kernel = NULL,
+  bandwidth = "heuristic",
+  epsilon = 1e-3
+) {
+  ds <- .cir_as_dataset(data)
+  k <- .cir_flatten_kernel(kernel)
+  .cir_make_test(
+    KCI$new( # nolint: object_usage_linter.
+      ds$ptr, k$mode, k$names, k$types, k$length_scales,
+      bandwidth, epsilon
+    ),
+    ds,
+    "kci"
+  )
+}
+
+#' Coerce a count/seed argument to a double scalar for the extendr layer.
+#'
+#' @param x The user-supplied value.
+#' @param name Argument name for the error message.
+#' @return A length-1 double (range and wholeness are checked in Rust).
+#' @keywords internal
+.cir_as_count <- function(x, name) {
+  if (!is.numeric(x) || length(x) != 1L) {
+    stop(sprintf("`%s` must be a single number", name), call. = FALSE)
+  }
+  as.double(x)
+}
+
 #' @export
 print.cir_test <- function(x, ...) {
   cat(sprintf("<cir_test: %s>\n", x$name))
@@ -183,11 +358,12 @@ run_test <- function(test, x, y, z = character()) {
 #' @return A single logical: `TRUE` if independent at `significance_level`.
 #' @export
 is_independent <- function(
-    test,
-    x,
-    y,
-    z = character(),
-    significance_level = 0.05) {
+  test,
+  x,
+  y,
+  z = character(),
+  significance_level = 0.05
+) {
   stopifnot(inherits(test, "cir_test"))
   test$handle$is_independent(x, y, .cir_as_names(z), significance_level)
 }

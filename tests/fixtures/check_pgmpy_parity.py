@@ -28,6 +28,20 @@ DISCRETE_TESTS = {
 }
 
 
+def build_kernel(spec: dict[str, Any] | None) -> Any:
+    """Map a fixture kernel description to sklearn kernels (imported lazily)."""
+    if spec is None:
+        return None
+    if "columns" in spec:
+        return {name: build_kernel(column) for name, column in spec["columns"].items()}
+    kernels = importlib.import_module("sklearn.gaussian_process.kernels")
+    if spec["type"] == "rbf":
+        return kernels.RBF(length_scale=spec["length_scale"])
+    if spec["type"] == "linear":
+        return kernels.DotProduct()
+    raise ValueError(f"unknown kernel type: {spec['type']}")
+
+
 Constructor = Callable[[ModuleType, Any, dict[str, Any]], Any]
 CONSTRUCTORS: dict[str, Constructor] = {
     "chi_squared": lambda m, df, p: m.ChiSquare(data=df),
@@ -42,6 +56,18 @@ CONSTRUCTORS: dict[str, Constructor] = {
         data=df, delta_threshold=p["delta_threshold"]
     ),
     "fisher_z": lambda m, df, p: m.FisherZ(data=df),
+    "hsic": lambda m, df, p: m.HSIC(
+        data=df,
+        kernel=build_kernel(p["kernel"]),
+        bandwidth=p["bandwidth"],
+        null_dist=p["null_dist"],
+    ),
+    "kci": lambda m, df, p: m.KCI(
+        data=df,
+        kernel=build_kernel(p["kernel"]),
+        bandwidth=p["bandwidth"],
+        epsilon=p["epsilon"],
+    ),
 }
 
 
@@ -49,6 +75,8 @@ def should_skip(case: dict[str, Any]) -> str | None:
     """Return the single declared pgmpy parity exception, if applicable."""
     if case["test"] in DISCRETE_TESTS and case["params"].get("yates") is False:
         return "pgmpy has no Yates-disable option"
+    if case["test"] == "hsic" and case["params"].get("null_dist") == "permutation":
+        return "permutation null uses a different RNG than pgmpy"
     return None
 
 
@@ -59,13 +87,18 @@ def build_dataframe(case: dict[str, Any], pandas: ModuleType) -> Any:
     )
 
 
-def _fields_match(expected: Any, actual: Any, tolerance: float) -> bool:
+def _fields_match(
+    expected: Any, actual: Any, tolerance: float, rel_tol: float | None = None
+) -> bool:
     if (
         isinstance(expected, numbers.Real)
         and isinstance(actual, numbers.Real)
         and math.isfinite(float(expected))
         and math.isfinite(float(actual))
     ):
+        if rel_tol is not None:
+            bound = max(1e-300, rel_tol * abs(float(expected)))
+            return abs(float(actual) - float(expected)) <= bound
         return math.isclose(
             float(expected), float(actual), rel_tol=0.0, abs_tol=tolerance
         )
@@ -77,6 +110,7 @@ def compare_fields(
     expected: dict[str, Any],
     actual: dict[str, Any],
     tolerance: float,
+    rel_tol: float | None = None,
 ) -> list[str]:
     """Compare all result fields, except a dof unavailable from pgmpy."""
     errors: list[str] = []
@@ -84,7 +118,7 @@ def compare_fields(
         actual_value = actual[field]
         if field == "dof" and actual_value is MISSING:
             continue
-        if not _fields_match(expected_value, actual_value, tolerance):
+        if not _fields_match(expected_value, actual_value, tolerance, rel_tol):
             errors.append(
                 f"{case_id}: {field} expected {expected_value}, got {actual_value}"
             )
@@ -123,6 +157,7 @@ def compare_actual_fields(
             {field: expected_value},
             {field: actual[field]},
             tolerance,
+            case.get("rel_tol"),
         )
         if not field_errors:
             continue

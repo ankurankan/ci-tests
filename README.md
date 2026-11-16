@@ -159,6 +159,14 @@ eqv.isIndependent("X", "Y", ["Z"], 0.05);            // -> boolean (p < alpha)
 | `pearson_correlation` | Continuous | — | `p ≥ α` |
 | `fisher_z` | Continuous | — | `p ≥ α` |
 | `pearson_equivalence` | Continuous | `delta_threshold` (default `0.1`) | `p < α` (TOST) |
+| `hsic` | Continuous | `kernel`, `bandwidth` (default `heuristic`), `null_dist` (default `gamma`), `n_permutations` (default 100), `seed` (default 0) | `p ≥ α` |
+| `kci` | Continuous | `kernel`, `bandwidth` (default `heuristic`), `epsilon` (default `1e-3`) | `p ≥ α` |
+
+- **Kernel tests.** `hsic` (unconditional) and `kci` (conditional) support RBF and linear
+  kernels only. KCI costs O(n²) memory and O(n³) time. Differences from pgmpy: `hsic`
+  rejects a non-empty conditioning set (pgmpy ignores it), constant columns raise an error
+  instead of yielding NaN, and permutation p-values use the library's own seeded generator,
+  so they differ from pgmpy's numpy-based draws.
 
 - **Uniform result.** Every `run_test(X, Y, Z)` returns the same `CiResult`: `statistic`,
   `p_value`, `dof`, and `effect_size`. Fields a test does not define are absent

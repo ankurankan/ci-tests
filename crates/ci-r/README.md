@@ -7,7 +7,7 @@ number of `X ⟂ Y | Z` queries against it. See the
 
 ## Install
 
-Requires Rust 1.81 or newer ([rustup](https://rustup.rs)). From the repository root:
+Requires Rust 1.85 or newer ([rustup](https://rustup.rs)). From the repository root:
 
 ```r
 # install.packages("devtools")
@@ -56,6 +56,17 @@ accepts a raw data.frame directly (`chi_squared(df)`).
 | `pearson_correlation(data)` | continuous | — | `p >= alpha` |
 | `fisher_z(data)` | continuous | — | `p >= alpha` |
 | `pearson_equivalence(data, delta_threshold = 0.1)` | continuous | `delta_threshold` | `p < alpha` (TOST) |
+| `hsic(data, kernel = NULL, bandwidth = "heuristic", null_dist = "gamma", n_permutations = 100L, seed = 0)` | continuous | kernel, bandwidth, null | `p >= alpha` (no `z`) |
+| `kci(data, kernel = NULL, bandwidth = "heuristic", epsilon = 1e-3)` | continuous | kernel, bandwidth, `epsilon` | `p >= alpha` |
+
+Kernel tests take `kernel = NULL` (default RBF), one `rbf_kernel(length_scale)` /
+`linear_kernel()`, or a named list of them keyed by column:
+
+```r
+df <- data.frame(X = rnorm(100), Y = rnorm(100), Z = rnorm(100))
+run_test(hsic(df, kernel = rbf_kernel(2)), "X", "Y")
+run_test(kci(df, kernel = list(X = linear_kernel())), "X", "Y", "Z")
+```
 
 `is_independent()` applies each test's own decision rule, so the caller never
 writes it — including the equivalence test's inverted rule.

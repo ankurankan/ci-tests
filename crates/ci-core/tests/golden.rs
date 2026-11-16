@@ -8,19 +8,22 @@
 //!   `cressie_read`, `freeman_tukey`, `modified_likelihood`) are run with the
 //!   case's own `params.yates`, so both Yates-on and Yates-off rows are covered.
 //! - All `pearson_correlation`, `pearson_equivalence`, and `fisher_z` rows.
+//! - All `hsic` and `kci` rows, built from the case's kernel/bandwidth/null params.
 //!
 //! Every non-null `statistic`/`p_value`/`dof`/`effect_size` field is asserted to
-//! within `1e-7`, with the `+∞` statistic / `p = 0` degenerate case handled
+//! within `1e-7` (or, for cases carrying `rel_tol`, within
+//! `max(1e-300, rel_tol * |expected|)`), with the `+∞` statistic / `p = 0` degenerate case handled
 //! exactly. The test asserts it exercised every supplied fixture case.
 
 use std::collections::BTreeMap;
 
 use ci_core::ci_tests::{
     chi_squared::ChiSquared, cressie_read::CressieRead, freeman_tukey::FreemanTukey,
-    log_likelihood::LogLikelihood, modified_likelihood::ModifiedLikelihood, FisherZ,
-    PearsonCorrelation, PearsonEquivalence,
+    log_likelihood::LogLikelihood, modified_likelihood::ModifiedLikelihood, FisherZ, Hsic, Kci,
+    NullDistribution, PearsonCorrelation, PearsonEquivalence,
 };
 use ci_core::dataset::{ColumnKind, Dataset};
+use ci_core::kernel::{Bandwidth, Kernel, KernelChoice};
 use ci_core::strategy::{CITest, CiResult, DataType};
 use serde::Deserialize;
 
@@ -32,6 +35,18 @@ struct Params {
     delta_threshold: Option<f64>,
     #[serde(default)]
     yates: Option<bool>,
+    #[serde(default)]
+    kernel: Option<serde_json::Value>,
+    #[serde(default)]
+    bandwidth: Option<String>,
+    #[serde(default)]
+    null_dist: Option<String>,
+    #[serde(default)]
+    n_permutations: Option<usize>,
+    #[serde(default)]
+    seed: Option<u64>,
+    #[serde(default)]
+    epsilon: Option<f64>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -59,6 +74,8 @@ struct Case {
     y: String,
     z: Vec<String>,
     expected: Expected,
+    #[serde(default)]
+    rel_tol: Option<f64>,
 }
 
 fn load_cases() -> Vec<Case> {
@@ -95,6 +112,65 @@ fn build_dataset(case: &Case) -> (Dataset, BTreeMap<String, usize>) {
 /// The `yates` flag for a discrete case (defaults to `true` if unspecified).
 fn case_yates(case: &Case) -> bool {
     case.params.yates.unwrap_or(true)
+}
+
+fn parse_kernel(v: &serde_json::Value) -> Kernel {
+    match v["type"].as_str() {
+        Some("rbf") => Kernel::Rbf {
+            length_scale: v["length_scale"]
+                .as_f64()
+                .expect("rbf kernel needs a numeric length_scale"),
+        },
+        Some("linear") => Kernel::Linear,
+        other => panic!("unknown kernel type {other:?}"),
+    }
+}
+
+/// Maps the fixture's kernel JSON (`null` | kernel | `{"columns": {..}}`).
+#[allow(
+    clippy::ref_option,
+    reason = "mirrors the `Option` field of `Params` directly"
+)]
+fn kernel_choice(v: &Option<serde_json::Value>) -> KernelChoice {
+    match v {
+        None | Some(serde_json::Value::Null) => KernelChoice::Auto,
+        Some(obj) => match obj.get("columns") {
+            Some(columns) => KernelChoice::PerColumn(
+                columns
+                    .as_object()
+                    .expect("columns must be an object")
+                    .iter()
+                    .map(|(name, k)| (name.clone(), parse_kernel(k)))
+                    .collect(),
+            ),
+            None => KernelChoice::All(parse_kernel(obj)),
+        },
+    }
+}
+
+fn case_bandwidth(case: &Case) -> Bandwidth {
+    match case.params.bandwidth.as_deref() {
+        Some("heuristic") | None => Bandwidth::Heuristic,
+        Some("median") => Bandwidth::Median,
+        Some(other) => panic!("[{}:{}] unknown bandwidth {other}", case.id, case.test),
+    }
+}
+
+fn case_null_dist(case: &Case) -> NullDistribution {
+    match case.params.null_dist.as_deref() {
+        Some("gamma") | None => NullDistribution::Gamma,
+        Some("permutation") => NullDistribution::Permutation {
+            n_permutations: case
+                .params
+                .n_permutations
+                .unwrap_or_else(|| panic!("[{}:{}] missing n_permutations", case.id, case.test)),
+            seed: case
+                .params
+                .seed
+                .unwrap_or_else(|| panic!("[{}:{}] missing seed", case.id, case.test)),
+        },
+        Some(other) => panic!("[{}:{}] unknown null_dist {other}", case.id, case.test),
+    }
 }
 
 fn run_case(case: &Case) -> CiResult {
@@ -144,6 +220,19 @@ fn run_case(case: &Case) -> CiResult {
             Box::new(PearsonEquivalence::new(delta))
         }
         "fisher_z" => Box::new(FisherZ::new()),
+        "hsic" => Box::new(Hsic {
+            kernel: kernel_choice(&case.params.kernel),
+            bandwidth: case_bandwidth(case),
+            null_dist: case_null_dist(case),
+        }),
+        "kci" => Box::new(Kci {
+            kernel: kernel_choice(&case.params.kernel),
+            bandwidth: case_bandwidth(case),
+            epsilon: case
+                .params
+                .epsilon
+                .unwrap_or_else(|| panic!("[{}:{}] kci case missing epsilon", case.id, case.test)),
+        }),
         other => panic!(
             "[{}:{}] run_case called for unsupported test {other}",
             case.id, case.test
@@ -187,8 +276,11 @@ fn assert_field(name: &str, case: &Case, expected: Option<f64>, actual: Option<f
         return;
     }
 
+    let tolerance = case
+        .rel_tol
+        .map_or(TOL, |rel| f64::max(1e-300, rel * exp.abs()));
     assert!(
-        (act - exp).abs() < TOL,
+        (act - exp).abs() <= tolerance,
         "[{}:{}] {name} mismatch: expected {exp}, got {act} (x={}, y={}, z={:?})",
         case.id,
         case.test,
@@ -247,6 +339,8 @@ fn golden_fixture_matches() {
         "pearson_correlation",
         "pearson_equivalence",
         "fisher_z",
+        "hsic",
+        "kci",
     ] {
         assert!(
             counts.get(test).copied().unwrap_or(0) > 0,

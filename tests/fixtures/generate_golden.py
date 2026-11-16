@@ -17,7 +17,7 @@ from typing import Any
 
 import numpy as np
 from scipy import stats
-
+from scipy.spatial.distance import cdist, pdist
 
 LAMBDA_BY_TEST = {
     "chi_squared": 1.0,
@@ -29,7 +29,7 @@ LAMBDA_BY_TEST = {
 DISCRETE_LAMBDAS = LAMBDA_BY_TEST
 RHO_CLIP = 0.999999
 CORRELATION_ZERO_ATOL = 1e-15
-EXPECTED_CASE_COUNT = 80
+EXPECTED_CASE_COUNT = 105
 EXPECTED_COUNTS = {
     "chi_squared": 12,
     "log_likelihood": 12,
@@ -39,7 +39,13 @@ EXPECTED_COUNTS = {
     "pearson_correlation": 7,
     "pearson_equivalence": 6,
     "fisher_z": 7,
+    "hsic": 13,
+    "kci": 12,
 }
+KERNEL_TESTS = {"hsic", "kci"}
+KERNEL_REL_TOL = 1e-9
+BANDWIDTHS = {"heuristic", "median"}
+NULL_DISTS = {"gamma", "permutation"}
 CASE_ID = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
 EXPECTED_KEYS = {"statistic", "p_value", "dof", "effect_size"}
 DEFAULT_OUTPUT = Path(__file__).with_name("golden.json")
@@ -459,14 +465,375 @@ def _fisher_expected(case: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+class _SplitMix64:
+    """Bit-exact port of crates/ci-core/src/rng.rs (SplitMix64 + Fisher-Yates)."""
+
+    MASK = (1 << 64) - 1
+
+    def __init__(self, seed: int) -> None:
+        self.state = seed & self.MASK
+
+    def next_u64(self) -> int:
+        self.state = (self.state + 0x9E3779B97F4A7C15) & self.MASK
+        z = self.state
+        z = ((z ^ (z >> 30)) * 0xBF58476D1CE4E5B9) & self.MASK
+        z = ((z ^ (z >> 27)) * 0x94D049BB133111EB) & self.MASK
+        return z ^ (z >> 31)
+
+    def bounded(self, m: int) -> int:
+        threshold = ((1 << 64) - m) % m
+        while True:
+            r = self.next_u64()
+            if r >= threshold:
+                return r % m
+
+    def shuffle_identity(self, n: int) -> list[int]:
+        out = list(range(n))
+        for i in range(n - 1, 0, -1):
+            j = self.bounded(i + 1)
+            out[i], out[j] = out[j], out[i]
+        return out
+
+
+def _standardize(values: Sequence[float]) -> np.ndarray:
+    array = np.asarray(values, dtype=np.float64)
+    return (array - array.mean()) / array.std(ddof=1)
+
+
+def _rbf(length_scale: float) -> dict[str, Any]:
+    return {"type": "rbf", "length_scale": length_scale}
+
+
+def _gram(kernel: dict[str, Any], points: np.ndarray) -> np.ndarray:
+    if kernel["type"] == "linear":
+        return points @ points.T
+    scaled = points / kernel["length_scale"]
+    return np.exp(-0.5 * cdist(scaled, scaled, "sqeuclidean"))
+
+
+def _median_length_scale(points: np.ndarray) -> float:
+    distances = pdist(points)
+    distances = distances[distances > 0.0]
+    if distances.size == 0:
+        return 1.0
+    return float(np.median(distances)) / math.sqrt(2.0)
+
+
+def _center(k: np.ndarray) -> np.ndarray:
+    column_mean = k.mean(axis=0)
+    return k - column_mean - column_mean[:, None] + column_mean.mean()
+
+
+def _gamma_p_value(statistic: float, mean: float, var: float) -> float:
+    if var <= 0.0 or mean <= 0.0:
+        return 1.0
+    return float(stats.gamma.sf(statistic, a=mean * mean / var, scale=var / mean))
+
+
+def _explicit_kernel(choice: Any, name: str) -> dict[str, Any] | None:
+    if choice is None:
+        return None
+    if "columns" in choice:
+        return choice["columns"].get(name)
+    return choice
+
+
+def _hsic_heuristic_length_scale(n: int) -> float:
+    return 0.8 if n < 200 else 0.5 if n < 1200 else 0.3
+
+
+def _kci_heuristic_width(n: int) -> float:
+    return 1.2 if n < 200 else 0.7 if n < 1200 else 0.4
+
+
+def _hsic_column_kernel(
+    choice: Any, name: str, points: np.ndarray, bandwidth: str
+) -> dict[str, Any]:
+    explicit = _explicit_kernel(choice, name)
+    if explicit is not None:
+        return explicit
+    if bandwidth == "median":
+        return _rbf(_median_length_scale(points))
+    return _rbf(_hsic_heuristic_length_scale(len(points)))
+
+
+def _kernel_inputs(case: dict[str, Any]) -> tuple[np.ndarray, np.ndarray]:
+    columns = case["columns"]
+    return (
+        _standardize(columns[case["x"]]["values"])[:, None],
+        _standardize(columns[case["y"]]["values"])[:, None],
+    )
+
+
+def _hsic_reference(case: dict[str, Any]) -> dict[str, Any]:
+    params = case["params"]
+    px, py = _kernel_inputs(case)
+    kx = _gram(
+        _hsic_column_kernel(params["kernel"], case["x"], px, params["bandwidth"]), px
+    )
+    ky = _gram(
+        _hsic_column_kernel(params["kernel"], case["y"], py, params["bandwidth"]), py
+    )
+    return _hsic_from_grams(kx, ky, params)
+
+
+def _hsic_from_grams(
+    kx: np.ndarray, ky: np.ndarray, params: dict[str, Any]
+) -> dict[str, Any]:
+    n = len(kx)
+    cx, cy = _center(kx), _center(ky)
+    statistic = float(np.sum(cx * cy))
+    effect_size = statistic / math.sqrt(np.sum(cx * cx) * np.sum(cy * cy))
+    if params["null_dist"] == "permutation":
+        rng = _SplitMix64(params["seed"])
+        count = 0
+        for _ in range(params["n_permutations"]):
+            order = np.asarray(rng.shuffle_identity(n))
+            if float(np.sum(cx * cy[np.ix_(order, order)])) >= statistic:
+                count += 1
+        p_value = (1.0 + count) / (1.0 + params["n_permutations"])
+    elif n < 6:
+        p_value = 1.0
+    else:
+        n_pairs = n * (n - 1.0)
+        product = cx * cy
+        off = (np.sum(product * product) - np.sum(np.diag(product) ** 2)) / 36.0
+        factor = 72.0 * (n - 4.0) * (n - 5.0) / (n_pairs * (n - 2.0) * (n - 3.0))
+        var = factor * off / n_pairs
+        mu_x = (kx.sum() - np.trace(kx)) / n_pairs
+        mu_y = (ky.sum() - np.trace(ky)) / n_pairs
+        mean = (np.trace(kx) / n - mu_x) * (np.trace(ky) / n - mu_y) / n
+        p_value = _gamma_p_value(statistic / n, n * mean, n * n * var)
+    return {
+        "statistic": statistic,
+        "p_value": float(p_value),
+        "dof": None,
+        "effect_size": float(effect_size),
+    }
+
+
+def _kci_kernel(
+    choice: Any, name: str | None, points: np.ndarray, bandwidth: str, n_z: int
+) -> dict[str, Any]:
+    explicit = None if name is None else _explicit_kernel(choice, name)
+    if explicit is not None:
+        return explicit
+    if bandwidth == "median":
+        return _rbf(_median_length_scale(points))
+    return _rbf(_kci_heuristic_width(len(points)) * math.sqrt(n_z))
+
+
+def _residualized(k: np.ndarray, rz: np.ndarray) -> np.ndarray:
+    return rz @ k @ rz
+
+
+def _null_factor(k: np.ndarray) -> np.ndarray:
+    values, vectors = np.linalg.eigh(0.5 * (k + k.T))
+    keep = values > values.max() * 1e-5
+    scaled = vectors[:, keep] * np.sqrt(values[keep])
+    return scaled @ scaled.T
+
+
+def _kci_reference(case: dict[str, Any]) -> dict[str, Any]:
+    params = case["params"]
+    if not case["z"]:
+        return _hsic_reference({**case, "params": {**params, "null_dist": "gamma"}})
+    columns = case["columns"]
+    n_z = len(case["z"])
+    px, py = _kernel_inputs(case)
+    pz = np.column_stack([_standardize(columns[name]["values"]) for name in case["z"]])
+    x_aug = np.hstack([px, 0.5 * pz])
+    choice, bandwidth = params["kernel"], params["bandwidth"]
+    kernel_z = (
+        choice
+        if choice is not None and "type" in choice
+        else _kci_kernel(None, None, pz, bandwidth, n_z)
+    )
+    kx = _center(_gram(_kci_kernel(choice, case["x"], x_aug, bandwidth, n_z), x_aug))
+    ky = _center(_gram(_kci_kernel(choice, case["y"], py, bandwidth, n_z), py))
+    kz = _center(_gram(kernel_z, pz))
+    epsilon = params["epsilon"]
+    n = len(kz)
+    rz = epsilon * np.linalg.solve(kz + epsilon * np.eye(n), np.eye(n))
+    kxr, kyr = _residualized(kx, rz), _residualized(ky, rz)
+    statistic = float(np.sum(kxr * kyr))
+    effect_size = statistic / math.sqrt(np.sum(kxr * kxr) * np.sum(kyr * kyr))
+    u = _null_factor(kxr) * _null_factor(kyr)
+    p_value = _gamma_p_value(statistic, float(np.trace(u)), 2.0 * float(np.sum(u * u)))
+    return {
+        "statistic": statistic,
+        "p_value": p_value,
+        "dof": None,
+        "effect_size": float(effect_size),
+    }
+
+
+def _kernel_scenario(
+    scenario_id: str,
+    arrays: dict[str, np.ndarray],
+    z_names: list[str],
+    params: dict[str, Any],
+    x: str = "X",
+    y: str = "Y",
+) -> dict[str, Any]:
+    columns = {
+        name: _column("continuous", [float(f"{v:.6f}") for v in values])
+        for name, values in arrays.items()
+    }
+    return {
+        "scenario_id": scenario_id,
+        "columns": columns,
+        "x": x,
+        "y": y,
+        "z": z_names,
+        "params": params,
+    }
+
+
+def _hsic_params(
+    kernel: dict[str, Any] | None = None,
+    bandwidth: str = "heuristic",
+    permutations: tuple[int, int] | None = None,
+) -> dict[str, Any]:
+    return {
+        "kernel": kernel,
+        "bandwidth": bandwidth,
+        "null_dist": "gamma" if permutations is None else "permutation",
+        "n_permutations": None if permutations is None else permutations[0],
+        "seed": None if permutations is None else permutations[1],
+    }
+
+
+def _hsic_scenarios() -> list[dict[str, Any]]:
+    def pair(seed: int, n: int, signal: Any, noise: float) -> dict[str, np.ndarray]:
+        rng = np.random.default_rng(seed)
+        x = rng.standard_normal(n)
+        return {"X": x, "Y": signal(x) + noise * rng.standard_normal(n)}
+
+    zero = lambda x: np.zeros_like(x)  # noqa: E731
+    identity = lambda x: x  # noqa: E731
+    square = lambda x: x * x  # noqa: E731
+    mild = lambda x: 0.6 * x  # noqa: E731
+    ties = {k: np.round(v, 1) for k, v in pair(15, 80, mild, 1.0).items()}
+    cases = [
+        ("hsic-independent-small", pair(11, 60, zero, 1.0), _hsic_params()),
+        ("hsic-linear-dependent-small", pair(12, 60, identity, 0.5), _hsic_params()),
+        ("hsic-independent-mid", pair(13, 300, zero, 1.0), _hsic_params()),
+        ("hsic-nonlinear-dependent-mid", pair(14, 300, square, 0.3), _hsic_params()),
+        (
+            "hsic-median-bandwidth",
+            pair(16, 80, mild, 1.0),
+            _hsic_params(bandwidth="median"),
+        ),
+        ("hsic-ties-median-bandwidth", ties, _hsic_params(bandwidth="median")),
+        ("hsic-rbf-all", pair(17, 80, mild, 1.0), _hsic_params(_rbf(2.0))),
+        (
+            "hsic-linear-all",
+            pair(18, 80, mild, 1.0),
+            _hsic_params({"type": "linear"}),
+        ),
+        (
+            "hsic-per-column",
+            pair(19, 80, mild, 1.0),
+            _hsic_params({"columns": {"X": _rbf(0.5)}}),
+        ),
+        ("hsic-tiny-sample", pair(20, 5, identity, 0.5), _hsic_params()),
+        ("hsic-tiny-p-value", pair(21, 250, identity, 0.7), _hsic_params()),
+        (
+            "hsic-permutation-independent",
+            pair(22, 40, zero, 1.0),
+            _hsic_params(permutations=(50, 7)),
+        ),
+        (
+            "hsic-permutation-dependent",
+            pair(23, 40, identity, 0.3),
+            _hsic_params(permutations=(50, 0)),
+        ),
+    ]
+    return [
+        _kernel_scenario(scenario_id, arrays, [], params)
+        for scenario_id, arrays, params in cases
+    ]
+
+
+def _kci_params(
+    kernel: dict[str, Any] | None = None,
+    bandwidth: str = "heuristic",
+    epsilon: float = 1e-3,
+) -> dict[str, Any]:
+    return {"kernel": kernel, "bandwidth": bandwidth, "epsilon": epsilon}
+
+
+def _kci_data(seed: int, n: int, n_z: int, dependent: bool) -> dict[str, np.ndarray]:
+    rng = np.random.default_rng(seed)
+    z = rng.standard_normal((n, n_z))
+    x = z.sum(axis=1) + 0.5 * rng.standard_normal(n)
+    y = 0.8 * z[:, 0] + 0.5 * rng.standard_normal(n)
+    if dependent:
+        y = y + 0.8 * x
+    names = ["Z"] if n_z == 1 else [f"Z{i + 1}" for i in range(n_z)]
+    arrays = {"X": x, "Y": y}
+    arrays.update({name: z[:, i] for i, name in enumerate(names)})
+    return arrays
+
+
+def _kci_scenarios() -> list[dict[str, Any]]:
+    one = ["Z"]
+    two = ["Z1", "Z2"]
+    dependent = _kci_data(32, 100, 1, True)
+    cases = [
+        ("kci-independent-z1-small", _kci_data(31, 100, 1, False), one, _kci_params()),
+        ("kci-dependent-z1-small", dependent, one, _kci_params()),
+        ("kci-independent-z1-mid", _kci_data(33, 250, 1, False), one, _kci_params()),
+        ("kci-independent-z2-small", _kci_data(34, 120, 2, False), two, _kci_params()),
+        ("kci-dependent-z2-small", _kci_data(35, 120, 2, True), two, _kci_params()),
+        (
+            "kci-median-bandwidth",
+            _kci_data(36, 100, 1, True),
+            one,
+            _kci_params(bandwidth="median"),
+        ),
+        (
+            "kci-rbf-all",
+            _kci_data(37, 100, 1, True),
+            one,
+            _kci_params(_rbf(1.0)),
+        ),
+        (
+            "kci-linear-all",
+            _kci_data(38, 100, 1, True),
+            one,
+            _kci_params({"type": "linear"}),
+        ),
+        (
+            "kci-per-column-z-ignored",
+            _kci_data(39, 100, 1, True),
+            one,
+            _kci_params({"columns": {"X": _rbf(2.0), "Z": _rbf(5.0)}}),
+        ),
+        ("kci-empty-z", _kci_data(40, 100, 1, True), [], _kci_params()),
+        ("kci-epsilon", _kci_data(41, 100, 1, True), one, _kci_params(epsilon=0.01)),
+    ]
+    scenarios = [
+        _kernel_scenario(scenario_id, arrays, z_names, params)
+        for scenario_id, arrays, z_names, params in cases
+    ]
+    swapped = _kernel_scenario(
+        "kci-swapped", dependent, one, _kci_params(), x="Y", y="X"
+    )
+    scenarios.append(swapped)
+    return scenarios
+
+
 def _case(
     case_id: str,
     test: str,
     params: dict[str, Any],
     scenario: dict[str, Any],
     expected: dict[str, Any],
+    rel_tol: float | None = None,
 ) -> dict[str, Any]:
-    return {
+    case = {
         "id": case_id,
         "test": test,
         "params": params,
@@ -476,6 +843,9 @@ def _case(
         "z": scenario["z"],
         "expected": expected,
     }
+    if rel_tol is not None:
+        case["rel_tol"] = rel_tol
+    return case
 
 
 def build_cases() -> list[dict[str, Any]]:
@@ -521,7 +891,24 @@ def build_cases() -> list[dict[str, Any]]:
                 _fisher_expected(scenario),
             )
         )
+    for scenario in _hsic_scenarios():
+        cases.append(_kernel_case("hsic", scenario, _hsic_reference))
+    for scenario in _kci_scenarios():
+        cases.append(_kernel_case("kci", scenario, _kci_reference))
     return cases
+
+
+def _kernel_case(test: str, scenario: dict[str, Any], reference: Any) -> dict[str, Any]:
+    case = _case(
+        scenario["scenario_id"],
+        test,
+        scenario["params"],
+        scenario,
+        {},
+        KERNEL_REL_TOL,
+    )
+    case["expected"] = reference(case)
+    return case
 
 
 def _finite_number(value: Any) -> bool:
@@ -532,11 +919,60 @@ def _finite_number(value: Any) -> bool:
     )
 
 
+def _validate_kernel_spec(case_id: str, kernel: Any, nested: bool = False) -> None:
+    if kernel is None and not nested:
+        return
+    if isinstance(kernel, dict) and set(kernel) == {"type"}:
+        if kernel["type"] == "linear":
+            return
+    if isinstance(kernel, dict) and set(kernel) == {"type", "length_scale"}:
+        scale = kernel["length_scale"]
+        if kernel["type"] == "rbf" and _finite_number(scale) and scale > 0.0:
+            return
+    if isinstance(kernel, dict) and set(kernel) == {"columns"} and not nested:
+        columns = kernel["columns"]
+        if isinstance(columns, dict) and columns:
+            for entry in columns.values():
+                _validate_kernel_spec(case_id, entry, nested=True)
+            return
+    raise ValueError(f"{case_id}: invalid kernel {kernel!r}")
+
+
+def _validate_kernel_params(case_id: str, test: str, params: dict[str, Any]) -> None:
+    keys = (
+        {"kernel", "bandwidth", "null_dist", "n_permutations", "seed"}
+        if test == "hsic"
+        else {"kernel", "bandwidth", "epsilon"}
+    )
+    if set(params) != keys:
+        raise ValueError(f"{case_id}: invalid {test} params")
+    _validate_kernel_spec(case_id, params["kernel"])
+    if params["bandwidth"] not in BANDWIDTHS:
+        raise ValueError(f"{case_id}: invalid bandwidth {params['bandwidth']!r}")
+    if test == "kci":
+        epsilon = params["epsilon"]
+        if not _finite_number(epsilon) or epsilon <= 0.0:
+            raise ValueError(f"{case_id}: epsilon must be finite and > 0")
+        return
+    if params["null_dist"] not in NULL_DISTS:
+        raise ValueError(f"{case_id}: invalid null_dist {params['null_dist']!r}")
+    permutation = (params["n_permutations"], params["seed"])
+    if params["null_dist"] == "gamma":
+        if permutation != (None, None):
+            raise ValueError(f"{case_id}: gamma null takes no permutation params")
+    elif (
+        not all(isinstance(v, int) and not isinstance(v, bool) for v in permutation)
+        or permutation[0] < 1
+        or permutation[1] < 0
+    ):
+        raise ValueError(f"{case_id}: invalid permutation params")
+
+
 def validate_cases(cases: list[dict[str, Any]]) -> None:
     counts = Counter(case.get("test") for case in cases)
     if len(cases) != EXPECTED_CASE_COUNT or counts != Counter(EXPECTED_COUNTS):
         raise ValueError(
-            f"expected the approved 80-case distribution, got {dict(counts)}"
+            f"expected the approved {EXPECTED_CASE_COUNT}-case distribution, got {dict(counts)}"
         )
     ids: set[str] = set()
     for case in cases:
@@ -561,8 +997,16 @@ def validate_cases(cases: list[dict[str, Any]]) -> None:
         elif test in {"pearson_correlation", "fisher_z"}:
             if params:
                 raise ValueError(f"{case_id}: unexpected params")
+        elif test in KERNEL_TESTS:
+            _validate_kernel_params(case_id, test, params)
         else:
             raise ValueError(f"{case_id}: unknown test {test!r}")
+        if test in KERNEL_TESTS:
+            rel_tol = case.get("rel_tol")
+            if not _finite_number(rel_tol) or rel_tol != KERNEL_REL_TOL:
+                raise ValueError(f"{case_id}: rel_tol must be {KERNEL_REL_TOL}")
+        elif "rel_tol" in case:
+            raise ValueError(f"{case_id}: unexpected rel_tol")
         columns = case["columns"]
         if not isinstance(columns, dict) or not columns:
             raise ValueError(f"{case_id}: columns must be a non-empty object")
@@ -593,6 +1037,8 @@ def validate_cases(cases: list[dict[str, Any]]) -> None:
             if not _finite_number(expected[field]):
                 raise ValueError(f"{case_id}: {field} must be finite")
         dof = expected["dof"]
+        if test in KERNEL_TESTS and dof is not None:
+            raise ValueError(f"{case_id}: kernel tests have no dof")
         if dof is not None and (
             isinstance(dof, bool) or not isinstance(dof, int) or dof < 0
         ):
@@ -640,17 +1086,20 @@ def _fixture_values_match(
     committed: Any,
     generated: Any,
     path: tuple[str | int, ...] = (),
+    rel_tol: float | None = None,
 ) -> bool:
     if type(committed) is not type(generated):
         return False
     if isinstance(generated, dict):
+        if "expected" in generated:
+            rel_tol = generated.get("rel_tol")
         return committed.keys() == generated.keys() and all(
-            _fixture_values_match(committed[key], value, (*path, key))
+            _fixture_values_match(committed[key], value, (*path, key), rel_tol)
             for key, value in generated.items()
         )
     if isinstance(generated, list):
         return len(committed) == len(generated) and all(
-            _fixture_values_match(left, right, (*path, index))
+            _fixture_values_match(left, right, (*path, index), rel_tol)
             for index, (left, right) in enumerate(zip(committed, generated))
         )
     if (
@@ -658,15 +1107,15 @@ def _fixture_values_match(
         and path[-2] == "expected"
         and path[-1] in TOLERATED_EXPECTED_FIELDS
     ):
+        tolerance = (
+            FIXTURE_NUMERIC_TOLERANCE
+            if rel_tol is None
+            else max(1e-300, rel_tol * abs(generated))
+        )
         return (
             _finite_number(committed)
             and _finite_number(generated)
-            and math.isclose(
-                committed,
-                generated,
-                rel_tol=0.0,
-                abs_tol=FIXTURE_NUMERIC_TOLERANCE,
-            )
+            and abs(committed - generated) <= tolerance
         )
     return committed == generated
 

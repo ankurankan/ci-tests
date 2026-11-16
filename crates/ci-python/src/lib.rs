@@ -14,15 +14,18 @@
 //!
 //! Discrete: [`ChiSquared`], [`LogLikelihood`], [`CressieRead`],
 //! [`FreemanTukey`], [`ModifiedLikelihood`].
-//! Continuous: [`PearsonCorrelation`], [`FisherZ`], [`PearsonEquivalence`].
+//! Continuous: [`PearsonCorrelation`], [`FisherZ`], [`PearsonEquivalence`],
+//! [`PyHsic`], [`PyKci`] (kernel tests, configured with [`PyRbf`] / [`PyLinear`]).
 
+use std::collections::BTreeMap;
 use std::sync::Arc;
 
 use ci_core::dataset::{ColumnKind, Dataset as CoreDataset};
 use ci_core::error::CiError as CoreError;
+use ci_core::kernel::{Bandwidth, Kernel, KernelChoice};
 use ci_core::strategy::{CITest, CiResult as CoreResult, DataType, IndependenceRule, TestMeta};
 use numpy::PyReadonlyArray1;
-use pyo3::exceptions::PyValueError;
+use pyo3::exceptions::{PyTypeError, PyValueError};
 use pyo3::prelude::*;
 use pyo3::types::{PyDict, PySequence, PyString, PyTuple};
 
@@ -332,6 +335,89 @@ fn meta_to_py(py: Python<'_>, meta: &TestMeta) -> PyResult<Py<PyDict>> {
     Ok(dict.unbind())
 }
 
+/// Gaussian (RBF) kernel with a fixed length scale.
+#[pyclass(name = "RBF", module = "ci_python._ci_python", frozen)]
+#[derive(Clone)]
+pub struct PyRbf {
+    #[pyo3(get)]
+    length_scale: f64,
+}
+
+#[pymethods]
+impl PyRbf {
+    #[new]
+    fn new(length_scale: f64) -> Self {
+        Self { length_scale }
+    }
+
+    fn __repr__(&self) -> String {
+        format!("RBF(length_scale={:?})", self.length_scale)
+    }
+}
+
+/// Linear kernel.
+#[pyclass(name = "Linear", module = "ci_python._ci_python", frozen)]
+#[derive(Clone)]
+pub struct PyLinear;
+
+#[pymethods]
+impl PyLinear {
+    #[new]
+    fn new() -> Self {
+        Self
+    }
+
+    #[allow(clippy::unused_self)]
+    fn __repr__(&self) -> String {
+        "Linear()".to_string()
+    }
+}
+
+/// Convert a single `RBF` / `Linear` object into a core [`Kernel`].
+fn parse_kernel(obj: &Bound<'_, PyAny>) -> PyResult<Kernel> {
+    if let Ok(rbf) = obj.downcast::<PyRbf>() {
+        Ok(Kernel::Rbf {
+            length_scale: rbf.get().length_scale,
+        })
+    } else if obj.downcast::<PyLinear>().is_ok() {
+        Ok(Kernel::Linear)
+    } else {
+        Err(PyTypeError::new_err(
+            "kernel must be an RBF or Linear instance",
+        ))
+    }
+}
+
+/// Convert the `kernel` argument (`None`, a kernel, or `{column: kernel}`).
+fn parse_kernel_choice(obj: Option<&Bound<'_, PyAny>>) -> PyResult<KernelChoice> {
+    let Some(obj) = obj.filter(|o| !o.is_none()) else {
+        return Ok(KernelChoice::Auto);
+    };
+    if let Ok(dict) = obj.downcast::<PyDict>() {
+        let mut map = BTreeMap::new();
+        for (key, value) in dict.iter() {
+            let name: String = key
+                .extract()
+                .map_err(|_| PyTypeError::new_err("kernel dict keys must be column names (str)"))?;
+            map.insert(name, parse_kernel(&value)?);
+        }
+        Ok(KernelChoice::PerColumn(map))
+    } else {
+        Ok(KernelChoice::All(parse_kernel(obj)?))
+    }
+}
+
+/// Parse a bandwidth rule name.
+fn parse_bandwidth(name: &str) -> PyResult<Bandwidth> {
+    match name {
+        "heuristic" => Ok(Bandwidth::Heuristic),
+        "median" => Ok(Bandwidth::Median),
+        other => Err(PyValueError::new_err(format!(
+            "bandwidth must be 'heuristic' or 'median', got {other:?}"
+        ))),
+    }
+}
+
 /// Generate a data-bound `#[pyclass]` wrapper for a concrete [`CITest`].
 ///
 /// Each generated class stores the shared [`CoreDataset`] plus a constructed
@@ -359,6 +445,7 @@ macro_rules! ci_test_class {
             fn new(data: &Bound<'_, PyAny> $(, $arg: $arg_ty)*) -> PyResult<Self> {
                 let data = PyDataset::coerce(data)?;
                 let inner = $ctor;
+                inner.validate(&data).map_err(|e| map_err(&e))?;
                 Ok(Self { data, inner })
             }
 
@@ -485,6 +572,59 @@ ci_test_class!(
     }
 );
 
+ci_test_class!(
+    "HSIC",
+    PyHsic,
+    ci_core::ci_tests::Hsic,
+    new(
+        kernel: Option<Bound<'_, PyAny>> = None,
+        bandwidth: &str = "heuristic",
+        null_dist: &str = "gamma",
+        n_permutations: usize = 100,
+        seed: u64 = 0,
+    ) {
+        if n_permutations < 1 {
+            return Err(PyValueError::new_err(format!(
+                "n_permutations must be >= 1, got {n_permutations}"
+            )));
+        }
+        let null_dist = match null_dist {
+            "gamma" => ci_core::ci_tests::NullDistribution::Gamma,
+            "permutation" => ci_core::ci_tests::NullDistribution::Permutation {
+                n_permutations,
+                seed,
+            },
+            other => {
+                return Err(PyValueError::new_err(format!(
+                    "null_dist must be 'gamma' or 'permutation', got {other:?}"
+                )))
+            }
+        };
+        ci_core::ci_tests::Hsic {
+            kernel: parse_kernel_choice(kernel.as_ref())?,
+            bandwidth: parse_bandwidth(bandwidth)?,
+            null_dist,
+        }
+    }
+);
+
+ci_test_class!(
+    "KCI",
+    PyKci,
+    ci_core::ci_tests::Kci,
+    new(
+        kernel: Option<Bound<'_, PyAny>> = None,
+        bandwidth: &str = "heuristic",
+        epsilon: f64 = 1e-3,
+    ) {
+        ci_core::ci_tests::Kci {
+            kernel: parse_kernel_choice(kernel.as_ref())?,
+            bandwidth: parse_bandwidth(bandwidth)?,
+            epsilon,
+        }
+    }
+);
+
 /// The native extension module (`ci_python._ci_python`).
 #[pymodule]
 #[pyo3(name = "_ci_python")]
@@ -500,5 +640,9 @@ fn ci_python(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<PyPearsonCorrelation>()?;
     m.add_class::<PyFisherZ>()?;
     m.add_class::<PyPearsonEquivalence>()?;
+    m.add_class::<PyRbf>()?;
+    m.add_class::<PyLinear>()?;
+    m.add_class::<PyHsic>()?;
+    m.add_class::<PyKci>()?;
     Ok(())
 }

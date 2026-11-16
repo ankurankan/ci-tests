@@ -216,8 +216,10 @@ test_that("NA values error at dataset construction", {
   df3 <- data.frame(A = factor(c("u", NA, "v")), X = c(0.1, 0.2, 0.3))
   expect_error(dataset(df3), "missing data")
   # Character columns are coded via a separate branch of .cir_code_column.
-  df4 <- data.frame(A = c("u", NA, "v"), X = c(0.1, 0.2, 0.3),
-                    stringsAsFactors = FALSE)
+  df4 <- data.frame(
+    A = c("u", NA, "v"), X = c(0.1, 0.2, 0.3),
+    stringsAsFactors = FALSE
+  )
   expect_error(dataset(df4), "missing data")
 })
 
@@ -231,4 +233,95 @@ test_that("invalid queries error", {
   expect_error(run_test(chi, "A", "A"), "invalid query")
   expect_error(run_test(chi, "A", "B", c("A")), "invalid query")
   expect_error(run_test(chi, "A", "B", c("C", "C")), "invalid query")
+})
+
+# ---------------------------------------------------------------------------
+# HSIC and KCI
+# ---------------------------------------------------------------------------
+
+kernel_df <- function() {
+  set.seed(3)
+  x <- rnorm(60)
+  data.frame(X = x, Y = x^2 + rnorm(60, sd = 0.3), Z = rnorm(60))
+}
+
+test_that("kernel constructors build cir_kernel objects", {
+  rbf <- rbf_kernel(2)
+  expect_s3_class(rbf, "cir_kernel")
+  expect_equal(rbf$type, "rbf")
+  expect_equal(rbf$length_scale, 2)
+  expect_equal(linear_kernel()$type, "linear")
+  expect_output(print(rbf), "rbf")
+  expect_output(print(linear_kernel()), "linear")
+  expect_error(rbf_kernel(0))
+  expect_error(rbf_kernel(-1))
+  expect_error(rbf_kernel(NA_real_))
+  expect_error(rbf_kernel("a"))
+})
+
+test_that("hsic and kci report meta; hsic is symmetric", {
+  data <- dataset(kernel_df())
+  h <- hsic(data)
+  k <- kci(data)
+  expect_s3_class(h, "cir_test")
+  expect_s3_class(k, "cir_test")
+  expect_equal(h$name, "hsic")
+  expect_equal(k$name, "kci")
+  expect_equal(h$handle$decision_rule(), "p_value_ge")
+  expect_equal(k$handle$decision_rule(), "p_value_ge")
+  expect_equal(
+    run_test(h, "X", "Y")$p_value,
+    run_test(h, "Y", "X")$p_value,
+    tolerance = 1e-9
+  )
+  # KCI is not exactly symmetric (its core meta says so); both orders run.
+  expect_true(is.finite(run_test(k, "X", "Y", "Z")$p_value))
+  expect_true(is.finite(run_test(k, "Y", "X", "Z")$p_value))
+})
+
+test_that("a kernel object and the equivalent named list agree", {
+  data <- dataset(kernel_df())
+  all_k <- run_test(hsic(data, kernel = rbf_kernel(1.5)), "X", "Y")
+  per_col <- run_test(
+    hsic(data, kernel = list(X = rbf_kernel(1.5), Y = rbf_kernel(1.5))),
+    "X", "Y"
+  )
+  expect_equal(all_k$p_value, per_col$p_value, tolerance = 1e-12)
+  expect_equal(all_k$statistic, per_col$statistic, tolerance = 1e-12)
+})
+
+test_that("permutation null is deterministic for a seed", {
+  data <- dataset(kernel_df())
+  t1 <- hsic(data, null_dist = "permutation", n_permutations = 20L, seed = 5)
+  t2 <- hsic(data, null_dist = "permutation", n_permutations = 20L, seed = 5)
+  expect_equal(run_test(t1, "X", "Y")$p_value, run_test(t2, "X", "Y")$p_value)
+})
+
+test_that("hsic and kci reject invalid configuration", {
+  data <- dataset(kernel_df())
+  expect_error(hsic(data, kernel = list(Nope = rbf_kernel(1))), "Nope")
+  expect_error(kci(data, kernel = list(Nope = linear_kernel())), "Nope")
+  expect_error(hsic(data, bandwidth = "x"))
+  expect_error(kci(data, bandwidth = "x"))
+  expect_error(hsic(data, null_dist = "x"))
+  expect_error(hsic(data, null_dist = "permutation", seed = -1))
+  expect_error(hsic(data, null_dist = "permutation", seed = 1.5))
+  expect_error(hsic(data, seed = NA_real_))
+  expect_error(hsic(data, seed = Inf))
+  expect_error(hsic(data, seed = 2^53 + 2))
+  expect_error(hsic(data, n_permutations = 0))
+  expect_error(hsic(data, n_permutations = 2.5))
+  expect_error(hsic(data, n_permutations = NA_integer_))
+  expect_error(hsic(data, null_dist = "permutation", n_permutations = 0))
+  expect_error(kci(data, epsilon = 0))
+  expect_error(kci(data, epsilon = -1))
+  expect_error(hsic(data, kernel = "rbf"))
+  expect_error(kci(data, kernel = "rbf"))
+  expect_error(hsic(data, kernel = list(X = "rbf")))
+  expect_error(hsic(data, kernel = list(rbf_kernel(1))))
+})
+
+test_that("hsic rejects a conditioning set", {
+  data <- dataset(kernel_df())
+  expect_error(run_test(hsic(data), "X", "Y", "Z"))
 })

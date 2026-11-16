@@ -8,6 +8,7 @@ resolver = "2"
 
 [workspace.dependencies]
 statrs = { version = "0.18.0", default-features = false }
+faer = { version = "0.24", default-features = false, features = ["std", "linalg"] }
 
 # Linting/development
 [workspace.lints.rust]

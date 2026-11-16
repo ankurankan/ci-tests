@@ -20,11 +20,32 @@ writes the `p >= alpha` (vs. `p < alpha`) logic.
 | `PearsonCorrelation` | Continuous | — | `n - |Z| - 2` |
 | `PearsonEquivalence` | Continuous | `delta_threshold=0.1` | `None` |
 | `FisherZ` | Continuous | — | `None` |
+| `HSIC` | Continuous | `kernel=None`, `bandwidth="heuristic"`, `null_dist="gamma"`, `n_permutations=100`, `seed=0` | `None` |
+| `KCI` | Continuous | `kernel=None`, `bandwidth="heuristic"`, `epsilon=1e-3` | `None` |
 
 `run_test` returns a `CiResult` with attributes `statistic` (float | None),
 `p_value` (float), `dof` (int | None), and `effect_size` (float | None).
 `PearsonCorrelation` reports `dof = n - |Z| - 2`; Fisher-Z and Pearson
 equivalence report `None`.
+
+### Kernel tests (HSIC and KCI)
+
+```python
+from ci_python import Dataset, HSIC, KCI, RBF, Linear
+
+# Marginal independence (HSIC takes no conditioning set) and conditional (KCI).
+hsic = HSIC(data, kernel=RBF(1.0), null_dist="permutation", n_permutations=200, seed=1)
+hsic.run_test("X", "Y")
+kci = KCI(data, kernel={"X": RBF(2.0), "Y": Linear(), "Z": RBF(0.5)})
+kci.run_test("X", "Y", ["Z"])
+```
+
+`kernel` is `None` (automatic), a single `RBF`/`Linear` applied to all columns,
+or a `dict` mapping column names to kernels. Differences from pgmpy: the
+permutation RNG is an integer `seed` (not `rng`), and only the `RBF` and
+`Linear` kernels are supported. Invalid configuration (e.g. `epsilon <= 0`,
+non-positive length scale, unknown column in `kernel`) raises `CiError` at
+construction.
 
 ## Requirements
 

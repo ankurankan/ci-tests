@@ -55,7 +55,7 @@ use wasm_bindgen::convert::TryFromJsValue;
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
 
-use options::{Config, DiscreteConfig, EmptyConfig, EquivalenceConfig};
+use options::{Config, DiscreteConfig, EmptyConfig, EquivalenceConfig, HsicConfig, KciConfig};
 
 #[wasm_bindgen(typescript_custom_section)]
 const TS_TYPES: &'static str = r#"
@@ -389,6 +389,7 @@ macro_rules! ci_test_class {
                 let data = coerce_dataset(data)?;
                 let $cfg = $config::parse(config)?;
                 let inner = $build;
+                inner.validate(&data).map_err(|e| to_js_error(&e))?;
                 Ok($wrapper { data, inner })
             }
 
@@ -512,4 +513,24 @@ ci_test_class!(
     _cfg,
     "Record<string, never> | undefined",
     ci_core::ci_tests::FisherZ::new()
+);
+
+ci_test_class!(
+    "HSIC",
+    Hsic,
+    ci_core::ci_tests::Hsic,
+    HsicConfig,
+    cfg,
+    "HsicOptions | undefined",
+    cfg.build()?
+);
+
+ci_test_class!(
+    "KCI",
+    Kci,
+    ci_core::ci_tests::Kci,
+    KciConfig,
+    cfg,
+    "KciOptions | undefined",
+    cfg.build()?
 );

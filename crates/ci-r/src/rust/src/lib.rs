@@ -31,7 +31,9 @@ use extendr_api::Result;
 
 mod util;
 
-use util::{result_to_list, to_r_error};
+use util::{
+    parse_bandwidth, parse_kernel_choice, result_to_list, to_r_error, whole_number, MAX_SAFE,
+};
 
 /// A named, typed, immutable table of columns shared by the test handles.
 ///
@@ -197,10 +199,12 @@ macro_rules! ci_test_handle {
         #[extendr]
         impl $wrapper {
             /// Construct the handle bound to `data` with the given config.
-            fn new(data: &Dataset $(, $arg: $arg_ty)*) -> Self {
+            fn new(data: &Dataset $(, $arg: $arg_ty)*) -> Result<Self> {
                 let data = data.clone();
-                let inner = $build;
-                Self { data, inner }
+                let built: Result<$core> = $build;
+                let inner = built?;
+                inner.validate(&data.inner).map_err(to_r_error)?;
+                Ok(Self { data, inner })
             }
 
             /// Run the test for `x ⟂ y | z` (column names; `z` a character
@@ -234,50 +238,117 @@ macro_rules! ci_test_handle {
 ci_test_handle!(
     ChiSquared,
     ci_core::ci_tests::ChiSquared,
-    new(yates: bool) { ci_core::ci_tests::ChiSquared { yates } }
+    new(yates: bool) { Ok(ci_core::ci_tests::ChiSquared { yates }) }
 );
 
 ci_test_handle!(
     LogLikelihood,
     ci_core::ci_tests::LogLikelihood,
-    new(yates: bool) { ci_core::ci_tests::LogLikelihood { yates } }
+    new(yates: bool) { Ok(ci_core::ci_tests::LogLikelihood { yates }) }
 );
 
 ci_test_handle!(
     CressieRead,
     ci_core::ci_tests::CressieRead,
-    new(yates: bool) { ci_core::ci_tests::CressieRead { yates } }
+    new(yates: bool) { Ok(ci_core::ci_tests::CressieRead { yates }) }
 );
 
 ci_test_handle!(
     FreemanTukey,
     ci_core::ci_tests::FreemanTukey,
-    new(yates: bool) { ci_core::ci_tests::FreemanTukey { yates } }
+    new(yates: bool) { Ok(ci_core::ci_tests::FreemanTukey { yates }) }
 );
 
 ci_test_handle!(
     ModifiedLikelihood,
     ci_core::ci_tests::ModifiedLikelihood,
-    new(yates: bool) { ci_core::ci_tests::ModifiedLikelihood { yates } }
+    new(yates: bool) { Ok(ci_core::ci_tests::ModifiedLikelihood { yates }) }
 );
 
 ci_test_handle!(
     PearsonCorrelation,
     ci_core::ci_tests::PearsonCorrelation,
-    new() { ci_core::ci_tests::PearsonCorrelation::new() }
+    new() { Ok(ci_core::ci_tests::PearsonCorrelation::new()) }
 );
 
 ci_test_handle!(
     FisherZ,
     ci_core::ci_tests::FisherZ,
-    new() { ci_core::ci_tests::FisherZ::new() }
+    new() { Ok(ci_core::ci_tests::FisherZ::new()) }
 );
 
 ci_test_handle!(
     PearsonEquivalence,
     ci_core::ci_tests::PearsonEquivalence,
     new(delta_threshold: f64) {
-        ci_core::ci_tests::PearsonEquivalence { delta_threshold }
+        Ok(ci_core::ci_tests::PearsonEquivalence { delta_threshold })
+    }
+);
+
+ci_test_handle!(
+    HSIC,
+    ci_core::ci_tests::Hsic,
+    new(
+        kernel_mode: &str,
+        kernel_names: Strings,
+        kernel_types: Strings,
+        kernel_length_scales: Doubles,
+        bandwidth: &str,
+        null_dist: &str,
+        n_permutations: f64,
+        seed: f64
+    ) {
+        // Validated for every null_dist (pgmpy rejects n_permutations < 1
+        // regardless); unused when the null is gamma.
+        let n_permutations = whole_number(n_permutations, "n_permutations", 1.0, MAX_SAFE)?;
+        let seed = whole_number(seed, "seed", 0.0, MAX_SAFE)?;
+        let null_dist = match null_dist {
+            "gamma" => ci_core::ci_tests::NullDistribution::Gamma,
+            "permutation" => ci_core::ci_tests::NullDistribution::Permutation {
+                // Whole and within 2^53, so the casts are exact.
+                n_permutations: n_permutations as usize,
+                seed: seed as u64,
+            },
+            other => {
+                return Err(Error::Other(format!(
+                    "null_dist must be \"gamma\" or \"permutation\", got {other:?}"
+                )))
+            }
+        };
+        Ok(ci_core::ci_tests::Hsic {
+            kernel: parse_kernel_choice(
+                kernel_mode,
+                &kernel_names,
+                &kernel_types,
+                &kernel_length_scales,
+            )?,
+            bandwidth: parse_bandwidth(bandwidth)?,
+            null_dist,
+        })
+    }
+);
+
+ci_test_handle!(
+    KCI,
+    ci_core::ci_tests::Kci,
+    new(
+        kernel_mode: &str,
+        kernel_names: Strings,
+        kernel_types: Strings,
+        kernel_length_scales: Doubles,
+        bandwidth: &str,
+        epsilon: f64
+    ) {
+        Ok(ci_core::ci_tests::Kci {
+            kernel: parse_kernel_choice(
+                kernel_mode,
+                &kernel_names,
+                &kernel_types,
+                &kernel_length_scales,
+            )?,
+            bandwidth: parse_bandwidth(bandwidth)?,
+            epsilon,
+        })
     }
 );
 
@@ -292,4 +363,6 @@ extendr_module! {
     impl PearsonCorrelation;
     impl FisherZ;
     impl PearsonEquivalence;
+    impl HSIC;
+    impl KCI;
 }

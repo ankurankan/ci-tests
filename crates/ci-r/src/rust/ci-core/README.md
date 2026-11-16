@@ -10,9 +10,13 @@ then pass it to a stateless test implementing [`CITest`](src/strategy.rs):
 `test(&data, x, y, z)` returns the test result, while
 `is_independent(&data, x, y, z, alpha)` returns an independence decision.
 
-The eight implementations are `ChiSquared`, `LogLikelihood`, `CressieRead`,
+The ten implementations are `ChiSquared`, `LogLikelihood`, `CressieRead`,
 `FreemanTukey`, `ModifiedLikelihood`, `PearsonCorrelation`, `FisherZ`, and
-`PearsonEquivalence`.
+`PearsonEquivalence`, `Hsic`, and `Kci`.
+
+`Hsic` and `Kci` are kernel tests (RBF and linear kernels, configured through
+`KernelChoice` and `Bandwidth`). `Hsic` is unconditional; `Kci` conditions on
+`z` at O(n²) memory and O(n³) time.
 
 The root
 [README](https://github.com/pgmpy/ci-tests/blob/main/README.md) is the

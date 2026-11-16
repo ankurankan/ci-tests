@@ -1,6 +1,6 @@
 //! Registry of the built-in closed-form conditional-independence tests.
 //!
-//! A single source of truth listing the eight tests that ship with this crate,
+//! A single source of truth listing the built-in tests that ship with this crate,
 //! so callers (and the language bindings) can enumerate the available tests and
 //! construct a default-configured one by its stable [`TestMeta::name`] without
 //! depending on every concrete struct.
@@ -10,7 +10,7 @@
 //! [`PearsonEquivalence`] uses an equivalence margin of `0.1`.
 
 use crate::ci_tests::{
-    ChiSquared, CressieRead, FisherZ, FreemanTukey, LogLikelihood, ModifiedLikelihood,
+    ChiSquared, CressieRead, FisherZ, FreemanTukey, Hsic, Kci, LogLikelihood, ModifiedLikelihood,
     PearsonCorrelation, PearsonEquivalence,
 };
 use crate::strategy::{CITest, TestMeta};
@@ -31,6 +31,8 @@ fn default_tests() -> Vec<Box<dyn CITest>> {
         Box::new(PearsonCorrelation::new()),
         Box::new(FisherZ::new()),
         Box::new(PearsonEquivalence::new(DEFAULT_DELTA_THRESHOLD)),
+        Box::new(Hsic::new()),
+        Box::new(Kci::new()),
     ]
 }
 
@@ -56,8 +58,8 @@ mod tests {
     use super::*;
     use std::collections::BTreeSet;
 
-    /// The eight stable names the registry must expose.
-    const EXPECTED_NAMES: [&str; 8] = [
+    /// The stable names the registry must expose.
+    const EXPECTED_NAMES: [&str; 10] = [
         "chi_squared",
         "log_likelihood",
         "cressie_read",
@@ -66,14 +68,24 @@ mod tests {
         "pearson_correlation",
         "fisher_z",
         "pearson_equivalence",
+        "hsic",
+        "kci",
     ];
 
     #[test]
-    fn exposes_eight_unique_metas() {
+    fn exposes_unique_metas() {
         let metas = all_metas();
-        assert_eq!(metas.len(), 8, "expected exactly 8 registered tests");
+        assert_eq!(
+            metas.len(),
+            EXPECTED_NAMES.len(),
+            "unexpected number of registered tests"
+        );
         let names: BTreeSet<&str> = metas.iter().map(|m| m.name).collect();
-        assert_eq!(names.len(), 8, "test names must be unique");
+        assert_eq!(
+            names.len(),
+            EXPECTED_NAMES.len(),
+            "test names must be unique"
+        );
         for expected in EXPECTED_NAMES {
             assert!(names.contains(expected), "missing test `{expected}`");
         }

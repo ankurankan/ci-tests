@@ -17,8 +17,10 @@
 //! | Pearson correlation | Continuous | [`ci_tests::PearsonCorrelation`] |
 //! | Fisher-z | Continuous | [`ci_tests::FisherZ`] |
 //! | Pearson equivalence (TOST) | Continuous | [`ci_tests::PearsonEquivalence`] |
+//! | HSIC | Continuous | [`ci_tests::Hsic`] |
+//! | KCI | Continuous | [`ci_tests::Kci`] |
 //!
-//! [`registry`] enumerates all eight and constructs a default-configured one by
+//! [`registry`] enumerates all ten and constructs a default-configured one by
 //! name.
 //!
 //! # Usage
@@ -46,7 +48,9 @@ pub mod dataset;
 pub mod discrete;
 pub mod error;
 pub(crate) mod gram;
+pub mod kernel;
 pub mod registry;
+mod rng;
 mod strata;
 pub mod strategy;
 

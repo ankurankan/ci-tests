@@ -3,7 +3,7 @@
 # ruff: noqa: D101, D102, D107, PYI021, ANN401
 
 from collections.abc import Sequence
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Literal
 
 if TYPE_CHECKING:
     import pandas as pd
@@ -12,6 +12,17 @@ ColumnRef = str | int
 ColumnSpec = tuple[str, Any]
 
 class CiError(Exception): ...
+
+class RBF:
+    def __init__(self, length_scale: float) -> None: ...
+    @property
+    def length_scale(self) -> float: ...
+
+class Linear:
+    def __init__(self) -> None: ...
+
+_Kernel = RBF | Linear
+_KernelSpec = _Kernel | dict[str, _Kernel] | None
 
 class CiResult:
     @property
@@ -75,4 +86,24 @@ class PearsonEquivalence(_BaseTest):
         self,
         data: _DatasetInput,
         delta_threshold: float = ...,
+    ) -> None: ...
+
+class HSIC(_BaseTest):
+    def __init__(
+        self,
+        data: _DatasetInput,
+        kernel: _KernelSpec = ...,
+        bandwidth: Literal["heuristic", "median"] = ...,
+        null_dist: Literal["gamma", "permutation"] = ...,
+        n_permutations: int = ...,
+        seed: int = ...,
+    ) -> None: ...
+
+class KCI(_BaseTest):
+    def __init__(
+        self,
+        data: _DatasetInput,
+        kernel: _KernelSpec = ...,
+        bandwidth: Literal["heuristic", "median"] = ...,
+        epsilon: float = ...,
     ) -> None: ...
