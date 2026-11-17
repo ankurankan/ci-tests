@@ -45,15 +45,29 @@ Copy the files of an existing test with the same options as your test.
 7. **Binding tests.** Add a test of `meta()` and of one error in `crates/ci-python/test/test_api.py`,
    `crates/ci-r/tests/testthat/test-api.R` and `crates/ci-js/tests/api.test.js`.
 8. **Examples.** Copy the four `gcm` examples and change the class.
-   Each example prints the p-value.
-   - `crates/ci-python/examples/<key>.py`
-   - `crates/ci-r/inst/examples/tests/<key>.R`
-   - `crates/ci-js/examples/<key>.js`
-   - `crates/ci-core/examples/<key>.rs`
+   Each example shows the four result fields and their output.
+   - `crates/ci-python/examples/<key>.pycon`: a doctest transcript.
+   - `crates/ci-r/inst/examples/tests/<key>.R`: the output in `#> ` comments under each `print()` line.
+   - `crates/ci-js/examples/<key>.js`: the output in `// ` comments under each `console.log()` line.
+   - `crates/ci-core/examples/<key>.rs`: the output in `// ` comments under each `println!` line.
 
+   Run each example and replace the copied output with its output.
+   - Python: `pytest --doctest-continue-on-failure crates/ci-python/examples/<key>.pycon`
+     shows every real output as "Got".
+   - R: `Rscript crates/ci-r/inst/examples/tests/<key>.R` runs the file.
+   - JavaScript: first run `wasm-pack build --target nodejs --out-dir pkg` in `crates/ci-js`.
+     The examples load `fastcit` as a package, so copy `pkg/` into a scratch `node_modules`:
+     `mkdir -p "$TMPDIR/nm" && cp -r crates/ci-js/pkg "$TMPDIR/nm/fastcit" && NODE_PATH="$TMPDIR/nm" node crates/ci-js/examples/<key>.js`.
+     On a mismatch, `npm test` in `crates/ci-js` prints "shows X, but prints Y".
+   - Rust: `cargo run -p fastcit-core --example <key>` runs the example.
+
+   Write numbers with 4 significant digits and integers exact.
+   Keep at least one decimal place in a number of 1000 or more (write `2629.3`, not `2629`).
+   A number without a decimal point is compared as exact text.
+   The example tests check each shown output to the written precision.
+   Do not put other comments directly under a print line.
    Raise the example count in `crates/ci-python/test/test_examples.py`,
    `crates/ci-r/tests/testthat/test-examples.R` and `crates/ci-js/tests/examples.test.js`.
-   If the expected p-value is not above 0.05, add the key to the `case` table in the "Run examples" step of `.github/workflows/rust.yml`.
 9. **Docs.** Copy `_docs_page.md` to `docs/tests/<key>.md` and resolve every TODO.
    Add a row to `docs/_includes/test-table.md` and the key to the toctree in `docs/tests/index.md`.
    Update the count in the first sentence of `docs/tests/index.md` and in `crates/ci-core/README.md`.
@@ -66,6 +80,7 @@ Copy the files of an existing test with the same options as your test.
 cargo fmt --check
 cargo clippy -p fastcit-core --all-targets -- -D warnings
 cargo test -p fastcit-core
+cargo run -q -p fastcit-core --example <key> | python3 crates/ci-core/examples/check_output.py crates/ci-core/examples/<key>.rs
 python3 crates/ci-r/tools/sync_package_assets.py --check
 pytest tests/test_docs_site.py
 ```

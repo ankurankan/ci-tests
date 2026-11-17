@@ -19,8 +19,8 @@ myst:
 
 `fastcit.ModifiedLikelihood(data, yates=True)`
 
-```{literalinclude} ../../crates/ci-python/examples/modified_likelihood.py
-:language: python
+```{literalinclude} ../../crates/ci-python/examples/modified_likelihood.pycon
+:language: pycon
 ```
 
 :::

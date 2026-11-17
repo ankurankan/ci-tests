@@ -4,13 +4,13 @@
 //! *factorized* up front into contiguous integer codes (`0..cardinality`) so
 //! the discrete tests can operate on cheap `usize` codes instead of repeatedly
 //! hashing floats. Continuous columns keep their raw `f64` values.
-//! NaN values are rejected at construction ([`CiError::MissingData`]); choose
+//! NaN values are rejected at construction ([`CIError::MissingData`]); choose
 //! and apply a missing-data convention (drop / impute) before binding.
 
 use std::collections::HashMap;
 use std::sync::{Arc, OnceLock};
 
-use crate::error::CiError;
+use crate::error::CIError;
 use crate::gram::GramCache;
 use crate::strata::{StrataCache, StrataPartition};
 
@@ -75,15 +75,15 @@ impl Dataset {
     ///
     /// # Errors
     ///
-    /// Returns [`CiError::DimensionMismatch`] if the columns do not all share a
+    /// Returns [`CIError::DimensionMismatch`] if the columns do not all share a
     /// common length, or if two columns share a name (names must be unique).
-    /// Returns [`CiError::MissingData`] if a discrete column contains NaN, or a
+    /// Returns [`CIError::MissingData`] if a discrete column contains NaN, or a
     /// continuous column contains any non-finite value (NaN or ±inf).
-    pub fn from_columns(cols: Vec<(String, ColumnKind, Vec<f64>)>) -> Result<Self, CiError> {
+    pub fn from_columns(cols: Vec<(String, ColumnKind, Vec<f64>)>) -> Result<Self, CIError> {
         let n_rows = cols.first().map_or(0, |(_, _, v)| v.len());
         for (name, _, values) in &cols {
             if values.len() != n_rows {
-                return Err(CiError::DimensionMismatch(format!(
+                return Err(CIError::DimensionMismatch(format!(
                     "column `{name}` has length {} but expected {n_rows}",
                     values.len(),
                 )));
@@ -102,7 +102,7 @@ impl Dataset {
                 ColumnKind::Discrete => values.iter().position(|v| v.is_nan()),
             };
             if let Some(row) = bad {
-                return Err(CiError::MissingData(format!(
+                return Err(CIError::MissingData(format!(
                     "column `{name}` contains NaN/missing values (first at row {row}); \
                      remove or impute before building the Dataset"
                 )));
@@ -125,7 +125,7 @@ impl Dataset {
                 }
             };
             if name_to_index.insert(name.clone(), idx).is_some() {
-                return Err(CiError::DimensionMismatch(format!(
+                return Err(CIError::DimensionMismatch(format!(
                     "duplicate column name `{name}`; column names must be unique"
                 )));
             }
@@ -171,20 +171,20 @@ impl Dataset {
     ///
     /// # Errors
     ///
-    /// Returns [`CiError::UnknownColumn`] if `index` is out of range, or
-    /// [`CiError::WrongColumnKind`] if the column is continuous.
+    /// Returns [`CIError::UnknownColumn`] if `index` is out of range, or
+    /// [`CIError::WrongColumnKind`] if the column is continuous.
     /// Borrow the column at `index`, mapping an out-of-range index to
-    /// [`CiError::UnknownColumn`].
-    fn column(&self, index: usize) -> Result<&Column, CiError> {
+    /// [`CIError::UnknownColumn`].
+    fn column(&self, index: usize) -> Result<&Column, CIError> {
         self.columns
             .get(index)
-            .ok_or_else(|| CiError::UnknownColumn(format!("column index {index}")))
+            .ok_or_else(|| CIError::UnknownColumn(format!("column index {index}")))
     }
 
-    pub(crate) fn discrete(&self, index: usize) -> Result<(&[usize], usize), CiError> {
+    pub(crate) fn discrete(&self, index: usize) -> Result<(&[usize], usize), CIError> {
         match self.column(index)? {
             Column::Discrete { codes, cardinality } => Ok((codes, *cardinality)),
-            Column::Continuous { .. } => Err(CiError::WrongColumnKind(format!(
+            Column::Continuous { .. } => Err(CIError::WrongColumnKind(format!(
                 "column {index} is continuous but a discrete column was required"
             ))),
         }
@@ -194,12 +194,12 @@ impl Dataset {
     ///
     /// # Errors
     ///
-    /// Returns [`CiError::UnknownColumn`] if `index` is out of range, or
-    /// [`CiError::WrongColumnKind`] if the column is discrete.
-    pub(crate) fn continuous(&self, index: usize) -> Result<&[f64], CiError> {
+    /// Returns [`CIError::UnknownColumn`] if `index` is out of range, or
+    /// [`CIError::WrongColumnKind`] if the column is discrete.
+    pub(crate) fn continuous(&self, index: usize) -> Result<&[f64], CIError> {
         match self.column(index)? {
             Column::Continuous { values } => Ok(values),
-            Column::Discrete { .. } => Err(CiError::WrongColumnKind(format!(
+            Column::Discrete { .. } => Err(CIError::WrongColumnKind(format!(
                 "column {index} is discrete but a continuous column was required"
             ))),
         }
@@ -224,9 +224,9 @@ impl Dataset {
     ///
     /// # Errors
     ///
-    /// Returns the usual column errors ([`CiError::WrongColumnKind`] /
-    /// [`CiError::UnknownColumn`]) if any `z` column is not discrete.
-    pub(crate) fn strata_partition(&self, z: &[usize]) -> Result<Arc<StrataPartition>, CiError> {
+    /// Returns the usual column errors ([`CIError::WrongColumnKind`] /
+    /// [`CIError::UnknownColumn`]) if any `z` column is not discrete.
+    pub(crate) fn strata_partition(&self, z: &[usize]) -> Result<Arc<StrataPartition>, CIError> {
         self.strata_cache.get_or_build(self, z)
     }
 }
@@ -285,7 +285,7 @@ mod tests {
                 Dataset::from_columns(vec![("a".to_string(), kind, vec![1.0, f64::NAN, 2.0])])
                     .unwrap_err();
             assert!(
-                matches!(err, CiError::MissingData(_)),
+                matches!(err, CIError::MissingData(_)),
                 "kind {kind:?}: {err}"
             );
             let msg = err.to_string();
@@ -301,7 +301,7 @@ mod tests {
             ("a".to_string(), ColumnKind::Continuous, vec![3.0, 4.0]),
         ])
         .unwrap_err();
-        assert!(matches!(err, CiError::DimensionMismatch(_)), "{err}");
+        assert!(matches!(err, CIError::DimensionMismatch(_)), "{err}");
         assert!(err.to_string().contains("`a`"));
     }
 
@@ -313,7 +313,7 @@ mod tests {
             vec![1.0, f64::INFINITY, 2.0],
         )])
         .unwrap_err();
-        assert!(matches!(err, CiError::MissingData(_)), "{err}");
+        assert!(matches!(err, CIError::MissingData(_)), "{err}");
         assert!(err.to_string().contains("row 1"));
     }
 
@@ -337,7 +337,7 @@ mod tests {
             ("b".to_string(), ColumnKind::Continuous, vec![1.0]),
         ])
         .unwrap_err();
-        assert!(matches!(err, CiError::DimensionMismatch(_)));
+        assert!(matches!(err, CIError::DimensionMismatch(_)));
     }
 
     #[test]
@@ -348,8 +348,8 @@ mod tests {
             vec![1.0, 2.0],
         )])
         .unwrap();
-        assert!(matches!(ds.continuous(0), Err(CiError::WrongColumnKind(_))));
-        assert!(matches!(ds.discrete(9), Err(CiError::UnknownColumn(_))));
+        assert!(matches!(ds.continuous(0), Err(CIError::WrongColumnKind(_))));
+        assert!(matches!(ds.discrete(9), Err(CIError::UnknownColumn(_))));
     }
 
     #[test]

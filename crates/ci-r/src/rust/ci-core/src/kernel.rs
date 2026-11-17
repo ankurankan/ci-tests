@@ -9,7 +9,7 @@ use faer::{Mat, MatRef};
 use statrs::distribution::{ContinuousCDF, Gamma};
 
 use crate::dataset::Dataset;
-use crate::error::CiError;
+use crate::error::CIError;
 
 /// A positive-definite kernel on standardized points.
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -49,11 +49,11 @@ impl Kernel {
     /// Check the kernel parameters.
     ///
     /// # Errors
-    /// [`CiError::InvalidConfig`] if an RBF length scale is not finite and > 0.
-    pub fn validate(&self) -> Result<(), CiError> {
+    /// [`CIError::InvalidConfig`] if an RBF length scale is not finite and > 0.
+    pub fn validate(&self) -> Result<(), CIError> {
         if let Kernel::Rbf { length_scale } = *self {
             if !(length_scale.is_finite() && length_scale > 0.0) {
-                return Err(CiError::InvalidConfig(format!(
+                return Err(CIError::InvalidConfig(format!(
                     "RBF length_scale must be finite and > 0, got {length_scale}"
                 )));
             }
@@ -66,16 +66,16 @@ impl KernelChoice {
     /// Validate every kernel and that every `PerColumn` key names a column.
     ///
     /// # Errors
-    /// [`CiError::InvalidConfig`] for a bad kernel, [`CiError::UnknownColumn`]
+    /// [`CIError::InvalidConfig`] for a bad kernel, [`CIError::UnknownColumn`]
     /// for an unknown column name.
-    pub fn validate(&self, data: &Dataset) -> Result<(), CiError> {
+    pub fn validate(&self, data: &Dataset) -> Result<(), CIError> {
         match self {
             KernelChoice::Auto => Ok(()),
             KernelChoice::All(k) => k.validate(),
             KernelChoice::PerColumn(map) => {
                 for (name, k) in map {
                     if data.index_of(name).is_none() {
-                        return Err(CiError::UnknownColumn(name.clone()));
+                        return Err(CIError::UnknownColumn(name.clone()));
                     }
                     k.validate()?;
                 }
@@ -86,7 +86,7 @@ impl KernelChoice {
 }
 
 /// Reject sample sizes whose dense `n x n` matrix would overflow `isize`.
-pub(crate) fn dense_len_guard(n: usize) -> Result<(), CiError> {
+pub(crate) fn dense_len_guard(n: usize) -> Result<(), CIError> {
     let ok = n
         .checked_mul(n)
         .and_then(|v| v.checked_mul(8))
@@ -94,7 +94,7 @@ pub(crate) fn dense_len_guard(n: usize) -> Result<(), CiError> {
     if ok {
         Ok(())
     } else {
-        Err(CiError::DegenerateData(format!(
+        Err(CIError::DegenerateData(format!(
             "too many rows ({n}) for a dense kernel matrix"
         )))
     }
@@ -105,10 +105,10 @@ pub(crate) fn standardized(
     data: &Dataset,
     cols: &[usize],
     scale: f64,
-) -> Result<Mat<f64>, CiError> {
+) -> Result<Mat<f64>, CIError> {
     let n = data.n_rows();
     if n < 2 {
-        return Err(CiError::DegenerateData(
+        return Err(CIError::DegenerateData(
             "at least 2 rows are required".into(),
         ));
     }
@@ -121,7 +121,7 @@ pub(crate) fn standardized(
         let var = v.iter().map(|x| (x - mean) * (x - mean)).sum::<f64>() / (nf - 1.0);
         let sd = var.sqrt();
         if !(sd.is_finite() && sd > 0.0) {
-            return Err(CiError::DegenerateData(format!(
+            return Err(CIError::DegenerateData(format!(
                 "column {} has zero or non-finite variance",
                 data.name_of(c).unwrap_or("?")
             )));
@@ -228,14 +228,14 @@ pub(crate) fn median_length_scale(points: MatRef<'_, f64>) -> f64 {
 }
 
 /// Gamma-approximation p-value from the null mean and variance.
-pub(crate) fn gamma_pvalue(stat: f64, mean: f64, var: f64) -> Result<f64, CiError> {
+pub(crate) fn gamma_pvalue(stat: f64, mean: f64, var: f64) -> Result<f64, CIError> {
     if var <= 0.0 || mean <= 0.0 {
         return Ok(1.0);
     }
     let shape = mean * mean / var;
     let scale = var / mean;
     let g = Gamma::new(shape, 1.0 / scale)
-        .map_err(|e| CiError::Numeric(format!("gamma construction failed: {e}")))?;
+        .map_err(|e| CIError::Numeric(format!("gamma construction failed: {e}")))?;
     Ok(g.sf(stat))
 }
 
@@ -309,11 +309,11 @@ mod tests {
         assert!((ss - 4.0 * 2.0).abs() < 1e-12);
         assert!(matches!(
             standardized(&d, &[1], 1.0),
-            Err(CiError::DegenerateData(_))
+            Err(CIError::DegenerateData(_))
         ));
         assert!(matches!(
             standardized(&d, &[2], 1.0),
-            Err(CiError::WrongColumnKind(_))
+            Err(CIError::WrongColumnKind(_))
         ));
     }
 
@@ -322,7 +322,7 @@ mod tests {
         for l in [0.0, -1.0, f64::NAN, f64::INFINITY] {
             assert!(matches!(
                 Kernel::Rbf { length_scale: l }.validate(),
-                Err(CiError::InvalidConfig(_))
+                Err(CIError::InvalidConfig(_))
             ));
         }
         assert!(Kernel::Rbf { length_scale: 0.5 }.validate().is_ok());
@@ -339,7 +339,7 @@ mod tests {
         m.insert("zz".to_string(), Kernel::Linear);
         assert!(matches!(
             KernelChoice::PerColumn(m).validate(&d),
-            Err(CiError::UnknownColumn(_))
+            Err(CIError::UnknownColumn(_))
         ));
     }
 
@@ -347,7 +347,7 @@ mod tests {
     fn dense_len_guard_rejects_overflow() {
         assert!(matches!(
             dense_len_guard(usize::MAX / 2),
-            Err(CiError::DegenerateData(_))
+            Err(CIError::DegenerateData(_))
         ));
         assert!(dense_len_guard(1000).is_ok());
     }

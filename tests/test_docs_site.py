@@ -1,8 +1,8 @@
 """Checks for the documentation site in docs/ (Sphinx, MyST pages), published at https://pgmpy.org/FastCIT/.
 
-The home page repeats the install commands and the quickstart examples of the README. These tests
-fail when the two copies differ. The home page includes the two tables of median call times from
-benchmarks/results/summary.md. Each test page must show the CI-run example file of each language
+The home page repeats the install commands of the README. The Quickstart of the home page and of the
+README is the Fisher-z example file of each language. These tests fail when a copy differs.
+The home page includes the two tables of median call times from benchmarks/results/summary.md. Each test page must show the CI-run example file of each language
 in a synced language tab set. The Benchmark page shows the chart of benchmarks/results/sweep.json,
 or a notice when the file does not exist. The tests also check the benchmark summary and the docs workflow.
 
@@ -45,11 +45,15 @@ REQUIRE_SPHINX = os.environ.get("FASTCIT_DOCS_REQUIRE_SPHINX") == "1"
 
 LANGUAGES = {"python": "Python", "r": "R", "javascript": "JavaScript", "rust": "Rust"}
 EXAMPLES = {
-    "python": "crates/ci-python/examples/{key}.py",
+    "python": "crates/ci-python/examples/{key}.pycon",
     "r": "crates/ci-r/inst/examples/tests/{key}.R",
     "javascript": "crates/ci-js/examples/{key}.js",
     "rust": "crates/ci-core/examples/{key}.rs",
 }
+# The Pygments lexer of each example file. The Python examples are doctest transcripts.
+LEXERS = {"python": "pycon", "r": "r", "javascript": "javascript", "rust": "rust"}
+# The copy button of a code block removes these prompts (copybutton_prompt_text in docs/conf.py).
+COPY_PROMPT = r">>> |\.\.\. "
 # key: (Python and JavaScript class, R function, Rust type)
 TESTS = {
     "chi_squared": ("ChiSquared", "chi_squared", "ChiSquared"),
@@ -81,7 +85,7 @@ RUNTIME_TABLES = {
 # The relative targets of the API reference cards. The deploy job adds these sites next to the Sphinx output.
 API_TARGETS = ("python/fastcit.html", "r/index.html", "js/index.html", "rust/fastcit_core/index.html")
 # The navbar of every page: the hidden toctree of the home page.
-NAVBAR = ["Conditional Independence Tests", "Benchmark", "API reference"]
+NAVBAR = ["CI Tests", "Benchmark", "API reference"]
 # The notice of the Benchmark page when sweep.json does not exist.
 SWEEP_NOTICE = "The benchmark results are not available at this time."
 # External URLs that a page may contain.
@@ -134,9 +138,18 @@ def fenced_code(body: str) -> str:
 
 
 @pytest.mark.parametrize("language", LANGUAGES)
-def test_quickstart_example_matches_readme(language: str) -> None:
+def test_quickstart_includes_the_fisher_z_example(language: str) -> None:
     items = {key: body for _, key, body in tab_items(section(read(INDEX), "Quickstart"))}
-    assert fenced_code(items[language]) == readme_example(LANGUAGES[language])
+    example = EXAMPLES[language].format(key="fisher_z")
+    includes = re.findall(r"^```\{literalinclude\} (\S+)\n:language: (\S+)\n", items[language], re.M)
+    assert includes == [(f"../{example}", LEXERS[language])]
+    assert (REPO_ROOT / example).is_file()
+
+
+@pytest.mark.parametrize("language", LANGUAGES)
+def test_readme_quickstart_is_the_fisher_z_example(language: str) -> None:
+    example = read(REPO_ROOT / EXAMPLES[language].format(key="fisher_z"))
+    assert readme_example(LANGUAGES[language]) + "\n" == example
 
 
 @pytest.mark.parametrize("language", LANGUAGES)
@@ -284,7 +297,7 @@ def test_test_page_includes_the_ci_examples(key: str) -> None:
     for _, language, body in items:
         example = EXAMPLES[language].format(key=key)
         includes = re.findall(r"^```\{literalinclude\} (\S+)\n:language: (\S+)\n", body, re.M)
-        assert includes == [(f"../../{example}", language)], f"{key}, {language}: include {example}"
+        assert includes == [(f"../../{example}", LEXERS[language])], f"{key}, {language}: include {example}"
         assert (REPO_ROOT / example).is_file(), f"{example} is missing"
 
 
@@ -332,6 +345,28 @@ def test_conf_mirrors_the_pgmpy_theme() -> None:
     css = read(STATIC / "custom.css")
     assert "Copied unchanged from pgmpy" in css
     assert "pgmpy Documentation — Custom Styles" in css
+
+
+@pytest.mark.parametrize("key", TESTS)
+def test_copy_button_copies_the_code_of_the_examples(key: str) -> None:
+    """sphinx-copybutton copies the lines with a prompt (without the prompt) and the empty lines.
+
+    A code block without a prompt line is copied unchanged.
+    """
+    conf = read(DOCS / "conf.py")
+    assert f'copybutton_prompt_text = r"{COPY_PROMPT}"' in conf
+    assert "copybutton_prompt_is_regexp = True" in conf
+    prompt = re.compile(rf"^({COPY_PROMPT})(.*)")
+    code = []
+    for line in read(REPO_ROOT / EXAMPLES["python"].format(key=key)).splitlines():
+        if match := prompt.match(line):
+            code.append(match[2])
+        elif not line.strip():
+            code.append(line)
+    compile("\n".join(code), key, "exec")  # the transcript without its prompts and output is a script
+    for language in ("r", "javascript", "rust"):
+        lines = read(REPO_ROOT / EXAMPLES[language].format(key=key)).splitlines()
+        assert not any(prompt.match(line) for line in lines), f"{key}, {language}: a line looks like a prompt"
 
 
 def test_narrow_screens_stack_the_field_list() -> None:
@@ -631,10 +666,10 @@ def test_deploy_checks_only_files_the_site_has(site: Path) -> None:
         assert (site / name).is_file(), f"the deploy job checks site/{name}, but the build does not write it"
 
 
-def test_built_home_page_shows_the_readme_examples(site: Path) -> None:
+def test_built_home_page_shows_the_quickstart_examples(site: Path) -> None:
     blocks = code_blocks(read(site / "index.html"))
-    for name in LANGUAGES.values():
-        assert readme_example(name) + "\n" in blocks
+    for language, name in LANGUAGES.items():
+        assert read(REPO_ROOT / EXAMPLES[language].format(key="fisher_z")) in blocks
         assert readme_install(name) + "\n" in blocks
 
 
@@ -646,6 +681,12 @@ def test_built_test_page_shows_each_example_in_a_language_tab(site: Path, key: s
     blocks = code_blocks(page)
     examples = [read(REPO_ROOT / EXAMPLES[language].format(key=key)) for language in LANGUAGES]
     assert [block for block in blocks if block in examples] == examples
+
+
+def test_built_copy_button_uses_the_doctest_prompts(site: Path) -> None:
+    script = read(site / "_static" / "copybutton.js")
+    prompt = COPY_PROMPT.replace("\\", "\\\\")
+    assert f"formatCopyText(text, '{prompt}', true, true, true, true," in script
 
 
 def test_built_formulas_use_mathjax(site: Path) -> None:

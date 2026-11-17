@@ -19,8 +19,8 @@ myst:
 
 `fastcit.PillaiTrace(data)`
 
-```{literalinclude} ../../crates/ci-python/examples/pillai.py
-:language: python
+```{literalinclude} ../../crates/ci-python/examples/pillai.pycon
+:language: pycon
 ```
 
 :::

@@ -5,6 +5,7 @@ use fastcit_core::dataset::{ColumnKind, Dataset};
 use fastcit_core::strategy::CITest;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
+    // Each language makes its own random data, so the values differ from the other tabs.
     // Seeded generator (Park-Miller), so every run gives the same data.
     let mut seed = 12345.0_f64;
     let mut uniform = move || {
@@ -25,6 +26,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let y = data.index_of("Y").unwrap();
     let z = data.index_of("Z").unwrap();
     let result = PearsonCorrelation::new().test(&data, x, y, &[z])?;
-    println!("{}", result.p_value);
+    println!("{:?}", result.statistic);
+    // Some(-0.04219)
+    println!("{:?}", result.p_value);
+    // 0.3470
+    println!("{:?}", result.dof);
+    // Some(497)
+    println!("{:?}", result.effect_size);
+    // Some(0.04219)
     Ok(())
 }

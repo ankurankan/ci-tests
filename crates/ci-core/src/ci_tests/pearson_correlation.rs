@@ -4,8 +4,8 @@ use statrs::distribution::{ContinuousCDF, StudentsT};
 
 use crate::correlation::partial_correlation;
 use crate::dataset::Dataset;
-use crate::error::CiError;
-use crate::strategy::{CITest, CiResult, DataType, IndependenceRule, TestMeta};
+use crate::error::CIError;
+use crate::strategy::{CIResult, CITest, DataType, IndependenceRule, TestMeta};
 
 /// Pearson correlation test. With a non-empty conditioning set it computes the
 /// partial correlation by regressing X and Y on `[1, Z]` (intercept included)
@@ -25,11 +25,11 @@ impl PearsonCorrelation {
 ///
 /// # Errors
 ///
-/// Returns [`CiError::DegenerateData`] if `|r| == 1` (t undefined) and
-/// [`CiError::Numeric`] if the t-distribution construction fails.
-fn correlation_p_value(r: f64, dof: usize) -> Result<f64, CiError> {
+/// Returns [`CIError::DegenerateData`] if `|r| == 1` (t undefined) and
+/// [`CIError::Numeric`] if the t-distribution construction fails.
+fn correlation_p_value(r: f64, dof: usize) -> Result<f64, CIError> {
     if (1.0 - r * r) <= 0.0 {
-        return Err(CiError::DegenerateData(
+        return Err(CIError::DegenerateData(
             "correlation is ±1; t-statistic is undefined".to_string(),
         ));
     }
@@ -37,7 +37,7 @@ fn correlation_p_value(r: f64, dof: usize) -> Result<f64, CiError> {
     let dof_f = dof as f64;
     let t = r * (dof_f / (1.0 - r * r)).sqrt();
     let dist = StudentsT::new(0.0, 1.0, dof_f)
-        .map_err(|e| CiError::Numeric(format!("Student's t distribution: {e}")))?;
+        .map_err(|e| CIError::Numeric(format!("Student's t distribution: {e}")))?;
     Ok(2.0 * dist.sf(t.abs()))
 }
 
@@ -48,10 +48,10 @@ impl CITest for PearsonCorrelation {
         x: usize,
         y: usize,
         z: &[usize],
-    ) -> Result<CiResult, CiError> {
+    ) -> Result<CIResult, CIError> {
         let (r, dof) = partial_correlation(data, x, y, z)?;
         let p_value = correlation_p_value(r, dof)?;
-        Ok(CiResult {
+        Ok(CIResult {
             statistic: Some(r),
             p_value,
             dof: Some(dof),
@@ -106,7 +106,7 @@ mod tests {
         ]);
         assert!(matches!(
             PearsonCorrelation::new().test(&data, 0, 1, &[]),
-            Err(CiError::DegenerateData(_))
+            Err(CIError::DegenerateData(_))
         ));
     }
 
@@ -118,7 +118,7 @@ mod tests {
         ]);
         assert!(matches!(
             PearsonCorrelation::new().test(&data, 0, 1, &[]),
-            Err(CiError::DegenerateData(_))
+            Err(CIError::DegenerateData(_))
         ));
     }
 
@@ -131,7 +131,7 @@ mod tests {
         let data = ds(vec![("x", x), ("y", y), ("z", z)]);
         // residuals are ~0 -> constant -> degenerate (exact collinear case).
         let res = PearsonCorrelation::new().test(&data, 0, 1, &[2]);
-        assert!(matches!(res, Err(CiError::DegenerateData(_))));
+        assert!(matches!(res, Err(CIError::DegenerateData(_))));
     }
 
     #[test]
@@ -157,7 +157,7 @@ mod tests {
         .unwrap();
         assert!(matches!(
             PearsonCorrelation::new().test(&data, 0, 1, &[]),
-            Err(CiError::WrongColumnKind(_))
+            Err(CIError::WrongColumnKind(_))
         ));
     }
 }

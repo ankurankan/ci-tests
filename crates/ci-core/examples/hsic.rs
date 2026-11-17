@@ -6,6 +6,7 @@ use fastcit_core::kernel::Bandwidth;
 use fastcit_core::strategy::CITest;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
+    // Each language makes its own random data, so the values differ from the other tabs.
     // Seeded generator (Park-Miller), so every run gives the same data.
     let mut seed = 12345.0_f64;
     let mut uniform = move || {
@@ -28,6 +29,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         ..Hsic::new()
     }
     .test(&data, x, y, &[])?;
-    println!("{}", result.p_value);
+    println!("{:?}", result.statistic);
+    // Some(2488.9)
+    println!("{:?}", result.p_value);
+    // 1.902e-38
+    println!("{:?}", result.dof);
+    // None
+    println!("{:?}", result.effect_size);
+    // Some(0.3257)
     Ok(())
 }

@@ -5,7 +5,7 @@ use thiserror::Error;
 /// Errors that can arise when constructing a [`crate::dataset::Dataset`] or
 /// running a conditional-independence test.
 #[derive(Debug, Error)]
-pub enum CiError {
+pub enum CIError {
     /// Columns (or X/Y/Z vectors) did not share a common length.
     #[error("dimension mismatch: {0}")]
     DimensionMismatch(String),

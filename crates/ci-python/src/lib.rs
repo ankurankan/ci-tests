@@ -7,8 +7,8 @@
 //!
 //! Column references (`x`, `y`, and the entries of `z`) accept either a column
 //! name (`str`) or an integer index, resolved against the bound dataset via
-//! [`Dataset::index_of`]. Core [`fastcit_core::error::CiError`]s surface as the
-//! Python [`CiError`] exception; no Rust panic is allowed to escape.
+//! [`Dataset::index_of`]. Core [`fastcit_core::error::CIError`]s surface as the
+//! Python [`CIError`] exception; no Rust panic is allowed to escape.
 //!
 //! # Exposed tests
 //!
@@ -23,10 +23,10 @@ use std::collections::BTreeMap;
 use std::sync::Arc;
 
 use fastcit_core::dataset::{ColumnKind, Dataset as CoreDataset};
-use fastcit_core::error::CiError as CoreError;
+use fastcit_core::error::CIError as CoreError;
 use fastcit_core::kernel::{Bandwidth, Kernel, KernelChoice};
 use fastcit_core::strategy::{
-    CITest, CiResult as CoreResult, DataType, IndependenceRule, TestMeta,
+    CIResult as CoreResult, CITest, DataType, IndependenceRule, TestMeta,
 };
 use numpy::PyReadonlyArray1;
 use pyo3::exceptions::{PyTypeError, PyValueError};
@@ -35,14 +35,14 @@ use pyo3::types::{PyDict, PySequence, PyString, PyTuple};
 
 pyo3::create_exception!(
     _fastcit,
-    CiError,
+    CIError,
     pyo3::exceptions::PyException,
     "Raised when the core conditional-independence engine reports an error."
 );
 
-/// Map a core [`CoreError`] onto the Python [`CiError`] exception.
+/// Map a core [`CoreError`] onto the Python [`CIError`] exception.
 fn map_err(err: &CoreError) -> PyErr {
-    CiError::new_err(err.to_string())
+    CIError::new_err(err.to_string())
 }
 
 /// Resolve a single column reference (a `str` name or an integer index) to a
@@ -117,11 +117,11 @@ fn resolve_xyz(
 
 /// The numeric outcome of a conditional-independence test.
 ///
-/// Mirrors [`fastcit_core::strategy::CiResult`]: `statistic`, `dof`, and
+/// Mirrors [`fastcit_core::strategy::CIResult`]: `statistic`, `dof`, and
 /// `effect_size` are `None` when the test does not define them.
-#[pyclass(name = "CiResult", module = "fastcit._fastcit", frozen)]
+#[pyclass(name = "CIResult", module = "fastcit._fastcit", frozen)]
 #[derive(Clone)]
-pub struct PyCiResult {
+pub struct PyCIResult {
     #[pyo3(get)]
     statistic: Option<f64>,
     #[pyo3(get)]
@@ -132,7 +132,7 @@ pub struct PyCiResult {
     effect_size: Option<f64>,
 }
 
-impl From<CoreResult> for PyCiResult {
+impl From<CoreResult> for PyCIResult {
     fn from(r: CoreResult) -> Self {
         Self {
             statistic: r.statistic,
@@ -144,10 +144,10 @@ impl From<CoreResult> for PyCiResult {
 }
 
 #[pymethods]
-impl PyCiResult {
+impl PyCIResult {
     fn __repr__(&self) -> String {
         format!(
-            "CiResult(statistic={:?}, p_value={}, dof={:?}, effect_size={:?})",
+            "CIResult(statistic={:?}, p_value={}, dof={:?}, effect_size={:?})",
             self.statistic, self.p_value, self.dof, self.effect_size
         )
     }
@@ -453,7 +453,7 @@ macro_rules! ci_test_class {
                 Ok(Self { data, inner })
             }
 
-            /// Run the test for `x ⟂ y | z`, returning a [`CiResult`].
+            /// Run the test for `x ⟂ y | z`, returning a [`CIResult`].
             ///
             /// `x` and `y` are column names or indices; `z` is a sequence of
             /// names/indices (default: empty conditioning set).
@@ -464,12 +464,12 @@ macro_rules! ci_test_class {
                 x: &Bound<'_, PyAny>,
                 y: &Bound<'_, PyAny>,
                 z: Option<&Bound<'_, PyAny>>,
-            ) -> PyResult<PyCiResult> {
+            ) -> PyResult<PyCIResult> {
                 let (xi, yi, zi) = resolve_xyz(&self.data, x, y, z)?;
                 let inner = &self.inner;
                 let data = &self.data;
                 py.allow_threads(|| inner.test(data.as_ref(), xi, yi, &zi))
-                    .map(PyCiResult::from)
+                    .map(PyCIResult::from)
                     .map_err(|e| map_err(&e))
             }
 
@@ -651,9 +651,9 @@ ci_test_class!(
 #[pymodule]
 #[pyo3(name = "_fastcit")]
 fn fastcit(m: &Bound<'_, PyModule>) -> PyResult<()> {
-    m.add("CiError", m.py().get_type::<CiError>())?;
+    m.add("CIError", m.py().get_type::<CIError>())?;
     m.add_class::<PyDataset>()?;
-    m.add_class::<PyCiResult>()?;
+    m.add_class::<PyCIResult>()?;
     m.add_class::<PyChiSquared>()?;
     m.add_class::<PyLogLikelihood>()?;
     m.add_class::<PyCressieRead>()?;

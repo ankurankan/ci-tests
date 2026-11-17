@@ -8,8 +8,8 @@ use crate::dataset::Dataset;
 use crate::discrete::{
     power_divergence_conditional, power_divergence_unconditional, DiscreteOutcome,
 };
-use crate::error::CiError;
-use crate::strategy::{CITest, CiResult, DataType, IndependenceRule, TestMeta};
+use crate::error::CIError;
+use crate::strategy::{CIResult, CITest, DataType, IndependenceRule, TestMeta};
 
 // Each named test differs only in its stable name and power-divergence λ.
 macro_rules! power_divergence_test {
@@ -42,7 +42,7 @@ macro_rules! power_divergence_test {
                 x: usize,
                 y: usize,
                 z: &[usize],
-            ) -> Result<CiResult, CiError> {
+            ) -> Result<CIResult, CIError> {
                 run_power_divergence(data, x, y, z, $lambda, self.yates)
             }
 
@@ -118,7 +118,7 @@ fn cramers_v(statistic: f64, n: usize, kx: usize, ky: usize) -> Option<f64> {
 
 /// Survival function `P(χ²_dof > statistic)`, with the degenerate and infinite
 /// cases handled exactly: `dof == 0 ⇒ 1.0`, `statistic == +∞ ⇒ 0.0`.
-fn chi_squared_sf(statistic: f64, dof: usize) -> Result<f64, CiError> {
+fn chi_squared_sf(statistic: f64, dof: usize) -> Result<f64, CIError> {
     if dof == 0 {
         return Ok(1.0);
     }
@@ -127,18 +127,18 @@ fn chi_squared_sf(statistic: f64, dof: usize) -> Result<f64, CiError> {
     }
     #[allow(clippy::cast_precision_loss)]
     let p = ChiSquaredDist::new(dof as f64)
-        .map_err(|e| CiError::Numeric(format!("chi-squared distribution: {e}")))?
+        .map_err(|e| CIError::Numeric(format!("chi-squared distribution: {e}")))?
         .sf(statistic);
     Ok(p)
 }
 
 /// Run a power-divergence test with parameter `lambda` and Yates flag `yates`,
-/// returning the full [`CiResult`] (statistic, p-value via the chi-squared
+/// returning the full [`CIResult`] (statistic, p-value via the chi-squared
 /// survival function, dof, Cramér's V effect size).
 ///
 /// # Errors
 ///
-/// Propagates [`CiError`] from reading the columns or constructing the
+/// Propagates [`CIError`] from reading the columns or constructing the
 /// chi-squared distribution.
 #[allow(
     clippy::many_single_char_names,
@@ -151,7 +151,7 @@ fn run_power_divergence(
     z: &[usize],
     lambda: f64,
     yates: bool,
-) -> Result<CiResult, CiError> {
+) -> Result<CIResult, CIError> {
     let (x_codes, kx) = data.discrete(x)?;
     let (y_codes, ky) = data.discrete(y)?;
 
@@ -165,7 +165,7 @@ fn run_power_divergence(
     let p_value = chi_squared_sf(statistic, dof)?;
     let effect_size = cramers_v(statistic, data.n_rows(), kx, ky);
 
-    Ok(CiResult {
+    Ok(CIResult {
         statistic: Some(statistic),
         p_value,
         dof: Some(dof),
@@ -271,8 +271,8 @@ mod tests {
                 _x: usize,
                 _y: usize,
                 _z: &[usize],
-            ) -> Result<CiResult, CiError> {
-                Ok(CiResult {
+            ) -> Result<CIResult, CIError> {
+                Ok(CIResult {
                     statistic: Some(1.0),
                     p_value: 1.0,
                     dof: Some(1),
@@ -355,7 +355,7 @@ mod tests {
             .unwrap();
             assert!(matches!(
                 ChiSquared::new().test(&data, 0, 1, &[]),
-                Err(CiError::WrongColumnKind(_))
+                Err(CIError::WrongColumnKind(_))
             ));
         }
     }

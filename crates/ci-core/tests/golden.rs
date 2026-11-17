@@ -25,7 +25,7 @@ use fastcit_core::ci_tests::{
 };
 use fastcit_core::dataset::{ColumnKind, Dataset};
 use fastcit_core::kernel::{Bandwidth, Kernel, KernelChoice};
-use fastcit_core::strategy::{CITest, CiResult, DataType};
+use fastcit_core::strategy::{CIResult, CITest, DataType};
 use serde::Deserialize;
 
 const TOL: f64 = 1e-7;
@@ -174,7 +174,7 @@ fn case_null_dist(case: &Case) -> NullDistribution {
     }
 }
 
-fn run_case(case: &Case) -> CiResult {
+fn run_case(case: &Case) -> CIResult {
     let (data, index) = build_dataset(case);
     let x = *index
         .get(&case.x)

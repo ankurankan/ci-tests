@@ -203,14 +203,14 @@ assume a well-formed query. Per-test config is constructor fields, the decision 
 
 ```rust
 use crate::dataset::{ColumnKind, Dataset};
-use crate::error::CiError;
-use crate::strategy::{CITest, CiResult, IndependenceRule, TestMeta};
+use crate::error::CIError;
+use crate::strategy::{CITest, CIResult, IndependenceRule, TestMeta};
 
 pub struct StudentsT { /* config fields only */ }
 
 impl CITest for StudentsT {
-    fn test_impl(&self, data: &Dataset, x: usize, y: usize, z: &[usize]) -> Result<CiResult, CiError> {
-        // ... return CiResult { statistic, p_value, dof, effect_size }
+    fn test_impl(&self, data: &Dataset, x: usize, y: usize, z: &[usize]) -> Result<CIResult, CIError> {
+        // ... return CIResult { statistic, p_value, dof, effect_size }
     }
 
     fn meta(&self) -> TestMeta {
@@ -225,7 +225,7 @@ impl CITest for StudentsT {
 ```
 
 See existing tests (e.g., `power_divergence.rs`, or `pearson_equivalence.rs` for the inverted rule)
-as examples. Return `CiError` rather than panicking; never let a panic escape into a binding.
+as examples. Return `CIError` rather than panicking; never let a panic escape into a binding.
 
 ### 3. Export and Register the Test
 
@@ -274,15 +274,29 @@ for it to the shared golden fixture (see [Testing](#testing)) so every language 
 
 - Add doc comments to your test struct and methods
 - Add the test to the "Available Tests" table in `README.md`
-- Add one example per language (`crates/ci-python/examples/<key>.py`, `crates/ci-r/inst/examples/tests/<key>.R`,
-  `crates/ci-js/examples/<key>.js`, `crates/ci-core/examples/<key>.rs`)
+- Add one example per language (`crates/ci-python/examples/<key>.pycon`, `crates/ci-r/inst/examples/tests/<key>.R`,
+  `crates/ci-js/examples/<key>.js`, `crates/ci-core/examples/<key>.rs`). Copy the examples of a test with the same
+  data types. Each example shows the four result fields (`statistic`, `p_value`, `dof`, `effect_size`) and their output:
+  - Python: a doctest transcript. For a field that is `None`, use `>>> print(result.dof)`, because doctest shows no
+    output for a bare `None`.
+  - R, JavaScript and Rust: put the output in comments directly under each print line (`#> ` in R, `// ` in
+    JavaScript and Rust). Do not put other comments directly under a print line.
+  - Run the example and copy its output. Write each number with 4 significant digits; keep integers exact.
+    The example tests compare each output number with the written number, to the written precision.
+    Thus `0.5778` matches `0.5778219788` (as with the NUMBER option of pytest doctests).
+    Keep at least one decimal place in a number of 1000 or more (write `2629.3`, not `2629`).
+    A number without a decimal point is compared as exact text.
+  - Each language makes its own random data. Start each example with the comment line that says so.
 - Add the page `docs/tests/<key>.md` (copy the layout of `docs/tests/chi_squared.md`), a row in
   `docs/_includes/test-table.md` and an entry in the toctree of `docs/tests/index.md`
 - Add the key to the `TESTS` dict in `tests/test_docs_site.py`
+- If numpy or R changes its random stream, the shown outputs go out of date. Run each example, as in
+  `devtools/extension_templates/README.md`, and copy the new output into the file.
+  Use `pytest --doctest-continue-on-failure crates/ci-python/examples/<key>.pycon` (Python),
+  `Rscript crates/ci-r/inst/examples/tests/<key>.R` (R, with the package installed),
+  the `node` recipe of that file (JavaScript) and `cargo run -p fastcit-core --example <key>` (Rust).
 - Raise the example count (12) in `crates/ci-python/test/test_examples.py`,
   `crates/ci-r/tests/testthat/test-examples.R` and `crates/ci-js/tests/examples.test.js`
-- If the example's expected p-value is not `> 0.05`, add its key to the `case` table in the "Run examples" step of
-  `.github/workflows/rust.yml`
 - Build the site with warnings as errors:
   `pip install -r docs/requirements.txt -c docs/constraints.txt` (Python 3.13 or later), then
   `sphinx-build -W -b html docs site`
@@ -337,6 +351,9 @@ cargo test -p fastcit-core test_chi_squared
 
 # Run with output (see println! statements)
 cargo test -p fastcit-core -- --nocapture
+
+# Run an example and compare its output with its output comments, as CI does for every example
+cargo run -q -p fastcit-core --example fisher_z | python3 crates/ci-core/examples/check_output.py crates/ci-core/examples/fisher_z.rs
 ```
 
 ### Python Tests
@@ -351,8 +368,8 @@ cd crates/ci-python
 pip install maturin
 maturin develop
 
-# Run tests (includes test_golden.py)
-pytest test/
+# Run tests (includes test_golden.py) and the documentation examples (examples/*.pycon, as doctests)
+pytest
 
 # Type-check the test suite
 mypy test/

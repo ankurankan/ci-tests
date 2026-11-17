@@ -18,28 +18,39 @@ Choose your language. Run one command.
 
 ## Quick start
 
-Open the block for your language. Each example builds a dataset, runs one test, and prints the p-value.
+Open the block for your language. Each example builds a dataset, runs one test, and prints the result fields with their values.
+Each language makes its own random data, so the values differ between the language tabs.
+With the same data, all languages give the same result.
 
 <details>
 <summary>Python</summary>
 
-```python
-import numpy as np
-import pandas as pd
-import fastcit
+```pycon
+>>> import numpy as np
+>>> import fastcit
 
-rng = np.random.default_rng(0)
-z = rng.standard_normal(500)
-df = pd.DataFrame({
-    "X": z + rng.standard_normal(500),
-    "Y": z + rng.standard_normal(500),
-    "Z": z,
-})
+>>> # Each language makes its own random data, so the values differ from the other tabs.
+>>> rng = np.random.default_rng(0)
+>>> n = 500
+>>> z = rng.standard_normal(n)
+>>> x = z + rng.standard_normal(n)  # X and Y depend on Z only
+>>> y = z + rng.standard_normal(n)
+>>> data = fastcit.Dataset({
+...     "X": ("continuous", x),
+...     "Y": ("continuous", y),
+...     "Z": ("continuous", z),
+... })
 
-data = fastcit.Dataset.from_pandas(df)
-test = fastcit.FisherZ(data)
-result = test.run_test("X", "Y", ["Z"])
-print(result.p_value)
+>>> test = fastcit.FisherZ(data)
+>>> result = test.run_test("X", "Y", ["Z"])
+>>> result.statistic
+-0.5566
+>>> result.p_value
+0.5778
+>>> print(result.dof)
+None
+>>> result.effect_size
+0.02499
 ```
 
 </details>
@@ -50,14 +61,25 @@ print(result.p_value)
 ```r
 library(fastcit)
 
+# Each language makes its own random data, so the values differ from the other tabs.
 set.seed(0)
-z <- rnorm(500)
-df <- data.frame(X = z + rnorm(500), Y = z + rnorm(500), Z = z)
+n <- 500
+z <- rnorm(n)
+x <- z + rnorm(n) # X and Y depend on Z only
+y <- z + rnorm(n)
+df <- data.frame(X = x, Y = y, Z = z)
 
 data <- dataset(df)
 test <- fisher_z(data)
 res <- run_test(test, "X", "Y", "Z")
+print(res$statistic)
+#> [1] -0.1752
 print(res$p_value)
+#> [1] 0.8609
+print(res$dof)
+#> NULL
+print(res$effect_size)
+#> [1] 0.007868
 ```
 
 </details>
@@ -68,19 +90,35 @@ print(res$p_value)
 ```js
 const { Dataset, FisherZ } = require("fastcit");
 
+// Each language makes its own random data, so the values differ from the other tabs.
+// Seeded generator (Park-Miller), so every run gives the same data.
+let seed = 12345;
+const uniform = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+const normal = () =>
+  Math.sqrt(-2 * Math.log(uniform())) * Math.cos(2 * Math.PI * uniform());
+const draw = (n, f) => Array.from({ length: n }, f);
+
 const n = 500;
-const z = Array.from({ length: n }, () => Math.random());
-const x = z.map((v) => v + Math.random());
-const y = z.map((v) => v + Math.random());
+const z = draw(n, normal);
+const x = z.map((v) => v + normal()); // X and Y depend on Z only
+const y = z.map((v) => v + normal());
 
 const data = new Dataset({
   X: { kind: "continuous", values: x },
   Y: { kind: "continuous", values: y },
   Z: { kind: "continuous", values: z },
 });
+
 const test = new FisherZ(data);
 const result = test.runTest("X", "Y", ["Z"]);
+console.log(result.statistic);
+// -0.9402
 console.log(result.pValue);
+// 0.3471
+console.log(result.dof);
+// null
+console.log(result.effectSize);
+// 0.04219
 ```
 
 </details>
@@ -89,27 +127,42 @@ console.log(result.pValue);
 <summary>Rust</summary>
 
 ```rust
+use std::f64::consts::PI;
+
 use fastcit_core::ci_tests::FisherZ;
 use fastcit_core::dataset::{ColumnKind, Dataset};
 use fastcit_core::strategy::CITest;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let z: Vec<f64> = (0..500).map(|i| ((i * 37 % 101) as f64) / 10.0).collect();
-    let x: Vec<f64> = z.iter().enumerate().map(|(i, v)| v + ((i * 53 % 97) as f64) / 10.0).collect();
-    let y: Vec<f64> = z.iter().enumerate().map(|(i, v)| v + ((i * 29 % 89) as f64) / 10.0).collect();
+    // Each language makes its own random data, so the values differ from the other tabs.
+    // Seeded generator (Park-Miller), so every run gives the same data.
+    let mut seed = 12345.0_f64;
+    let mut uniform = move || {
+        seed = seed * 16807.0 % 2_147_483_647.0;
+        seed / 2_147_483_647.0
+    };
+    let mut normal = || (-2.0 * uniform().ln()).sqrt() * (2.0 * PI * uniform()).cos();
+    let z: Vec<f64> = (0..500).map(|_| normal()).collect();
+    let x: Vec<f64> = z.iter().map(|v| v + normal()).collect(); // X and Y depend on Z only
+    let y: Vec<f64> = z.iter().map(|v| v + normal()).collect();
 
     let data = Dataset::from_columns(vec![
         ("X".into(), ColumnKind::Continuous, x),
         ("Y".into(), ColumnKind::Continuous, y),
         ("Z".into(), ColumnKind::Continuous, z),
     ])?;
-    let (x, y, z) = (
-        data.index_of("X").unwrap(),
-        data.index_of("Y").unwrap(),
-        data.index_of("Z").unwrap(),
-    );
+    let x = data.index_of("X").unwrap();
+    let y = data.index_of("Y").unwrap();
+    let z = data.index_of("Z").unwrap();
     let result = FisherZ::new().test(&data, x, y, &[z])?;
-    println!("{}", result.p_value);
+    println!("{:?}", result.statistic);
+    // Some(-0.9402)
+    println!("{:?}", result.p_value);
+    // 0.3471
+    println!("{:?}", result.dof);
+    // None
+    println!("{:?}", result.effect_size);
+    // Some(0.04219)
     Ok(())
 }
 ```

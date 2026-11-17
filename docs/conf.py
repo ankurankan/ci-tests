@@ -38,6 +38,11 @@ pygments_style = "tango"
 myst_enable_extensions = ["colon_fence", "deflist", "fieldlist", "dollarmath"]
 myst_heading_anchors = 3
 
+# The Python examples are doctest transcripts. The copy button copies only the code lines,
+# without the prompts. A code block without prompts (R, JavaScript, Rust) is copied unchanged.
+copybutton_prompt_text = r">>> |\.\.\. "
+copybutton_prompt_is_regexp = True
+
 # -- Options for HTML output ----------------------------------------------
 
 html_theme = "pydata_sphinx_theme"

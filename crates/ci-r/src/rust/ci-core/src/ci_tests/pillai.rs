@@ -24,9 +24,9 @@ use faer::{Mat, MatRef};
 use statrs::distribution::{ContinuousCDF, FisherSnedecor};
 
 use crate::dataset::Dataset;
-use crate::error::CiError;
+use crate::error::CIError;
 use crate::residual::{design_matrix, ols_residuals_multi, target_block};
-use crate::strategy::{CITest, CiResult, DataType, IndependenceRule, TestMeta};
+use crate::strategy::{CIResult, CITest, DataType, IndependenceRule, TestMeta};
 
 /// Relative threshold below which a residual column is treated as zero.
 const RESIDUAL_TOL: f64 = 1e-10;
@@ -49,7 +49,7 @@ impl Pillai {
 
 /// Residual block of `col` on `design`, with a check that no residual column
 /// is (numerically) constant zero relative to its target column.
-fn residual_block(data: &Dataset, design: &Mat<f64>, col: usize) -> Result<Mat<f64>, CiError> {
+fn residual_block(data: &Dataset, design: &Mat<f64>, col: usize) -> Result<Mat<f64>, CIError> {
     let label = data
         .name_of(col)
         .map_or_else(|| col.to_string(), |n| format!("`{n}`"));
@@ -60,7 +60,7 @@ fn residual_block(data: &Dataset, design: &Mat<f64>, col: usize) -> Result<Mat<f
                 (l.min(v), h.max(v))
             });
         if lo >= hi {
-            return Err(CiError::DegenerateData(format!(
+            return Err(CIError::DegenerateData(format!(
                 "column {label} is constant"
             )));
         }
@@ -77,7 +77,7 @@ fn residual_block(data: &Dataset, design: &Mat<f64>, col: usize) -> Result<Mat<f
         let res_ss: f64 = (0..n).map(|i| res[(i, j)].powi(2)).sum();
         let noise = nf * f64::EPSILON * f64::EPSILON * max_abs * max_abs;
         if !res_ss.is_finite() || res_ss <= RESIDUAL_TOL * RESIDUAL_TOL * scale + noise {
-            return Err(CiError::DegenerateData(format!(
+            return Err(CIError::DegenerateData(format!(
                 "residual of column {label} given Z has no variance"
             )));
         }
@@ -86,7 +86,7 @@ fn residual_block(data: &Dataset, design: &Mat<f64>, col: usize) -> Result<Mat<f
 }
 
 /// Column-centers `m` and scales every column to unit Euclidean norm.
-fn standardize(m: MatRef<'_, f64>) -> Result<Mat<f64>, CiError> {
+fn standardize(m: MatRef<'_, f64>) -> Result<Mat<f64>, CIError> {
     let (n, k) = (m.nrows(), m.ncols());
     #[allow(clippy::cast_precision_loss)]
     let nf = n as f64;
@@ -98,7 +98,7 @@ fn standardize(m: MatRef<'_, f64>) -> Result<Mat<f64>, CiError> {
             .sum::<f64>()
             .sqrt();
         if !(norm.is_finite() && norm > 0.0) {
-            return Err(CiError::DegenerateData(
+            return Err(CIError::DegenerateData(
                 "residual column has no variance".to_string(),
             ));
         }
@@ -119,13 +119,13 @@ fn cross(a: MatRef<'_, f64>, b: MatRef<'_, f64>) -> Mat<f64> {
 /// Lower Cholesky factor of a unit-diagonal correlation matrix; a pivot whose
 /// square is not above [`PIVOT_TOL`] means the block is (numerically) singular.
 #[allow(clippy::many_single_char_names)] // standard linear-algebra names
-fn cholesky(c: &Mat<f64>) -> Result<Mat<f64>, CiError> {
+fn cholesky(c: &Mat<f64>) -> Result<Mat<f64>, CIError> {
     let k = c.nrows();
     let mut l = Mat::<f64>::zeros(k, k);
     for j in 0..k {
         let d = c[(j, j)] - (0..j).map(|t| l[(j, t)].powi(2)).sum::<f64>();
         if !(d.is_finite() && d > PIVOT_TOL) {
-            return Err(CiError::DegenerateData(
+            return Err(CIError::DegenerateData(
                 "residual block is singular (collinear or determined by Z)".to_string(),
             ));
         }
@@ -155,11 +155,11 @@ fn forward_solve(l: &Mat<f64>, b: &Mat<f64>) -> Mat<f64> {
 ///
 /// # Errors
 ///
-/// Returns [`CiError::DegenerateData`] if either block is singular or a
-/// column is constant, or [`CiError::DimensionMismatch`] on unequal row counts.
-pub(crate) fn pillai_trace(rx: MatRef<'_, f64>, ry: MatRef<'_, f64>) -> Result<f64, CiError> {
+/// Returns [`CIError::DegenerateData`] if either block is singular or a
+/// column is constant, or [`CIError::DimensionMismatch`] on unequal row counts.
+pub(crate) fn pillai_trace(rx: MatRef<'_, f64>, ry: MatRef<'_, f64>) -> Result<f64, CIError> {
     if rx.nrows() != ry.nrows() {
-        return Err(CiError::DimensionMismatch(format!(
+        return Err(CIError::DimensionMismatch(format!(
             "residual blocks have {} and {} rows",
             rx.nrows(),
             ry.nrows()
@@ -178,7 +178,7 @@ pub(crate) fn pillai_trace(rx: MatRef<'_, f64>, ry: MatRef<'_, f64>) -> Result<f
         .map(|i| (0..w.ncols()).map(|j| w[(i, j)].powi(2)).sum::<f64>())
         .sum();
     if !v.is_finite() {
-        return Err(CiError::DegenerateData(
+        return Err(CIError::DegenerateData(
             "Pillai's trace is not finite".to_string(),
         ));
     }
@@ -193,7 +193,7 @@ impl CITest for Pillai {
         x: usize,
         y: usize,
         z: &[usize],
-    ) -> Result<CiResult, CiError> {
+    ) -> Result<CIResult, CIError> {
         let design = design_matrix(data, z)?;
         let rx = residual_block(data, &design, x)?;
         let ry = residual_block(data, &design, y)?;
@@ -210,7 +210,7 @@ impl CITest for Pillai {
             (sf, df1, df2)
         };
         if df2.is_nan() || df2 <= 0.0 {
-            return Err(CiError::DegenerateData(format!(
+            return Err(CIError::DegenerateData(format!(
                 "denominator degrees of freedom {df2} are not positive"
             )));
         }
@@ -220,10 +220,10 @@ impl CITest for Pillai {
         } else {
             let f_stat = (v / df1) * (df2 / (sf - v));
             let dist = FisherSnedecor::new(df1, df2)
-                .map_err(|e| CiError::Numeric(format!("F distribution: {e}")))?;
+                .map_err(|e| CIError::Numeric(format!("F distribution: {e}")))?;
             dist.sf(f_stat)
         };
-        Ok(CiResult {
+        Ok(CIResult {
             statistic: Some(v),
             p_value,
             dof: None,
@@ -398,7 +398,7 @@ mod tests {
         ]);
         assert!(matches!(
             Pillai::new().test(&data, 0, 1, &[2]),
-            Err(CiError::DegenerateData(_))
+            Err(CIError::DegenerateData(_))
         ));
     }
 
@@ -423,7 +423,7 @@ mod tests {
                     assert!(
                         matches!(
                             Pillai::new().test(&data, 0, 1, &z),
-                            Err(CiError::DegenerateData(_))
+                            Err(CIError::DegenerateData(_))
                         ),
                         "c={c} z={z:?} const_is_y={const_is_y}"
                     );
@@ -503,11 +503,11 @@ mod tests {
                 let d = cd(extra);
                 assert!(matches!(
                     Pillai::new().test(&d, 0, 1, &[2, 3]),
-                    Err(CiError::DegenerateData(_))
+                    Err(CIError::DegenerateData(_))
                 ));
                 assert!(matches!(
                     Gcm::new().test(&d, 0, 1, &[2, 3]),
-                    Err(CiError::DegenerateData(_))
+                    Err(CIError::DegenerateData(_))
                 ));
             }
         }

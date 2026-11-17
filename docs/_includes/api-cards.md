@@ -7,7 +7,7 @@
 :link-type: url
 :class-card: sd-card-hover
 
-The `fastcit` module: `Dataset`, the test classes and `CiResult`.
+The `fastcit` module: `Dataset`, the test classes and `CIResult`.
 :::
 
 :::{grid-item-card} R package

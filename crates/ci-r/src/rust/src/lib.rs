@@ -13,7 +13,7 @@
 //! Discrete columns must already be numeric when they reach Rust: the R side
 //! factor/character → integer coding happens before [`Dataset::new`], so the
 //! core only ever sees `f64` values (which it factorizes into contiguous codes).
-//! Core [`fastcit_core::error::CiError`]s and Rust panics surface as R errors via
+//! Core [`fastcit_core::error::CIError`]s and Rust panics surface as R errors via
 //! extendr's `Result` support.
 
 // Every fallible export returns `extendr_api::Result<_>`, which extendr turns
@@ -27,7 +27,7 @@ use std::sync::Arc;
 use extendr_api::prelude::*;
 use extendr_api::Result;
 use fastcit_core::dataset::{ColumnKind, Dataset as CoreDataset};
-use fastcit_core::strategy::{CITest, CiResult as CoreResult, IndependenceRule};
+use fastcit_core::strategy::{CIResult as CoreResult, CITest, IndependenceRule};
 
 mod util;
 

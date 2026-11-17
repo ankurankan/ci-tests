@@ -19,8 +19,8 @@ myst:
 
 `fastcit.FreemanTukey(data, yates=True)`
 
-```{literalinclude} ../../crates/ci-python/examples/freeman_tukey.py
-:language: python
+```{literalinclude} ../../crates/ci-python/examples/freeman_tukey.pycon
+:language: pycon
 ```
 
 :::

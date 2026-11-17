@@ -10,12 +10,12 @@ use faer::{Mat, Side};
 
 use crate::ci_tests::hsic::{hsic_unconditional, NullDistribution};
 use crate::dataset::Dataset;
-use crate::error::CiError;
+use crate::error::CIError;
 use crate::kernel::{
     center, dense_len_guard, gamma_pvalue, kernel_matrix, median_length_scale, standardized,
     Bandwidth, Kernel, KernelChoice,
 };
-use crate::strategy::{CITest, CiResult, DataType, IndependenceRule, TestMeta};
+use crate::strategy::{CIResult, CITest, DataType, IndependenceRule, TestMeta};
 
 /// Eigenvalue cut-off relative to the largest eigenvalue.
 const EIGEN_RELATIVE_CUTOFF: f64 = 1e-5;
@@ -75,8 +75,8 @@ fn inner(a: &Mat<f64>, b: &Mat<f64>) -> f64 {
     s
 }
 
-fn numeric<E: std::fmt::Debug>(what: &str, e: E) -> CiError {
-    CiError::Numeric(format!("{what} failed: {e:?}"))
+fn numeric<E: std::fmt::Debug>(what: &str, e: E) -> CIError {
+    CIError::Numeric(format!("{what} failed: {e:?}"))
 }
 
 /// Default RBF kernel for `points` under the bandwidth rule.
@@ -107,7 +107,7 @@ fn centered_kernel(kernel: Kernel, points: &Mat<f64>) -> Mat<f64> {
 }
 
 /// Kept eigenvectors scaled by `sqrt(eigenvalue)` of `½(A + Aᵀ)`.
-fn scaled_eigenvectors(a: &Mat<f64>) -> Result<Mat<f64>, CiError> {
+fn scaled_eigenvectors(a: &Mat<f64>) -> Result<Mat<f64>, CIError> {
     let n = a.nrows();
     let sym = Mat::<f64>::from_fn(n, n, |i, j| f64::midpoint(a[(i, j)], a[(j, i)]));
     let eig = sym
@@ -125,9 +125,9 @@ fn scaled_eigenvectors(a: &Mat<f64>) -> Result<Mat<f64>, CiError> {
 }
 
 impl CITest for Kci {
-    fn validate(&self, data: &Dataset) -> Result<(), CiError> {
+    fn validate(&self, data: &Dataset) -> Result<(), CIError> {
         if !(self.epsilon.is_finite() && self.epsilon > 0.0) {
-            return Err(CiError::InvalidConfig(
+            return Err(CIError::InvalidConfig(
                 "epsilon must be finite and > 0".to_string(),
             ));
         }
@@ -145,7 +145,7 @@ impl CITest for Kci {
         x: usize,
         y: usize,
         z: &[usize],
-    ) -> Result<CiResult, CiError> {
+    ) -> Result<CIResult, CIError> {
         if z.is_empty() {
             return hsic_unconditional(
                 data,
@@ -218,7 +218,7 @@ impl CITest for Kci {
         }
         let p_value = gamma_pvalue(stat, tr, 2.0 * sq)?;
 
-        Ok(CiResult {
+        Ok(CIResult {
             statistic: Some(stat),
             p_value,
             dof: None,
@@ -383,10 +383,10 @@ mod tests {
                 epsilon: eps,
                 ..Kci::new()
             };
-            assert!(matches!(t.validate(&d), Err(CiError::InvalidConfig(_))));
+            assert!(matches!(t.validate(&d), Err(CIError::InvalidConfig(_))));
             assert!(matches!(
                 t.test(&d, 0, 1, &[2]),
-                Err(CiError::InvalidConfig(_))
+                Err(CIError::InvalidConfig(_))
             ));
         }
         let mut rng = SplitMix64::new(8);
@@ -410,7 +410,7 @@ mod tests {
         .unwrap();
         assert!(matches!(
             Kci::new().test(&d, 0, 1, &[2]),
-            Err(CiError::WrongColumnKind { .. })
+            Err(CIError::WrongColumnKind { .. })
         ));
     }
 

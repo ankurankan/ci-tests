@@ -19,8 +19,8 @@ myst:
 
 `fastcit.PearsonEquivalence(data, delta_threshold=0.1)`
 
-```{literalinclude} ../../crates/ci-python/examples/pearson_equivalence.py
-:language: python
+```{literalinclude} ../../crates/ci-python/examples/pearson_equivalence.pycon
+:language: pycon
 ```
 
 :::

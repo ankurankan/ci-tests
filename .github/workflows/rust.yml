@@ -102,21 +102,19 @@ jobs:
       - name: Run tests
         run: cargo test -p fastcit-core --verbose
 
-      # Run every documentation example and check its seeded p-value: hsic uses
-      # dependent data (p < 0.001), pearson_equivalence must reject
-      # non-equivalence (p < 0.05), all others use conditionally independent
-      # data (p > 0.05).
+      # Each example prints the fields of its result. The `//` comments under each
+      # println! line show the output. check_output.py compares the two; a number
+      # matches to the precision written in the comment.
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Test the example output checker
+        run: python -m doctest crates/ci-core/examples/check_output.py
+
       - name: Run examples
         shell: bash
         run: |
           for f in crates/ci-core/examples/*.rs; do
-            key=$(basename "$f" .rs)
-            p=$(cargo run -q -p fastcit-core --example "$key")
-            echo "$key: $p"
-            case "$key" in
-              hsic) cond='p < 0.001' ;;
-              pearson_equivalence) cond='p < 0.05' ;;
-              *) cond='p > 0.05' ;;
-            esac
-            awk -v p="$p" "BEGIN { exit !($cond) }" || { echo "unexpected p-value for $key"; exit 1; }
+            cargo run -q -p fastcit-core --example "$(basename "$f" .rs)" | python crates/ci-core/examples/check_output.py "$f"
           done

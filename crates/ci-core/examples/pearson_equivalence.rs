@@ -5,6 +5,7 @@ use fastcit_core::dataset::{ColumnKind, Dataset};
 use fastcit_core::strategy::CITest;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
+    // Each language makes its own random data, so the values differ from the other tabs.
     // Seeded generator (Park-Miller), so every run gives the same data.
     let mut seed = 12345.0_f64;
     let mut uniform = move || {
@@ -26,6 +27,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let z = data.index_of("Z").unwrap();
     // A small p-value supports equivalence: |rho| < threshold, so X and Y are independent given Z.
     let result = PearsonEquivalence::new(0.1).test(&data, x, y, &[z])?;
-    println!("{}", result.p_value);
+    println!("{:?}", result.statistic);
+    // Some(-0.01296)
+    println!("{:?}", result.p_value);
+    // 4.734e-5
+    println!("{:?}", result.dof);
+    // None
+    println!("{:?}", result.effect_size);
+    // Some(0.01296)
     Ok(())
 }

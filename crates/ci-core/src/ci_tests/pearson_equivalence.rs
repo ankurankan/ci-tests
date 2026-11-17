@@ -4,8 +4,8 @@ use statrs::distribution::{ContinuousCDF, Normal};
 
 use crate::correlation::{clipped_fisher_transform, partial_correlation};
 use crate::dataset::Dataset;
-use crate::error::CiError;
-use crate::strategy::{CITest, CiResult, DataType, IndependenceRule, TestMeta};
+use crate::error::CIError;
+use crate::strategy::{CIResult, CITest, DataType, IndependenceRule, TestMeta};
 
 /// Two One-Sided Tests (TOST) equivalence test on the partial correlation,
 /// using Fisher's z-transform. A *low* p-value (below the significance level)
@@ -35,9 +35,9 @@ impl CITest for PearsonEquivalence {
         x: usize,
         y: usize,
         z: &[usize],
-    ) -> Result<CiResult, CiError> {
+    ) -> Result<CIResult, CIError> {
         if !(self.delta_threshold > 0.0 && self.delta_threshold < 1.0) {
-            return Err(CiError::DegenerateData(format!(
+            return Err(CIError::DegenerateData(format!(
                 "delta_threshold must be in (0, 1), got {}",
                 self.delta_threshold
             )));
@@ -56,13 +56,13 @@ impl CITest for PearsonEquivalence {
         let c = ((n - n_z - 3) as f64).sqrt();
 
         let normal =
-            Normal::new(0.0, 1.0).map_err(|e| CiError::Numeric(format!("standard normal: {e}")))?;
+            Normal::new(0.0, 1.0).map_err(|e| CIError::Numeric(format!("standard normal: {e}")))?;
 
         let p_lower = 1.0 - normal.cdf(c * (z_rho + z_delta));
         let p_upper = normal.cdf(c * (z_rho - z_delta));
         let p_value = p_lower.max(p_upper);
 
-        Ok(CiResult {
+        Ok(CIResult {
             statistic: Some(z_rho),
             p_value,
             dof: None,
@@ -127,7 +127,7 @@ mod tests {
         ]);
         assert!(matches!(
             PearsonEquivalence::new(1.5).test(&data, 0, 1, &[]),
-            Err(CiError::DegenerateData(_))
+            Err(CIError::DegenerateData(_))
         ));
     }
 
@@ -173,7 +173,7 @@ mod tests {
         ]);
         assert!(matches!(
             PearsonEquivalence::new(0.1).test(&data, 0, 1, &[2]),
-            Err(CiError::DegenerateData(_))
+            Err(CIError::DegenerateData(_))
         ));
     }
 }

@@ -10,9 +10,9 @@ use faer::Mat;
 use statrs::distribution::{ContinuousCDF, Normal};
 
 use crate::dataset::Dataset;
-use crate::error::CiError;
+use crate::error::CIError;
 use crate::residual::{design_matrix, ols_residuals_multi};
-use crate::strategy::{CITest, CiResult, DataType, IndependenceRule, TestMeta};
+use crate::strategy::{CIResult, CITest, DataType, IndependenceRule, TestMeta};
 
 /// Relative threshold below which a residual is treated as exactly zero.
 const RESIDUAL_TOL: f64 = 1e-10;
@@ -35,7 +35,7 @@ fn residual_of(
     design: &Mat<f64>,
     col: usize,
     name: &str,
-) -> Result<Vec<f64>, CiError> {
+) -> Result<Vec<f64>, CIError> {
     let values = data.continuous(col)?;
     let n = values.len();
     let target = Mat::from_fn(n, 1, |i, _| values[i]);
@@ -48,7 +48,7 @@ fn residual_of(
             (l.min(v), h.max(v))
         });
     if lo >= hi {
-        return Err(CiError::DegenerateData(format!("{name} is constant")));
+        return Err(CIError::DegenerateData(format!("{name} is constant")));
     }
     #[allow(clippy::cast_precision_loss)]
     let nf = n as f64;
@@ -58,7 +58,7 @@ fn residual_of(
     let res_ss: f64 = r.iter().map(|v| v * v).sum();
     let noise = nf * f64::EPSILON * f64::EPSILON * max_abs * max_abs;
     if !res_ss.is_finite() || res_ss <= RESIDUAL_TOL * RESIDUAL_TOL * scale + noise {
-        return Err(CiError::DegenerateData(format!(
+        return Err(CIError::DegenerateData(format!(
             "residual of {name} given Z has no variance"
         )));
     }
@@ -73,7 +73,7 @@ impl CITest for Gcm {
         x: usize,
         y: usize,
         z: &[usize],
-    ) -> Result<CiResult, CiError> {
+    ) -> Result<CIResult, CIError> {
         data.continuous(x)?;
         data.continuous(y)?;
         for &c in z {
@@ -90,14 +90,14 @@ impl CITest for Gcm {
         let mean_u = sum_u / n;
         let std_u = (u.iter().map(|v| (v - mean_u).powi(2)).sum::<f64>() / n).sqrt();
         if !(std_u.is_finite() && std_u > 0.0) {
-            return Err(CiError::DegenerateData(
+            return Err(CIError::DegenerateData(
                 "residual products have zero variance".to_string(),
             ));
         }
         let t = sum_u / (n.sqrt() * std_u);
 
         let normal = Normal::new(0.0, 1.0)
-            .map_err(|e| CiError::Numeric(format!("normal distribution: {e}")))?;
+            .map_err(|e| CIError::Numeric(format!("normal distribution: {e}")))?;
         let p_value = 2.0 * normal.sf(t.abs());
 
         let mx = rx.iter().sum::<f64>() / n;
@@ -110,11 +110,11 @@ impl CITest for Gcm {
         }
         let effect = (cov_xy / (var_x.sqrt() * var_y.sqrt())).abs();
         if !effect.is_finite() {
-            return Err(CiError::DegenerateData(
+            return Err(CIError::DegenerateData(
                 "residual correlation is undefined".to_string(),
             ));
         }
-        Ok(CiResult {
+        Ok(CIResult {
             statistic: Some(t),
             p_value,
             dof: None,
@@ -294,7 +294,7 @@ mod tests {
             ]);
             assert!(matches!(
                 Gcm::new().test(&data, 0, 1, &[2]),
-                Err(CiError::WrongColumnKind(_))
+                Err(CIError::WrongColumnKind(_))
             ));
         }
     }
@@ -310,7 +310,7 @@ mod tests {
         ]);
         assert!(matches!(
             Gcm::new().test(&data, 0, 1, &[2]),
-            Err(CiError::DegenerateData(_))
+            Err(CIError::DegenerateData(_))
         ));
     }
 
@@ -327,7 +327,7 @@ mod tests {
                 ]);
                 assert!(matches!(
                     Gcm::new().test(&data, 0, 1, &z),
-                    Err(CiError::DegenerateData(_))
+                    Err(CIError::DegenerateData(_))
                 ));
             }
         }

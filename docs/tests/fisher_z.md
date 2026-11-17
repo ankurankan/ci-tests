@@ -19,8 +19,8 @@ myst:
 
 `fastcit.FisherZ(data)`
 
-```{literalinclude} ../../crates/ci-python/examples/fisher_z.py
-:language: python
+```{literalinclude} ../../crates/ci-python/examples/fisher_z.pycon
+:language: pycon
 ```
 
 :::

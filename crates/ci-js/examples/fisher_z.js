@@ -1,5 +1,6 @@
 const { Dataset, FisherZ } = require("fastcit");
 
+// Each language makes its own random data, so the values differ from the other tabs.
 // Seeded generator (Park-Miller), so every run gives the same data.
 let seed = 12345;
 const uniform = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
@@ -20,4 +21,11 @@ const data = new Dataset({
 
 const test = new FisherZ(data);
 const result = test.runTest("X", "Y", ["Z"]);
+console.log(result.statistic);
+// -0.9402
 console.log(result.pValue);
+// 0.3471
+console.log(result.dof);
+// null
+console.log(result.effectSize);
+// 0.04219

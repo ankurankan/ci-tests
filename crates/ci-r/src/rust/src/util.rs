@@ -4,9 +4,9 @@ use std::collections::BTreeMap;
 
 use extendr_api::prelude::*;
 use extendr_api::Result;
-use fastcit_core::error::CiError as CoreError;
+use fastcit_core::error::CIError as CoreError;
 use fastcit_core::kernel::{Bandwidth, Kernel, KernelChoice};
-use fastcit_core::strategy::CiResult as CoreResult;
+use fastcit_core::strategy::CIResult as CoreResult;
 
 /// Map a core [`CoreError`] onto an extendr [`Error`], which extendr raises as
 /// an R error at the call site.

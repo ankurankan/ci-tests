@@ -130,6 +130,19 @@ jobs:
         working-directory: crates/ci-python
         run: mypy test/
 
-      # Verified locally: `pytest crates/ci-python/test/` -> golden = 80/80.
+      # Verified locally: `pytest` in crates/ci-python -> golden = 80/80.
+      # testpaths in pyproject.toml lists test/ and examples/ (the documentation examples,
+      # doctest transcripts *.pycon), so a bare `pytest` runs both.
       - name: Run tests
-        run: pytest crates/ci-python/test/
+        working-directory: crates/ci-python
+        run: pytest
+
+      # Fails when a transcript is not collected, for example after a change of testpaths.
+      - name: Check that every example transcript is collected
+        working-directory: crates/ci-python
+        shell: bash
+        run: |
+          collected=$(pytest --collect-only -q | grep -c '\.pycon::')
+          files=$(ls examples/*.pycon | wc -l)
+          echo "collected $collected of $files transcripts"
+          test "$collected" -eq "$files"

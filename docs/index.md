@@ -119,23 +119,8 @@ cargo add fastcit-core
 :::{tab-item} Python
 :sync: python
 
-```python
-import numpy as np
-import pandas as pd
-import fastcit
-
-rng = np.random.default_rng(0)
-z = rng.standard_normal(500)
-df = pd.DataFrame({
-    "X": z + rng.standard_normal(500),
-    "Y": z + rng.standard_normal(500),
-    "Z": z,
-})
-
-data = fastcit.Dataset.from_pandas(df)
-test = fastcit.FisherZ(data)
-result = test.run_test("X", "Y", ["Z"])
-print(result.p_value)
+```{literalinclude} ../crates/ci-python/examples/fisher_z.pycon
+:language: pycon
 ```
 
 :::
@@ -143,17 +128,8 @@ print(result.p_value)
 :::{tab-item} R
 :sync: r
 
-```r
-library(fastcit)
-
-set.seed(0)
-z <- rnorm(500)
-df <- data.frame(X = z + rnorm(500), Y = z + rnorm(500), Z = z)
-
-data <- dataset(df)
-test <- fisher_z(data)
-res <- run_test(test, "X", "Y", "Z")
-print(res$p_value)
+```{literalinclude} ../crates/ci-r/inst/examples/tests/fisher_z.R
+:language: r
 ```
 
 :::
@@ -161,22 +137,8 @@ print(res$p_value)
 :::{tab-item} JavaScript
 :sync: javascript
 
-```javascript
-const { Dataset, FisherZ } = require("fastcit");
-
-const n = 500;
-const z = Array.from({ length: n }, () => Math.random());
-const x = z.map((v) => v + Math.random());
-const y = z.map((v) => v + Math.random());
-
-const data = new Dataset({
-  X: { kind: "continuous", values: x },
-  Y: { kind: "continuous", values: y },
-  Z: { kind: "continuous", values: z },
-});
-const test = new FisherZ(data);
-const result = test.runTest("X", "Y", ["Z"]);
-console.log(result.pValue);
+```{literalinclude} ../crates/ci-js/examples/fisher_z.js
+:language: javascript
 ```
 
 :::
@@ -184,30 +146,8 @@ console.log(result.pValue);
 :::{tab-item} Rust
 :sync: rust
 
-```rust
-use fastcit_core::ci_tests::FisherZ;
-use fastcit_core::dataset::{ColumnKind, Dataset};
-use fastcit_core::strategy::CITest;
-
-fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let z: Vec<f64> = (0..500).map(|i| ((i * 37 % 101) as f64) / 10.0).collect();
-    let x: Vec<f64> = z.iter().enumerate().map(|(i, v)| v + ((i * 53 % 97) as f64) / 10.0).collect();
-    let y: Vec<f64> = z.iter().enumerate().map(|(i, v)| v + ((i * 29 % 89) as f64) / 10.0).collect();
-
-    let data = Dataset::from_columns(vec![
-        ("X".into(), ColumnKind::Continuous, x),
-        ("Y".into(), ColumnKind::Continuous, y),
-        ("Z".into(), ColumnKind::Continuous, z),
-    ])?;
-    let (x, y, z) = (
-        data.index_of("X").unwrap(),
-        data.index_of("Y").unwrap(),
-        data.index_of("Z").unwrap(),
-    );
-    let result = FisherZ::new().test(&data, x, y, &[z])?;
-    println!("{}", result.p_value);
-    Ok(())
-}
+```{literalinclude} ../crates/ci-core/examples/fisher_z.rs
+:language: rust
 ```
 
 :::
@@ -229,7 +169,7 @@ HSIC takes no Z.
 test = fastcit.FisherZ(data)  # or fastcit.KCI(data), fastcit.GCM(data), ...
 
 result = test.run_test("X", "Y", ["Z"])
-# result has statistic, p_value, dof and effect_size
+# result.statistic, result.p_value, result.dof, result.effect_size
 
 test.is_independent("X", "Y", ["Z"], significance_level=0.05)
 ```
@@ -243,7 +183,7 @@ test.is_independent("X", "Y", ["Z"], significance_level=0.05)
 test <- fisher_z(data)  # or kci(data), gcm(data), ...
 
 res <- run_test(test, "X", "Y", "Z")
-# res has statistic, p_value, dof and effect_size
+# res$statistic, res$p_value, res$dof, res$effect_size
 
 is_independent(test, "X", "Y", "Z", significance_level = 0.05)
 ```
@@ -257,7 +197,7 @@ is_independent(test, "X", "Y", "Z", significance_level = 0.05)
 const test = new FisherZ(data); // or new KCI(data), new GCM(data), ...
 
 const result = test.runTest("X", "Y", ["Z"]);
-// result has statistic, pValue, dof and effectSize
+// result.statistic, result.pValue, result.dof, result.effectSize
 
 test.isIndependent("X", "Y", ["Z"], 0.05);
 ```
@@ -271,7 +211,7 @@ test.isIndependent("X", "Y", ["Z"], 0.05);
 let test = FisherZ::new(); // or Kci::new(), Gcm::new(), ...
 
 let result = test.test(&data, x, y, &[z])?;
-// result has statistic, p_value, dof and effect_size
+// result.statistic, result.p_value, result.dof, result.effect_size
 
 let independent = test.is_independent(&data, x, y, &[z], 0.05)?;
 ```
@@ -320,7 +260,7 @@ Each language has its own API reference.
 ```{toctree}
 :hidden:
 
-Conditional Independence Tests <tests/index>
+CI Tests <tests/index>
 Benchmark <benchmark>
 API reference <api>
 ```

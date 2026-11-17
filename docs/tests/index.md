@@ -5,6 +5,8 @@ All tests share one API (see [one API for all tests](../index.md#one-api-for-all
 A test checks whether X and Y are independent given a set Z of other variables.
 HSIC has no Z: it checks only whether X and Y are independent.
 Select a test to see an example in each language and the method.
+Each language makes its own random data, so the values differ between the language tabs.
+With the same data, all languages give the same result.
 
 ```{include} ../_includes/test-table.md
 ```

@@ -25,7 +25,7 @@ writes the `p >= alpha` (vs. `p < alpha`) logic.
 | `HSIC` | Continuous | `kernel=None`, `bandwidth="heuristic"`, `null_dist="gamma"`, `n_permutations=100`, `seed=0` | `None` |
 | `KCI` | Continuous | `kernel=None`, `bandwidth="heuristic"`, `epsilon=1e-3` | `None` |
 
-`run_test` returns a `CiResult` with attributes `statistic` (float | None),
+`run_test` returns a `CIResult` with attributes `statistic` (float | None),
 `p_value` (float), `dof` (int | None), and `effect_size` (float | None).
 `PearsonCorrelation` reports `dof = n - |Z| - 2`; Fisher-Z and Pearson
 equivalence report `None`.
@@ -44,8 +44,8 @@ regression**, whereas pgmpy's default regressor is a random forest, so
 p-values differ from pgmpy defaults. In `PillaiTrace`, discrete conditioning
 variables are one-hot encoded minus one level, and a categorical `X` or `Y`
 becomes K-1 level indicators residualized with a linear probability model;
-canonical correlations are exact. `GCM` raises `CiError` for any discrete
-column; `PillaiTrace` raises `CiError` on degenerate data (e.g. `X` fully
+canonical correlations are exact. `GCM` raises `CIError` for any discrete
+column; `PillaiTrace` raises `CIError` on degenerate data (e.g. `X` fully
 determined by `Z`). Conditioning sets whose columns are linearly dependent (duplicate or nested categorical variables, a constant column) raise a degenerate-data error, whereas pgmpy fits them by least squares. When `Z` is not empty and
 `n - columns == max(p, q)`, `PillaiTrace` returns `p = 0` ("dependent"), as pgmpy
 does. When `n - columns < max(p, q)`, it raises an error.
@@ -66,7 +66,7 @@ kci.run_test("X", "Y", ["Z"])
 or a `dict` mapping column names to kernels. Differences from pgmpy: the
 permutation RNG is an integer `seed` (not `rng`), and only the `RBF` and
 `Linear` kernels are supported. Invalid configuration (e.g. `epsilon <= 0`,
-non-positive length scale, unknown column in `kernel`) raises `CiError` at
+non-positive length scale, unknown column in `kernel`) raises `CIError` at
 construction.
 
 ## Requirements
@@ -125,7 +125,7 @@ eqv.is_independent("X", "Y", ["Z"], significance_level=0.05)  # -> bool (p < alp
   sequence of names/indices (default: empty conditioning set).
 - A test constructor accepts either a `Dataset` or a raw
   `{name: (kind, values)}` mapping.
-- Core errors (degenerate data, wrong column kind, …) raise `fastcit.CiError`;
+- Core errors (degenerate data, wrong column kind, …) raise `fastcit.CIError`;
   unknown columns / out-of-range indices raise `ValueError`.
 
 ### From a pandas DataFrame

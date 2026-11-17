@@ -39,8 +39,8 @@ use statrs::distribution::{ContinuousCDF, StudentsT};
 
 use crate::correlation::partial_correlation;
 use crate::dataset::Dataset;
-use crate::error::CiError;
-use crate::strategy::{CITest, CiResult, DataType, IndependenceRule, TestMeta};
+use crate::error::CIError;
+use crate::strategy::{CIResult, CITest, DataType, IndependenceRule, TestMeta};
 
 // TEMPLATE: Give each default a named constant. The registry and the bindings use the same value.
 /// Default for [`ExampleTest::min_rows`].
@@ -110,9 +110,9 @@ impl CITest for ExampleTest {
         x: usize,
         y: usize,
         z: &[usize],
-    ) -> Result<CiResult, CiError> {
+    ) -> Result<CIResult, CIError> {
         // Step 1: Check the column kinds.
-        // TEMPLATE: A continuous-only test returns `CiError::WrongColumnKind`. `data.continuous`
+        // TEMPLATE: A continuous-only test returns `CIError::WrongColumnKind`. `data.continuous`
         // does this. A discrete test uses `data.discrete`. A mixed test accepts both kinds.
         data.continuous(x)?;
         data.continuous(y)?;
@@ -121,11 +121,11 @@ impl CITest for ExampleTest {
         }
 
         // Step 2: Check the sample size.
-        // TEMPLATE: Return `CiError::DegenerateData` for data the test cannot use. Never panic.
+        // TEMPLATE: Return `CIError::DegenerateData` for data the test cannot use. Never panic.
         // Never return NaN as a result.
         let n = data.n_rows();
         if n < self.min_rows {
-            return Err(CiError::DegenerateData(format!(
+            return Err(CIError::DegenerateData(format!(
                 "{n} rows is fewer than min_rows = {}",
                 self.min_rows
             )));
@@ -137,7 +137,7 @@ impl CITest for ExampleTest {
         // Put new numerical code that two tests can share in one of these files.
         let (r, dof) = partial_correlation(data, x, y, z)?;
         if r * r >= 1.0 {
-            return Err(CiError::DegenerateData(
+            return Err(CIError::DegenerateData(
                 "correlation is +1 or -1, so the statistic is undefined".to_string(),
             ));
         }
@@ -146,14 +146,14 @@ impl CITest for ExampleTest {
         let statistic = r * (dof_f / (1.0 - r * r)).sqrt();
 
         // Step 4: Compute the p-value.
-        // TEMPLATE: Map a failed distribution setup to `CiError::Numeric`.
+        // TEMPLATE: Map a failed distribution setup to `CIError::Numeric`.
         let dist = StudentsT::new(0.0, 1.0, dof_f)
-            .map_err(|e| CiError::Numeric(format!("Student's t distribution: {e}")))?;
+            .map_err(|e| CIError::Numeric(format!("Student's t distribution: {e}")))?;
         let p_value = 2.0 * dist.sf(statistic.abs());
 
         // Step 5: Return the result.
         // TEMPLATE: Use `None` for a field the test does not define, for example `dof: None`.
-        Ok(CiResult {
+        Ok(CIResult {
             statistic: Some(statistic),
             p_value,
             dof: Some(dof),
@@ -163,9 +163,9 @@ impl CITest for ExampleTest {
 
     // TEMPLATE: Check the options here. Bindings call `validate` when they build the test, so a
     // bad option fails early. The provided `test` also calls it on every query.
-    fn validate(&self, _data: &Dataset) -> Result<(), CiError> {
+    fn validate(&self, _data: &Dataset) -> Result<(), CIError> {
         if self.min_rows == 0 {
-            return Err(CiError::InvalidConfig(
+            return Err(CIError::InvalidConfig(
                 "min_rows must be at least 1".to_string(),
             ));
         }
@@ -277,7 +277,7 @@ mod tests {
         .unwrap();
         assert!(matches!(
             ExampleTest::new().test(&data, 0, 1, &[]),
-            Err(CiError::WrongColumnKind(_))
+            Err(CIError::WrongColumnKind(_))
         ));
     }
 
@@ -286,7 +286,7 @@ mod tests {
         let data = continuous(vec![("x", lcg(5, 7)), ("y", lcg(5, 8))]);
         assert!(matches!(
             ExampleTest::new().test(&data, 0, 1, &[]),
-            Err(CiError::DegenerateData(_))
+            Err(CIError::DegenerateData(_))
         ));
     }
 
@@ -295,7 +295,7 @@ mod tests {
         let data = continuous(vec![("x", vec![0.5; 20]), ("y", lcg(20, 9))]);
         assert!(matches!(
             ExampleTest::new().test(&data, 0, 1, &[]),
-            Err(CiError::DegenerateData(_))
+            Err(CIError::DegenerateData(_))
         ));
     }
 
@@ -304,7 +304,7 @@ mod tests {
         let data = continuous(vec![("x", lcg(20, 10)), ("y", lcg(20, 11))]);
         assert!(matches!(
             ExampleTest { min_rows: 0 }.test(&data, 0, 1, &[]),
-            Err(CiError::InvalidConfig(_))
+            Err(CIError::InvalidConfig(_))
         ));
     }
 
@@ -313,7 +313,7 @@ mod tests {
         let data = continuous(vec![("x", lcg(20, 12)), ("y", lcg(20, 13))]);
         assert!(matches!(
             ExampleTest::new().test(&data, 0, 0, &[]),
-            Err(CiError::InvalidQuery(_))
+            Err(CIError::InvalidQuery(_))
         ));
     }
 }

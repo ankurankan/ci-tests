@@ -3,7 +3,7 @@
 //! Provides statistical tests for whether two variables X and Y are independent
 //! given a conditioning set Z (X ⊥ Y | Z). Data is held in a [`dataset::Dataset`]
 //! built once from named, typed columns; tests refer to variables by column
-//! index and return a numeric [`strategy::CiResult`].
+//! index and return a numeric [`strategy::CIResult`].
 //!
 //! # Tests
 //!
@@ -64,6 +64,6 @@ pub mod strategy;
 mod extension_template;
 
 pub use dataset::{ColumnKind, Dataset};
-pub use error::CiError;
+pub use error::CIError;
 pub use registry::{all_metas, make_default};
-pub use strategy::{validate_query, CITest, CiResult, DataType, IndependenceRule, TestMeta};
+pub use strategy::{validate_query, CIResult, CITest, DataType, IndependenceRule, TestMeta};

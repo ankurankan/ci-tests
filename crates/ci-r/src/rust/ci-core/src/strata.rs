@@ -4,7 +4,7 @@ use std::collections::HashMap;
 use std::sync::{Arc, RwLock};
 
 use crate::dataset::Dataset;
-use crate::error::CiError;
+use crate::error::CIError;
 
 /// Total byte budget for cached stratum partitions (see
 /// [`Dataset::strata_partition`]): partitions are cached until the budget is
@@ -58,7 +58,7 @@ impl StrataCache {
         &self,
         data: &Dataset,
         z: &[usize],
-    ) -> Result<Arc<StrataPartition>, CiError> {
+    ) -> Result<Arc<StrataPartition>, CIError> {
         let mut key: Vec<usize> = z.to_vec();
         key.sort_unstable();
 
@@ -248,7 +248,7 @@ mod tests {
         .unwrap();
         assert!(matches!(
             ds2.strata_partition(&[1]),
-            Err(CiError::WrongColumnKind(_))
+            Err(CIError::WrongColumnKind(_))
         ));
     }
 

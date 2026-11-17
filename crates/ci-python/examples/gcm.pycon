@@ -1,0 +1,25 @@
+>>> import numpy as np
+>>> import fastcit
+
+>>> # Each language makes its own random data, so the values differ from the other tabs.
+>>> rng = np.random.default_rng(0)
+>>> n = 500
+>>> z = rng.standard_normal(n)
+>>> x = z + rng.standard_normal(n)  # X and Y depend on Z only
+>>> y = z + rng.standard_normal(n)
+>>> data = fastcit.Dataset({
+...     "X": ("continuous", x),
+...     "Y": ("continuous", y),
+...     "Z": ("continuous", z),
+... })
+
+>>> test = fastcit.GCM(data)
+>>> result = test.run_test("X", "Y", ["Z"])
+>>> result.statistic
+-0.5699
+>>> result.p_value
+0.5687
+>>> print(result.dof)
+None
+>>> result.effect_size
+0.02499

@@ -19,8 +19,8 @@ myst:
 
 `fastcit.KCI(data, kernel=None, bandwidth="heuristic", epsilon=1e-3)`
 
-```{literalinclude} ../../crates/ci-python/examples/kci.py
-:language: python
+```{literalinclude} ../../crates/ci-python/examples/kci.pycon
+:language: pycon
 ```
 
 :::

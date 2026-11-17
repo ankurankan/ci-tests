@@ -14,7 +14,7 @@ from fastcit import (
     KCI,
     RBF,
     ChiSquared,
-    CiError,
+    CIError,
     Dataset,
     FisherZ,
     Linear,
@@ -120,7 +120,7 @@ def test_is_independent_uses_rule() -> None:
 @pytest.mark.parametrize("level", [float("nan"), float("inf"), float("-inf")])
 def test_is_independent_rejects_non_finite_significance_level(level: float) -> None:
     chi = ChiSquared(_discrete_data())
-    with pytest.raises(CiError, match="significance level must be finite"):
+    with pytest.raises(CIError, match="significance level must be finite"):
         chi.is_independent("A", "B", significance_level=level)
 
 
@@ -163,7 +163,7 @@ def test_out_of_range_index_raises() -> None:
 def test_wrong_column_kind_raises_cierror() -> None:
     # A continuous column handed to the (discrete) chi-squared test.
     chi = ChiSquared(_continuous_data())
-    with pytest.raises(CiError):
+    with pytest.raises(CIError):
         chi.run_test("X", "Y")
 
 
@@ -218,18 +218,18 @@ def test_fisher_z_concurrent_calls_are_safe() -> None:
 
 def test_invalid_queries_raise() -> None:
     chi = ChiSquared(_discrete_data())
-    with pytest.raises(CiError, match="invalid query"):
+    with pytest.raises(CIError, match="invalid query"):
         chi.run_test("A", "A")
-    with pytest.raises(CiError, match="invalid query"):
+    with pytest.raises(CIError, match="invalid query"):
         chi.run_test("A", "B", ["A"])
-    with pytest.raises(CiError, match="invalid query"):
+    with pytest.raises(CIError, match="invalid query"):
         chi.run_test("A", "B", ["C", "C"])
 
 
 def test_nan_rejected_at_dataset_construction() -> None:
-    with pytest.raises(CiError, match="missing data"):
+    with pytest.raises(CIError, match="missing data"):
         Dataset({"A": ("continuous", np.array([1.0, np.nan, 2.0]))})
-    with pytest.raises(CiError, match="missing data"):
+    with pytest.raises(CIError, match="missing data"):
         Dataset({"A": ("discrete", np.array([1.0, np.nan, 2.0]))})
 
 
@@ -286,10 +286,10 @@ def test_from_pandas_object_and_category_columns() -> None:
 def test_from_pandas_missing_categorical_errors() -> None:
     pd = pytest.importorskip("pandas")
     df = pd.DataFrame({"A": pd.Categorical(["u", None, "v"]), "B": [1.0, 2.0, 3.0]})
-    with pytest.raises(CiError, match="missing data"):
+    with pytest.raises(CIError, match="missing data"):
         Dataset.from_pandas(df)
     df2 = pd.DataFrame({"A": ["u", None, "v"], "B": [1.0, 2.0, 3.0]})
-    with pytest.raises(CiError, match="missing data"):
+    with pytest.raises(CIError, match="missing data"):
         Dataset.from_pandas(df2)
 
 
@@ -359,9 +359,9 @@ def test_kernel_objects_repr_and_equality_of_results() -> None:
 
 
 def test_kernel_dict_unknown_column_raises_at_construction() -> None:
-    with pytest.raises(CiError):
+    with pytest.raises(CIError):
         HSIC(_xyz_data(), kernel={"nope": RBF(1.0)})
-    with pytest.raises(CiError):
+    with pytest.raises(CIError):
         KCI(_xyz_data(), kernel={"nope": Linear()})
 
 
@@ -375,10 +375,10 @@ def test_kernel_dict_unknown_column_raises_at_construction() -> None:
         (HSIC, {"seed": -1}, (OverflowError, ValueError)),
         (HSIC, {"seed": 2**64}, (OverflowError, ValueError)),
         (KCI, {"bandwidth": "x"}, ValueError),
-        (KCI, {"epsilon": 0.0}, CiError),
-        (KCI, {"epsilon": float("nan")}, CiError),
-        (HSIC, {"kernel": RBF(0.0)}, CiError),
-        (KCI, {"kernel": RBF(0.0)}, CiError),
+        (KCI, {"epsilon": 0.0}, CIError),
+        (KCI, {"epsilon": float("nan")}, CIError),
+        (HSIC, {"kernel": RBF(0.0)}, CIError),
+        (KCI, {"kernel": RBF(0.0)}, CIError),
         (HSIC, {"kernel": "rbf"}, TypeError),
         (KCI, {"kernel": "rbf"}, TypeError),
     ],
@@ -389,7 +389,7 @@ def test_invalid_hsic_kci_options_raise(cls: type, kwargs: dict, exc: type | tup
 
 
 def test_hsic_rejects_z() -> None:
-    with pytest.raises(CiError):
+    with pytest.raises(CIError):
         HSIC(_xyz_data()).run_test("X", "Y", ["Z"])
 
 
@@ -424,7 +424,7 @@ def test_gcm_and_pillai_meta() -> None:
 
 
 def test_gcm_rejects_discrete_columns() -> None:
-    with pytest.raises(CiError):
+    with pytest.raises(CIError):
         GCM(_discrete_data()).run_test("A", "B", ["C"])
 
 
@@ -454,5 +454,5 @@ def test_pillai_degenerate_raises() -> None:
             "Z": ("continuous", z),
         }
     )
-    with pytest.raises(CiError, match="degenerate"):
+    with pytest.raises(CIError, match="degenerate"):
         PillaiTrace(data).run_test("X", "Y", ["Z"])

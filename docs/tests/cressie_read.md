@@ -19,8 +19,8 @@ myst:
 
 `fastcit.CressieRead(data, yates=True)`
 
-```{literalinclude} ../../crates/ci-python/examples/cressie_read.py
-:language: python
+```{literalinclude} ../../crates/ci-python/examples/cressie_read.pycon
+:language: pycon
 ```
 
 :::

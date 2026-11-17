@@ -47,7 +47,11 @@ test = [
 ]
 
 [tool.pytest.ini_options]
-testpaths = ["test"]
+testpaths = ["test", "examples"]
+# The documentation examples (examples/*.pycon) are doctest transcripts. With NUMBER, a number
+# in the shown output matches to the precision written there: 0.5778 matches 0.5778219788.
+addopts = ["--doctest-glob=*.pycon"]
+doctest_optionflags = ["NUMBER", "ELLIPSIS", "NORMALIZE_WHITESPACE"]
 
 [tool.ruff]
 line-length = 120
@@ -55,8 +59,6 @@ line-length = 120
 # The hand-maintained native stubs use their own compact formatting.
 extend-exclude = [
     "fastcit/_fastcit",
-    # Documentation examples are plain scripts shown verbatim on the docs site.
-    "examples",
 ]
 
 [tool.ruff.lint]

@@ -6,14 +6,14 @@
 //! lives on the [`Dataset`]. The provided [`CITest::test`] validates the query
 //! via [`validate_query`] before delegating to the required
 //! [`CITest::test_impl`]. The default [`CITest::is_independent`] turns a
-//! numeric [`CiResult`] into a boolean using the test's [`IndependenceRule`].
+//! numeric [`CIResult`] into a boolean using the test's [`IndependenceRule`].
 
 use crate::dataset::Dataset;
-use crate::error::CiError;
+use crate::error::CIError;
 
 /// The numeric outcome of a conditional-independence test.
 #[derive(Debug, Clone, PartialEq)]
-pub struct CiResult {
+pub struct CIResult {
     /// The test statistic (e.g. chi-squared statistic, Pearson r, Fisher-z),
     /// when the test defines one.
     pub statistic: Option<f64>,
@@ -65,35 +65,35 @@ pub struct TestMeta {
 /// Validate a `(x, y, z)` query against `data` before running a test.
 ///
 /// Checks, in order: all column indices are in range
-/// ([`CiError::UnknownColumn`]); `x != y`; `x`/`y` do not appear in `z`; `z`
-/// has no duplicates (all [`CiError::InvalidQuery`]). Called by the provided
+/// ([`CIError::UnknownColumn`]); `x != y`; `x`/`y` do not appear in `z`; `z`
+/// has no duplicates (all [`CIError::InvalidQuery`]). Called by the provided
 /// [`CITest::test`] so every test is validated uniformly.
 ///
 /// # Errors
 ///
 /// Returns the first violated rule as described above.
-pub fn validate_query(data: &Dataset, x: usize, y: usize, z: &[usize]) -> Result<(), CiError> {
+pub fn validate_query(data: &Dataset, x: usize, y: usize, z: &[usize]) -> Result<(), CIError> {
     let n_cols = data.n_cols();
     for idx in [x, y].into_iter().chain(z.iter().copied()) {
         if idx >= n_cols {
-            return Err(CiError::UnknownColumn(format!("column index {idx}")));
+            return Err(CIError::UnknownColumn(format!("column index {idx}")));
         }
     }
     if x == y {
-        return Err(CiError::InvalidQuery(format!(
+        return Err(CIError::InvalidQuery(format!(
             "x and y must be different columns (both are column index {x})"
         )));
     }
     for (label, idx) in [("x", x), ("y", y)] {
         if z.contains(&idx) {
-            return Err(CiError::InvalidQuery(format!(
+            return Err(CIError::InvalidQuery(format!(
                 "{label} (column index {idx}) must not appear in the conditioning set z"
             )));
         }
     }
     for i in 0..z.len() {
         if z[i + 1..].contains(&z[i]) {
-            return Err(CiError::InvalidQuery(format!(
+            return Err(CIError::InvalidQuery(format!(
                 "conditioning set z contains column index {} more than once",
                 z[i]
             )));
@@ -110,7 +110,7 @@ pub trait CITest: Send + Sync {
     ///
     /// # Errors
     ///
-    /// Returns a [`CiError`] if the data is unsuitable (wrong column kind,
+    /// Returns a [`CIError`] if the data is unsuitable (wrong column kind,
     /// degenerate input, dimension mismatch) or a numerical routine fails.
     fn test_impl(
         &self,
@@ -118,7 +118,7 @@ pub trait CITest: Send + Sync {
         x: usize,
         y: usize,
         z: &[usize],
-    ) -> Result<CiResult, CiError>;
+    ) -> Result<CIResult, CIError>;
 
     /// Check the test's own configuration against `data` (e.g. kernel
     /// parameters, column names). The default accepts everything. Bindings call
@@ -127,9 +127,9 @@ pub trait CITest: Send + Sync {
     ///
     /// # Errors
     ///
-    /// Returns a [`CiError`] (typically [`CiError::InvalidConfig`] or
-    /// [`CiError::UnknownColumn`]) describing the invalid setting.
-    fn validate(&self, _data: &Dataset) -> Result<(), CiError> {
+    /// Returns a [`CIError`] (typically [`CIError::InvalidConfig`] or
+    /// [`CIError::UnknownColumn`]) describing the invalid setting.
+    fn validate(&self, _data: &Dataset) -> Result<(), CIError> {
         Ok(())
     }
 
@@ -141,9 +141,9 @@ pub trait CITest: Send + Sync {
     ///
     /// # Errors
     ///
-    /// Returns [`CiError::UnknownColumn`] / [`CiError::InvalidQuery`] for a
+    /// Returns [`CIError::UnknownColumn`] / [`CIError::InvalidQuery`] for a
     /// malformed query, or any error from [`CITest::test_impl`].
-    fn test(&self, data: &Dataset, x: usize, y: usize, z: &[usize]) -> Result<CiResult, CiError> {
+    fn test(&self, data: &Dataset, x: usize, y: usize, z: &[usize]) -> Result<CIResult, CIError> {
         validate_query(data, x, y, z)?;
         self.validate(data)?;
         self.test_impl(data, x, y, z)
@@ -164,9 +164,9 @@ pub trait CITest: Send + Sync {
         y: usize,
         z: &[usize],
         alpha: f64,
-    ) -> Result<bool, CiError> {
+    ) -> Result<bool, CIError> {
         if !alpha.is_finite() {
-            return Err(CiError::InvalidQuery(format!(
+            return Err(CIError::InvalidQuery(format!(
                 "significance level must be finite, got {alpha}"
             )));
         }
@@ -212,7 +212,7 @@ mod tests {
         let data = two_col_data();
         let err = ChiSquared::new().test(&data, 0, 0, &[]).unwrap_err();
         assert!(
-            matches!(err, crate::error::CiError::InvalidQuery(_)),
+            matches!(err, crate::error::CIError::InvalidQuery(_)),
             "{err}"
         );
     }
@@ -222,11 +222,11 @@ mod tests {
         let data = two_col_data();
         assert!(matches!(
             ChiSquared::new().test(&data, 0, 1, &[0]),
-            Err(crate::error::CiError::InvalidQuery(_))
+            Err(crate::error::CIError::InvalidQuery(_))
         ));
         assert!(matches!(
             ChiSquared::new().test(&data, 0, 1, &[1]),
-            Err(crate::error::CiError::InvalidQuery(_))
+            Err(crate::error::CIError::InvalidQuery(_))
         ));
     }
 
@@ -235,7 +235,7 @@ mod tests {
         let data = two_col_data();
         assert!(matches!(
             ChiSquared::new().test(&data, 0, 1, &[2, 2]),
-            Err(crate::error::CiError::InvalidQuery(_))
+            Err(crate::error::CIError::InvalidQuery(_))
         ));
     }
 
@@ -244,16 +244,16 @@ mod tests {
         let data = two_col_data();
         assert!(matches!(
             ChiSquared::new().test(&data, 9, 1, &[]),
-            Err(crate::error::CiError::UnknownColumn(_))
+            Err(crate::error::CIError::UnknownColumn(_))
         ));
         assert!(matches!(
             ChiSquared::new().test(&data, 0, 1, &[9]),
-            Err(crate::error::CiError::UnknownColumn(_))
+            Err(crate::error::CIError::UnknownColumn(_))
         ));
         // is_independent goes through the same validation.
         assert!(matches!(
             ChiSquared::new().is_independent(&data, 0, 0, &[], 0.05),
-            Err(crate::error::CiError::InvalidQuery(_))
+            Err(crate::error::CIError::InvalidQuery(_))
         ));
     }
 
@@ -267,7 +267,7 @@ mod tests {
             assert!(
                 matches!(
                     err,
-                    crate::error::CiError::InvalidQuery(ref message)
+                    crate::error::CIError::InvalidQuery(ref message)
                         if message.contains("significance level must be finite")
                 ),
                 "alpha={alpha}: {err}"

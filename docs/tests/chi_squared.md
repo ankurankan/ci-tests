@@ -19,8 +19,8 @@ myst:
 
 `fastcit.ChiSquared(data, yates=True)`
 
-```{literalinclude} ../../crates/ci-python/examples/chi_squared.py
-:language: python
+```{literalinclude} ../../crates/ci-python/examples/chi_squared.pycon
+:language: pycon
 ```
 
 :::

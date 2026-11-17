@@ -27,8 +27,8 @@ tests/test_docs_site.py checks the headings, the tab order and the constructor l
 
 `fastcit.<PyClass>(data)`
 
-```{literalinclude} ../../crates/ci-python/examples/<key>.py
-:language: python
+```{literalinclude} ../../crates/ci-python/examples/<key>.pycon
+:language: pycon
 ```
 
 :::

@@ -19,8 +19,8 @@ myst:
 
 `fastcit.HSIC(data, kernel=None, bandwidth="heuristic", null_dist="gamma", n_permutations=100, seed=0)`
 
-```{literalinclude} ../../crates/ci-python/examples/hsic.py
-:language: python
+```{literalinclude} ../../crates/ci-python/examples/hsic.pycon
+:language: pycon
 ```
 
 :::

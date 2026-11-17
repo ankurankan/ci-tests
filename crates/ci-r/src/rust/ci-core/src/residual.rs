@@ -9,7 +9,7 @@
 use faer::{Mat, MatRef};
 
 use crate::dataset::Dataset;
-use crate::error::CiError;
+use crate::error::CIError;
 
 /// Relative pivot tolerance (against the column's own norm) for declaring the
 /// design rank-deficient.
@@ -21,8 +21,8 @@ const RANK_TOL: f64 = 1e-10;
 ///
 /// # Errors
 ///
-/// Returns [`CiError::UnknownColumn`] for an out-of-range index.
-pub(crate) fn design_matrix(data: &Dataset, z: &[usize]) -> Result<Mat<f64>, CiError> {
+/// Returns [`CIError::UnknownColumn`] for an out-of-range index.
+pub(crate) fn design_matrix(data: &Dataset, z: &[usize]) -> Result<Mat<f64>, CIError> {
     let n = data.n_rows();
     let mut cols: Vec<Vec<f64>> = vec![vec![1.0; n]];
     for &idx in z {
@@ -48,16 +48,16 @@ pub(crate) fn design_matrix(data: &Dataset, z: &[usize]) -> Result<Mat<f64>, CiE
 ///
 /// # Errors
 ///
-/// Returns [`CiError::DegenerateData`] if a discrete column has one level, or
-/// [`CiError::UnknownColumn`] for an out-of-range index.
-pub(crate) fn target_block(data: &Dataset, col: usize) -> Result<Mat<f64>, CiError> {
+/// Returns [`CIError::DegenerateData`] if a discrete column has one level, or
+/// [`CIError::UnknownColumn`] for an out-of-range index.
+pub(crate) fn target_block(data: &Dataset, col: usize) -> Result<Mat<f64>, CIError> {
     let n = data.n_rows();
     if let Ok(values) = data.continuous(col) {
         return Ok(Mat::from_fn(n, 1, |i, _| values[i]));
     }
     let (codes, card) = data.discrete(col)?;
     if card < 2 {
-        return Err(CiError::DegenerateData(format!(
+        return Err(CIError::DegenerateData(format!(
             "column {col} has a single observed level"
         )));
     }
@@ -79,22 +79,22 @@ fn reflect(v: &[f64], j: usize, col: &mut [f64]) {
 ///
 /// # Errors
 ///
-/// Returns [`CiError::DegenerateData`] if `design` is rank-deficient (a pivot
+/// Returns [`CIError::DegenerateData`] if `design` is rank-deficient (a pivot
 /// below `1e-10` of its own column's norm) or has no more rows than columns, or if the
 /// row counts differ.
 pub(crate) fn ols_residuals_multi(
     design: MatRef<'_, f64>,
     targets: MatRef<'_, f64>,
-) -> Result<Mat<f64>, CiError> {
+) -> Result<Mat<f64>, CIError> {
     let (n, d) = (design.nrows(), design.ncols());
     if targets.nrows() != n {
-        return Err(CiError::DimensionMismatch(format!(
+        return Err(CIError::DimensionMismatch(format!(
             "design has {n} rows but targets have {}",
             targets.nrows()
         )));
     }
     if n <= d {
-        return Err(CiError::DegenerateData(format!(
+        return Err(CIError::DegenerateData(format!(
             "design matrix [1, Z] is rank-deficient: {n} rows for {d} columns"
         )));
     }
@@ -131,7 +131,7 @@ pub(crate) fn ols_residuals_multi(
         .zip(&col_norms)
         .any(|(&p, &c)| !p.is_finite() || !c.is_finite() || p <= RANK_TOL * c)
     {
-        return Err(CiError::DegenerateData(
+        return Err(CIError::DegenerateData(
             "design matrix [1, Z] is rank-deficient (collinear or constant conditioning columns)"
                 .to_string(),
         ));
@@ -280,7 +280,7 @@ mod tests {
         let data = ds(vec![("d", ColumnKind::Discrete, vec![4., 4., 4.])]);
         assert!(matches!(
             target_block(&data, 0),
-            Err(CiError::DegenerateData(_))
+            Err(CIError::DegenerateData(_))
         ));
     }
 
@@ -296,7 +296,7 @@ mod tests {
         let d = design_matrix(&data, &[0, 1]).unwrap();
         assert!(matches!(
             ols_residuals_multi(d.as_ref(), t.as_ref()),
-            Err(CiError::DegenerateData(_))
+            Err(CIError::DegenerateData(_))
         ));
         let data = ds(vec![
             ("a", ColumnKind::Continuous, vec![1., 2., 4.]),
@@ -308,7 +308,7 @@ mod tests {
         let d = design_matrix(&data, &[0, 1, 2]).unwrap();
         assert!(matches!(
             ols_residuals_multi(d.as_ref(), t.as_ref()),
-            Err(CiError::DegenerateData(_))
+            Err(CIError::DegenerateData(_))
         ));
     }
 

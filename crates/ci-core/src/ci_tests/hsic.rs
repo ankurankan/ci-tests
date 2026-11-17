@@ -5,13 +5,13 @@
 use faer::Mat;
 
 use crate::dataset::Dataset;
-use crate::error::CiError;
+use crate::error::CIError;
 use crate::kernel::{
     center, dense_len_guard, gamma_pvalue, kernel_matrix, median_length_scale, standardized,
     Bandwidth, Kernel, KernelChoice,
 };
 use crate::rng::{shuffle_identity, SplitMix64};
-use crate::strategy::{CITest, CiResult, DataType, IndependenceRule, TestMeta};
+use crate::strategy::{CIResult, CITest, DataType, IndependenceRule, TestMeta};
 
 /// How the null distribution of the HSIC statistic is approximated.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
@@ -99,7 +99,7 @@ pub(crate) fn hsic_unconditional(
     kernel: &KernelChoice,
     bandwidth: Bandwidth,
     null_dist: NullDistribution,
-) -> Result<CiResult, CiError> {
+) -> Result<CIResult, CIError> {
     let n = data.n_rows();
     dense_len_guard(n)?;
     let px = standardized(data, &[x], 1.0)?;
@@ -170,7 +170,7 @@ pub(crate) fn hsic_unconditional(
         }
     };
 
-    Ok(CiResult {
+    Ok(CIResult {
         statistic: Some(stat),
         p_value,
         dof: None,
@@ -192,10 +192,10 @@ fn sum_and_trace(k: &Mat<f64>) -> (f64, f64) {
 }
 
 impl CITest for Hsic {
-    fn validate(&self, data: &Dataset) -> Result<(), CiError> {
+    fn validate(&self, data: &Dataset) -> Result<(), CIError> {
         if let NullDistribution::Permutation { n_permutations, .. } = self.null_dist {
             if n_permutations < 1 {
-                return Err(CiError::InvalidConfig(
+                return Err(CIError::InvalidConfig(
                     "n_permutations must be >= 1".to_string(),
                 ));
             }
@@ -209,9 +209,9 @@ impl CITest for Hsic {
         x: usize,
         y: usize,
         z: &[usize],
-    ) -> Result<CiResult, CiError> {
+    ) -> Result<CIResult, CIError> {
         if !z.is_empty() {
-            return Err(CiError::InvalidQuery(
+            return Err(CIError::InvalidQuery(
                 "HSIC does not support a conditioning set; use KCI".to_string(),
             ));
         }
@@ -238,7 +238,7 @@ impl CITest for Hsic {
 mod tests {
     use super::*;
     use crate::dataset::{ColumnKind, Dataset};
-    use crate::error::CiError;
+    use crate::error::CIError;
     use crate::kernel::{Bandwidth, Kernel, KernelChoice};
     use crate::rng::SplitMix64;
     use crate::strategy::CITest;
@@ -378,7 +378,7 @@ mod tests {
         ]);
         assert!(matches!(
             Hsic::new().test(&d, 0, 1, &[2]),
-            Err(CiError::InvalidQuery(_))
+            Err(CIError::InvalidQuery(_))
         ));
     }
 
@@ -392,17 +392,17 @@ mod tests {
             },
             ..Hsic::new()
         };
-        assert!(matches!(t.validate(&d), Err(CiError::InvalidConfig(_))));
+        assert!(matches!(t.validate(&d), Err(CIError::InvalidConfig(_))));
         assert!(matches!(
             t.test(&d, 0, 1, &[]),
-            Err(CiError::InvalidConfig(_))
+            Err(CIError::InvalidConfig(_))
         ));
         for ell in [0.0, -1.0, f64::NAN] {
             let t = Hsic {
                 kernel: KernelChoice::All(Kernel::Rbf { length_scale: ell }),
                 ..Hsic::new()
             };
-            assert!(matches!(t.validate(&d), Err(CiError::InvalidConfig(_))));
+            assert!(matches!(t.validate(&d), Err(CIError::InvalidConfig(_))));
         }
         let mut m = BTreeMap::new();
         m.insert("nope".to_string(), Kernel::Linear);
@@ -410,7 +410,7 @@ mod tests {
             kernel: KernelChoice::PerColumn(m),
             ..Hsic::new()
         };
-        assert!(matches!(t.validate(&d), Err(CiError::UnknownColumn(_))));
+        assert!(matches!(t.validate(&d), Err(CIError::UnknownColumn(_))));
     }
 
     #[test]

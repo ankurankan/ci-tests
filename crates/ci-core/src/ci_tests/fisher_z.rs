@@ -4,8 +4,8 @@ use statrs::distribution::{ContinuousCDF, Normal};
 
 use crate::correlation::{clipped_fisher_transform, partial_correlation};
 use crate::dataset::Dataset;
-use crate::error::CiError;
-use crate::strategy::{CITest, CiResult, DataType, IndependenceRule, TestMeta};
+use crate::error::CIError;
+use crate::strategy::{CIResult, CITest, DataType, IndependenceRule, TestMeta};
 
 /// Fisher-z test on the (partial) correlation: `z = √(n − |Z| − 3) · atanh(ρ)`
 /// is approximately standard normal under `X ⊥ Y | Z`. The de-facto standard
@@ -33,7 +33,7 @@ impl CITest for FisherZ {
         x: usize,
         y: usize,
         z: &[usize],
-    ) -> Result<CiResult, CiError> {
+    ) -> Result<CIResult, CIError> {
         let n = data.n_rows();
         let n_z = z.len();
 
@@ -46,10 +46,10 @@ impl CITest for FisherZ {
         let statistic = scale * clipped_fisher_transform(r);
 
         let normal =
-            Normal::new(0.0, 1.0).map_err(|e| CiError::Numeric(format!("standard normal: {e}")))?;
+            Normal::new(0.0, 1.0).map_err(|e| CIError::Numeric(format!("standard normal: {e}")))?;
         let p_value = 2.0 * normal.sf(statistic.abs());
 
-        Ok(CiResult {
+        Ok(CIResult {
             statistic: Some(statistic),
             p_value,
             dof: None,

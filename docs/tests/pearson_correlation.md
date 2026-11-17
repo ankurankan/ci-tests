@@ -19,8 +19,8 @@ myst:
 
 `fastcit.PearsonCorrelation(data)`
 
-```{literalinclude} ../../crates/ci-python/examples/pearson_correlation.py
-:language: python
+```{literalinclude} ../../crates/ci-python/examples/pearson_correlation.pycon
+:language: pycon
 ```
 
 :::

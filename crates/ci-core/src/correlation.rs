@@ -1,7 +1,7 @@
 //! Shared plain and partial-correlation calculations for continuous CI tests.
 
 use crate::dataset::Dataset;
-use crate::error::CiError;
+use crate::error::CIError;
 use crate::gram::GramCache;
 
 /// Relative tolerance for declaring a post-conditioning residual vector
@@ -31,8 +31,8 @@ fn sum_sq_deviations(v: &[f64]) -> f64 {
 
 /// The "input is constant; Pearson correlation is undefined" error for input
 /// `which` (`"x"` or `"y"`).
-fn constant_input_error(which: &str) -> CiError {
-    CiError::DegenerateData(format!(
+fn constant_input_error(which: &str) -> CIError {
+    CIError::DegenerateData(format!(
         "input `{which}` is constant; Pearson correlation is undefined"
     ))
 }
@@ -42,16 +42,16 @@ fn constant_input_error(which: &str) -> CiError {
 ///
 /// # Errors
 ///
-/// Returns [`CiError::DegenerateData`] if there are too few rows.
-fn check_row_count(n: usize, n_z: usize) -> Result<(), CiError> {
+/// Returns [`CIError::DegenerateData`] if there are too few rows.
+fn check_row_count(n: usize, n_z: usize) -> Result<(), CIError> {
     if n_z == 0 {
         if n < 3 {
-            return Err(CiError::DegenerateData(format!(
+            return Err(CIError::DegenerateData(format!(
                 "need at least 3 rows for correlation, got {n}"
             )));
         }
     } else if n < n_z + 3 {
-        return Err(CiError::DegenerateData(format!(
+        return Err(CIError::DegenerateData(format!(
             "need at least |Z| + 3 = {} rows, got {n}",
             n_z + 3
         )));
@@ -64,15 +64,15 @@ fn check_row_count(n: usize, n_z: usize) -> Result<(), CiError> {
 ///
 /// # Errors
 ///
-/// Returns [`CiError::DegenerateData`] if `residual_var <= VARIANCE_REL_EPS *
+/// Returns [`CIError::DegenerateData`] if `residual_var <= VARIANCE_REL_EPS *
 /// original_var`.
 fn check_residual_variance(
     which: &str,
     residual_var: f64,
     original_var: f64,
-) -> Result<(), CiError> {
+) -> Result<(), CIError> {
     if residual_var <= VARIANCE_REL_EPS * original_var {
-        return Err(CiError::DegenerateData(format!(
+        return Err(CIError::DegenerateData(format!(
             "residual `{which}` is constant after conditioning on Z; \
              partial correlation is undefined"
         )));
@@ -84,8 +84,8 @@ fn check_residual_variance(
 ///
 /// # Errors
 ///
-/// Returns [`CiError::DegenerateData`] if either input has zero variance.
-fn pearson_r(x: &[f64], y: &[f64]) -> Result<f64, CiError> {
+/// Returns [`CIError::DegenerateData`] if either input has zero variance.
+fn pearson_r(x: &[f64], y: &[f64]) -> Result<f64, CIError> {
     #[allow(clippy::cast_precision_loss)]
     let n = x.len() as f64;
     let x_mean = x.iter().sum::<f64>() / n;
@@ -120,16 +120,16 @@ fn pearson_r(x: &[f64], y: &[f64]) -> Result<f64, CiError> {
 ///
 /// # Errors
 ///
-/// Returns [`CiError::Numeric`] if the design is rank-deficient (a zero pivot on
+/// Returns [`CIError::Numeric`] if the design is rank-deficient (a zero pivot on
 /// the diagonal of `R`), which would make the residuals ill-defined.
 fn ols_residuals(
     design: &[f64],
     target: &[f64],
     rows: usize,
     cols: usize,
-) -> Result<Vec<f64>, CiError> {
+) -> Result<Vec<f64>, CIError> {
     let rank_deficient =
-        || CiError::Numeric("rank-deficient design matrix in partial correlation".to_string());
+        || CIError::Numeric("rank-deficient design matrix in partial correlation".to_string());
 
     // Work on mutable copies: `mat` is triangularized in place, `rhs` is the
     // transformed right-hand side. Row-major index: mat[i * cols + j].
@@ -224,9 +224,9 @@ fn ols_residuals(
 ///
 /// # Errors
 ///
-/// Returns [`CiError::DegenerateData`] on constant input / residuals or too
-/// few rows, [`CiError::WrongColumnKind`] for discrete columns, and
-/// [`CiError::Numeric`] for a rank-deficient conditioning set.
+/// Returns [`CIError::DegenerateData`] on constant input / residuals or too
+/// few rows, [`CIError::WrongColumnKind`] for discrete columns, and
+/// [`CIError::Numeric`] for a rank-deficient conditioning set.
 #[allow(
     clippy::many_single_char_names,
     reason = "x, y, z are the standard conditional-independence variable names from the contract"
@@ -236,7 +236,7 @@ pub(crate) fn partial_correlation(
     x: usize,
     y: usize,
     z: &[usize],
-) -> Result<(f64, usize), CiError> {
+) -> Result<(f64, usize), CIError> {
     match data.gram() {
         Some(gram) => partial_correlation_gram(gram, data.n_rows(), x, y, z),
         None => partial_correlation_residual(data, x, y, z),
@@ -254,7 +254,7 @@ fn partial_correlation_gram(
     x: usize,
     y: usize,
     z: &[usize],
-) -> Result<(f64, usize), CiError> {
+) -> Result<(f64, usize), CIError> {
     let n_z = z.len();
     check_row_count(n, n_z)?;
 
@@ -288,8 +288,8 @@ fn partial_correlation_gram(
 ///
 /// # Errors
 ///
-/// Returns [`CiError::DegenerateData`] on constant input or when there are too
-/// few rows, and [`CiError::Numeric`] if the least-squares solve fails.
+/// Returns [`CIError::DegenerateData`] on constant input or when there are too
+/// few rows, and [`CIError::Numeric`] if the least-squares solve fails.
 #[allow(
     clippy::many_single_char_names,
     reason = "x, y, z are the standard conditional-independence variable names from the contract"
@@ -299,7 +299,7 @@ fn partial_correlation_residual(
     x: usize,
     y: usize,
     z: &[usize],
-) -> Result<(f64, usize), CiError> {
+) -> Result<(f64, usize), CIError> {
     let x_vals = data.continuous(x)?;
     let y_vals = data.continuous(y)?;
     let n = x_vals.len();
@@ -418,7 +418,7 @@ mod tests {
         ]);
         assert!(matches!(
             partial_correlation(&data, 0, 1, &[]),
-            Err(CiError::DegenerateData(_))
+            Err(CIError::DegenerateData(_))
         ));
 
         // Z perfectly explains x -> "residual is constant".
@@ -428,7 +428,7 @@ mod tests {
         let data = ds(vec![("x", x), ("y", y), ("z", z)]);
         assert!(matches!(
             partial_correlation(&data, 0, 1, &[2]),
-            Err(CiError::DegenerateData(_))
+            Err(CIError::DegenerateData(_))
         ));
 
         // Collinear Z (z2 = 2*z1) -> rank-deficient.
@@ -439,7 +439,7 @@ mod tests {
         let data = ds(vec![("x", x), ("y", y), ("z1", z1), ("z2", z2)]);
         assert!(matches!(
             partial_correlation(&data, 0, 1, &[2, 3]),
-            Err(CiError::Numeric(_))
+            Err(CIError::Numeric(_))
         ));
     }
 
@@ -454,7 +454,7 @@ mod tests {
         let data = ds(vec![("x", x), ("y", y), ("z1", z1), ("z2", z2)]);
         assert!(matches!(
             partial_correlation_residual(&data, 0, 1, &[2, 3]),
-            Err(CiError::Numeric(_))
+            Err(CIError::Numeric(_))
         ));
     }
 }

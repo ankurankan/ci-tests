@@ -19,8 +19,8 @@ myst:
 
 `fastcit.GCM(data)`
 
-```{literalinclude} ../../crates/ci-python/examples/gcm.py
-:language: python
+```{literalinclude} ../../crates/ci-python/examples/gcm.pycon
+:language: pycon
 ```
 
 :::

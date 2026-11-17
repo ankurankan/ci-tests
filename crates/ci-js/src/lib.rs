@@ -35,7 +35,7 @@
 //!
 //! Discrete column `values` may be a `number[]`, a `Float64Array`, **or** a
 //! `string[]` (first-seen string-to-code factorization). Continuous columns
-//! require numeric values. Core [`CiError`]s and Rust panics surface as thrown
+//! require numeric values. Core [`CIError`]s and Rust panics surface as thrown
 //! JS `Error`s.
 
 // This crate is a thin wasm-bindgen FFI layer: every fallible function returns
@@ -49,9 +49,9 @@ mod options;
 use std::rc::Rc;
 
 use fastcit_core::dataset::{ColumnKind, Dataset as CoreDataset};
-use fastcit_core::error::CiError as CoreError;
+use fastcit_core::error::CIError as CoreError;
 use fastcit_core::strategy::{
-    CITest, CiResult as CoreResult, DataType, IndependenceRule, TestMeta,
+    CIResult as CoreResult, CITest, DataType, IndependenceRule, TestMeta,
 };
 use wasm_bindgen::convert::TryFromJsValue;
 use wasm_bindgen::prelude::*;

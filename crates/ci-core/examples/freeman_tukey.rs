@@ -3,6 +3,7 @@ use fastcit_core::dataset::{ColumnKind, Dataset};
 use fastcit_core::strategy::CITest;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
+    // Each language makes its own random data, so the values differ from the other tabs.
     // Seeded generator (Park-Miller), so every run gives the same data.
     let mut seed = 12345.0_f64;
     let mut uniform = move || {
@@ -31,6 +32,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let y = data.index_of("Y").unwrap();
     let z = data.index_of("Z").unwrap();
     let result = FreemanTukey::new().test(&data, x, y, &[z])?;
-    println!("{}", result.p_value);
+    println!("{:?}", result.statistic);
+    // Some(15.51)
+    println!("{:?}", result.p_value);
+    // 0.2148
+    println!("{:?}", result.dof);
+    // Some(12)
+    println!("{:?}", result.effect_size);
+    // Some(0.1245)
     Ok(())
 }

@@ -11,7 +11,7 @@ if TYPE_CHECKING:
 ColumnRef = str | int
 ColumnSpec = tuple[str, Any]
 
-class CiError(Exception): ...
+class CIError(Exception): ...
 
 class RBF:
     def __init__(self, length_scale: float) -> None: ...
@@ -24,7 +24,7 @@ class Linear:
 _Kernel = RBF | Linear
 _KernelSpec = _Kernel | dict[str, _Kernel] | None
 
-class CiResult:
+class CIResult:
     @property
     def statistic(self) -> float | None: ...
     @property
@@ -50,7 +50,7 @@ class _BaseTest:
         x: ColumnRef,
         y: ColumnRef,
         z: Sequence[ColumnRef] | None = ...,
-    ) -> CiResult: ...
+    ) -> CIResult: ...
     def is_independent(
         self,
         x: ColumnRef,

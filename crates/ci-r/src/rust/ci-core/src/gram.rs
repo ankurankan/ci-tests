@@ -14,7 +14,7 @@
 //! yield unspecified non-finite results on *both* paths; neither errors.
 
 use crate::dataset::Dataset;
-use crate::error::CiError;
+use crate::error::CIError;
 
 /// Maximum number of continuous columns for which the full matrix is cached:
 /// `2048² × 8 B = 32 MiB`. Wider datasets silently use the per-query
@@ -85,13 +85,13 @@ impl GramCache {
 
     /// Dense continuous index of global column `col`, or an error mirroring
     /// [`Dataset::continuous`] when the column is discrete.
-    fn dense(&self, col: usize) -> Result<usize, CiError> {
+    fn dense(&self, col: usize) -> Result<usize, CIError> {
         match self.col_to_dense.get(col) {
             Some(Some(d)) => Ok(*d as usize),
-            Some(None) => Err(CiError::WrongColumnKind(format!(
+            Some(None) => Err(CIError::WrongColumnKind(format!(
                 "column {col} is discrete but a continuous column was required"
             ))),
-            None => Err(CiError::UnknownColumn(format!("column index {col}"))),
+            None => Err(CIError::UnknownColumn(format!("column index {col}"))),
         }
     }
 
@@ -107,8 +107,8 @@ impl GramCache {
     ///
     /// # Errors
     ///
-    /// [`CiError::WrongColumnKind`] for a discrete column, and
-    /// [`CiError::Numeric`] when `S_zz` is not positive definite
+    /// [`CIError::WrongColumnKind`] for a discrete column, and
+    /// [`CIError::Numeric`] when `S_zz` is not positive definite
     /// (rank-deficient / collinear conditioning set).
     #[allow(
         clippy::many_single_char_names,
@@ -120,7 +120,7 @@ impl GramCache {
         x: usize,
         y: usize,
         z: &[usize],
-    ) -> Result<(f64, f64, f64, f64, f64), CiError> {
+    ) -> Result<(f64, f64, f64, f64, f64), CIError> {
         let dx = self.dense(x)?;
         let dy = self.dense(y)?;
         let dz: Vec<usize> = z
@@ -137,7 +137,7 @@ impl GramCache {
         }
 
         let rank_deficient =
-            || CiError::Numeric("rank-deficient design matrix in partial correlation".to_string());
+            || CIError::Numeric("rank-deficient design matrix in partial correlation".to_string());
 
         // In-place Cholesky of the k×k S_zz gather (lower triangle).
         let mut l = vec![0.0; k * k];

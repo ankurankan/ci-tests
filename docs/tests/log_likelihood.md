@@ -19,8 +19,8 @@ myst:
 
 `fastcit.LogLikelihood(data, yates=True)`
 
-```{literalinclude} ../../crates/ci-python/examples/log_likelihood.py
-:language: python
+```{literalinclude} ../../crates/ci-python/examples/log_likelihood.pycon
+:language: pycon
 ```
 
 :::
