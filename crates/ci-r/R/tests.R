@@ -1,7 +1,8 @@
 #' Build a `fastcit_test` wrapper around a constructed extendr test handle.
 #'
 #' @param handle The external-pointer test handle from `<Class>$new(...)`.
-#' @param ds The bound `fastcit_dataset` (carries column names for pcalg mapping).
+#' @param ds The bound `fastcit_dataset` (carries column names for pcalg
+#'   mapping).
 #' @param name The test's stable name (e.g. `"chi_squared"`).
 #' @return An object of class `fastcit_test`.
 #' @keywords internal
@@ -157,8 +158,9 @@ gcm <- function(data) {
 #' Conditioning variables are one-hot encoded minus one level. A categorical
 #' `X` or `Y` becomes `K - 1` level indicators, residualized with a linear
 #' probability model. Factor and numeric columns may be mixed. Degenerate
-#' inputs raise errors instead of returning `NaN`. Conditioning sets whose columns are linearly
-#' dependent (duplicate or nested categorical variables, a constant column)
+#' inputs raise errors instead of returning `NaN`. Conditioning sets whose
+#' columns are linearly dependent (duplicate or nested categorical variables, a
+#' constant column)
 #' raise a degenerate-data error, whereas pgmpy fits them by least squares.
 #' With few rows relative to the conditioning columns and categorical levels
 #' (`n - columns < p + q`), the test returns `p = 0` ("dependent"), as pgmpy
@@ -210,8 +212,8 @@ pearson_equivalence <- function(data, delta_threshold = 0.1) {
 #' Radial-basis-function (Gaussian) kernel specification.
 #'
 #' @param length_scale Positive, finite length scale of the kernel.
-#' @return A `fastcit_kernel` object for use as the `kernel` argument of [hsic()]
-#'   and [kci()].
+#' @return A `fastcit_kernel` object for use as the `kernel` argument of
+#'   [hsic()] and [kci()].
 #' @examples
 #' rbf_kernel(2)
 #' @export
@@ -232,8 +234,8 @@ rbf_kernel <- function(length_scale) {
 
 #' Linear kernel specification.
 #'
-#' @return A `fastcit_kernel` object for use as the `kernel` argument of [hsic()]
-#'   and [kci()].
+#' @return A `fastcit_kernel` object for use as the `kernel` argument of
+#'   [hsic()] and [kci()].
 #' @examples
 #' linear_kernel()
 #' @export
@@ -256,14 +258,18 @@ print.fastcit_kernel <- function(x, ...) {
 
 #' Flatten a `kernel` argument for the extendr layer.
 #'
-#' @param kernel `NULL`, one `fastcit_kernel`, or a named list of `fastcit_kernel`.
+#' @param kernel `NULL`, one `fastcit_kernel`, or a named list of
+#'   `fastcit_kernel`.
 #' @return A list with `mode`, `names`, `types` and `length_scales`.
 #' @keywords internal
 .fastcit_flatten_kernel <- function(kernel) {
   flat <- function(k) {
     if (!inherits(k, "fastcit_kernel")) {
       stop(
-        "`kernel` must be NULL, a fastcit_kernel, or a named list of fastcit_kernel",
+        paste0(
+          "`kernel` must be NULL, a fastcit_kernel, or a named list of ",
+          "fastcit_kernel"
+        ),
         call. = FALSE
       )
     }
@@ -294,7 +300,10 @@ print.fastcit_kernel <- function(x, ...) {
   bad <- bad || anyNA(nms) || any(!nzchar(nms)) || anyDuplicated(nms) > 0L
   if (bad) {
     stop(
-      "`kernel` must be NULL, a fastcit_kernel, or a named list of fastcit_kernel",
+      paste0(
+        "`kernel` must be NULL, a fastcit_kernel, or a named list of ",
+        "fastcit_kernel"
+      ),
       call. = FALSE
     )
   }

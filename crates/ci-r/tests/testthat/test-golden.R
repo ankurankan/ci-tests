@@ -35,9 +35,9 @@ load_cases <- function() {
   jsonlite::fromJSON(find_golden(), simplifyVector = FALSE)
 }
 
-# Build a `fastcit_dataset` from a fixture case's `columns` map. Discrete columns
-# are coerced to integer (so `dataset()` infers "discrete"); continuous columns
-# stay double ("continuous").
+# Build a `fastcit_dataset` from a fixture case's `columns` map. Discrete
+# columns are coerced to integer (so `dataset()` infers "discrete");
+# continuous columns stay double ("continuous").
 build_dataset <- function(columns) {
   cols <- lapply(columns, function(col) {
     values <- as.numeric(unlist(col$values))
@@ -51,7 +51,8 @@ build_dataset <- function(columns) {
   dataset(df)
 }
 
-# Translate a fixture kernel spec into `NULL`, a `fastcit_kernel`, or a named list.
+# Translate a fixture kernel spec into `NULL`, a `fastcit_kernel`, or a named
+# list.
 parse_kernel <- function(spec) {
   if (is.null(spec)) {
     return(NULL)

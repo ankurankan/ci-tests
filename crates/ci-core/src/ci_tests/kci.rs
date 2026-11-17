@@ -109,7 +109,7 @@ fn centered_kernel(kernel: Kernel, points: &Mat<f64>) -> Mat<f64> {
 /// Kept eigenvectors scaled by `sqrt(eigenvalue)` of `½(A + Aᵀ)`.
 fn scaled_eigenvectors(a: &Mat<f64>) -> Result<Mat<f64>, CiError> {
     let n = a.nrows();
-    let sym = Mat::<f64>::from_fn(n, n, |i, j| 0.5 * (a[(i, j)] + a[(j, i)]));
+    let sym = Mat::<f64>::from_fn(n, n, |i, j| f64::midpoint(a[(i, j)], a[(j, i)]));
     let eig = sym
         .self_adjoint_eigen(Side::Lower)
         .map_err(|e| numeric("eigendecomposition", e))?;

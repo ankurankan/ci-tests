@@ -7,7 +7,8 @@
 .fastcit_flatten_kernel(kernel)
 }
 \arguments{
-\item{kernel}{\code{NULL}, one \code{fastcit_kernel}, or a named list of \code{fastcit_kernel}.}
+\item{kernel}{\code{NULL}, one \code{fastcit_kernel}, or a named list of
+\code{fastcit_kernel}.}
 }
 \value{
 A list with \code{mode}, \code{names}, \code{types} and \code{length_scales}.

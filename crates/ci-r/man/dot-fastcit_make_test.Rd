@@ -9,7 +9,8 @@
 \arguments{
 \item{handle}{The external-pointer test handle from \verb{<Class>$new(...)}.}
 
-\item{ds}{The bound \code{fastcit_dataset} (carries column names for pcalg mapping).}
+\item{ds}{The bound \code{fastcit_dataset} (carries column names for pcalg
+mapping).}
 
 \item{name}{The test's stable name (e.g. \code{"chi_squared"}).}
 }

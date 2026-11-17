@@ -19,8 +19,9 @@ Pillai trace from the exact canonical correlations of the residuals.
 Conditioning variables are one-hot encoded minus one level. A categorical
 \code{X} or \code{Y} becomes \code{K - 1} level indicators, residualized with a linear
 probability model. Factor and numeric columns may be mixed. Degenerate
-inputs raise errors instead of returning \code{NaN}. Conditioning sets whose columns are linearly
-dependent (duplicate or nested categorical variables, a constant column)
+inputs raise errors instead of returning \code{NaN}. Conditioning sets whose
+columns are linearly dependent (duplicate or nested categorical variables, a
+constant column)
 raise a degenerate-data error, whereas pgmpy fits them by least squares.
 With few rows relative to the conditioning columns and categorical levels
 (\code{n - columns < p + q}), the test returns \code{p = 0} ("dependent"), as pgmpy

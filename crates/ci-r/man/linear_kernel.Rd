@@ -7,8 +7,8 @@
 linear_kernel()
 }
 \value{
-A \code{fastcit_kernel} object for use as the \code{kernel} argument of \code{\link[=hsic]{hsic()}}
-and \code{\link[=kci]{kci()}}.
+A \code{fastcit_kernel} object for use as the \code{kernel} argument of
+\code{\link[=hsic]{hsic()}} and \code{\link[=kci]{kci()}}.
 }
 \description{
 Linear kernel specification.

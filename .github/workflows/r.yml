@@ -61,6 +61,27 @@ jobs:
           styler::style_file(files, dry = "fail", include_roxygen_examples = FALSE)
         shell: Rscript {0}
 
+      # object_usage_linter finds helpers defined in other files through the
+      # installed package namespace, so build and install the package first.
+      - name: Install Rust MSRV
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: 1.85.0
+
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Install R package dependencies
+        uses: r-lib/actions/setup-r-dependencies@v2
+        with:
+          working-directory: crates/ci-r
+          extra-packages: any::rextendr
+
+      - name: Install the package for linting
+        run: |
+          rextendr::document("crates/ci-r")
+          install.packages("crates/ci-r", repos = NULL, type = "source")
+        shell: Rscript {0}
+
       - name: Lint R code
         working-directory: crates/ci-r
         run: |

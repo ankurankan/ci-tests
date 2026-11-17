@@ -59,8 +59,8 @@
 #' `na.omit(df)`) before binding.
 #'
 #' @param df A data.frame (or object coercible to one).
-#' @return An object of class `fastcit_dataset` wrapping the bound dataset and its
-#'   column names.
+#' @return An object of class `fastcit_dataset` wrapping the bound dataset and
+#'   its column names.
 #' @examples
 #' df <- data.frame(A = sample(0:1, 50, TRUE), X = rnorm(50))
 #' data <- dataset(df)

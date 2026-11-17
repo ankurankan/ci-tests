@@ -222,7 +222,7 @@ pub(crate) fn median_length_scale(points: MatRef<'_, f64>) -> f64 {
         hi
     } else {
         let lo = lower.iter().copied().max_by(cmp).unwrap_or(hi);
-        0.5 * (lo + hi)
+        f64::midpoint(lo, hi)
     };
     median / std::f64::consts::SQRT_2
 }

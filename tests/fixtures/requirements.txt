@@ -1,3 +1,6 @@
 numpy==2.4.2
 PyYAML==6.0.3
 scipy==1.17.0
+# Used by the check_pgmpy_parity tests.
+pandas==3.0.0
+scikit-learn==1.8.0

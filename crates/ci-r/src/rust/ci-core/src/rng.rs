@@ -110,7 +110,7 @@ mod tests {
         let mut rng = SplitMix64::new(0);
         let mut empty: Vec<usize> = Vec::new();
         shuffle_identity(&mut rng, &mut empty);
-        assert!(empty.is_empty());
+        assert_eq!(empty, Vec::<usize>::new());
 
         let mut one = vec![0usize; 1];
         shuffle_identity(&mut rng, &mut one);

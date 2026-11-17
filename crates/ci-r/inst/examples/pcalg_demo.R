@@ -1,8 +1,8 @@
 # pcalg integration demo for the fastcit package.
 #
 # Builds a continuous dataset with a known chain structure X -> Y -> Z, adapts a
-# fastcit Pearson-correlation test into a pcalg `indepTest` callback via as_pcalg(),
-# and runs pcalg::pc() to recover the skeleton/CPDAG. Run with:
+# fastcit Pearson-correlation test into a pcalg `indepTest` callback via
+# as_pcalg(), and runs pcalg::pc() to recover the skeleton/CPDAG. Run with:
 #
 #   conda run -n expert Rscript crates/ci-r/inst/examples/pcalg_demo.R
 #
