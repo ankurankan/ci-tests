@@ -25,7 +25,7 @@ def test_grids_match_the_plan():
     kernel = [100, 200, 500, 1000, 2000]
     assert sweep_data.N_GRID == big
     assert sweep_data.N_GRID_KERNEL == kernel
-    assert sweep_data.Z_GRID == [0, 1, 2, 3, 4]
+    assert sweep_data.Z_GRID == [0, 1, 2, 3, 4, 6, 8]
     for row, plan in sweep_data.PLAN.items():
         assert plan["n_grid"] == (kernel if row in ("hsic", "kci") else big), row
         assert plan["z_n"] == {"pillai": 2000, "kci": 500, "hsic": None}.get(row, 10000), row
@@ -37,7 +37,7 @@ def test_written_plan_matches_the_constraints(small):
     plan = json.loads((small / "sweep-queries.json").read_text())["plan"]
     big = [100, 300, 1000, 3000, 10000, 30000, 100000]
     kernel = [100, 200, 500, 1000, 2000]
-    assert plan["grids"] == {"n": big, "n_kernel": kernel, "z": [0, 1, 2, 3, 4]}
+    assert plan["grids"] == {"n": big, "n_kernel": kernel, "z": [0, 1, 2, 3, 4, 6, 8]}
     assert set(plan["rows"]) == {"chi_square", "g_sq", "cressie_read", "freeman_tukey", "modified_ll", "fisher_z",
                                  "pearson_t", "pearson_equivalence", "gcm", "pillai", "hsic", "kci"}
     for row, p in plan["rows"].items():
@@ -75,7 +75,7 @@ def test_queries_have_exact_k_and_are_distinct(small):
     for gen, spec in q.items():
         cols = set(pd.read_csv(small / spec["data"]).columns)
         want = 10 if gen == "nonlinear" else 20
-        assert sorted(spec["queries"], key=int) == ["0", "1", "2", "3", "4"]
+        assert sorted(spec["queries"], key=int) == ["0", "1", "2", "3", "4", "6", "8"]
         for k, qs in spec["queries"].items():
             assert len(qs) == want, (gen, k)
             seen = set()
@@ -91,8 +91,22 @@ def test_queries_have_exact_k_and_are_distinct(small):
 
 def test_mixed_has_enough_columns():
     df = sweep_data.sweep_mixed(50)
-    assert sum(c.startswith("D") for c in df.columns) >= 4
-    assert sum(c.startswith("C") for c in df.columns) >= 4
+    assert sum(c.startswith("D") for c in df.columns) >= 6
+    assert sum(c.startswith("C") for c in df.columns) >= 6
+    assert all(str(v).startswith("L") for c in df.columns if c.startswith("D") for v in df[c])
+
+
+def test_nonlinear_has_enough_columns_and_no_categorical_names():
+    import re
+    df = sweep_data.sweep_nonlinear(50)
+    assert df.shape == (50, 12)
+    assert not any(re.fullmatch(r"D\d", c) for c in df.columns)
+
+
+def test_query_sampler_stops_when_too_few_queries_exist():
+    with pytest.raises(ValueError):
+        sweep_data.sweep_queries(["a", "b", "c"], 20, 1, 1)
+    assert len(sweep_data.sweep_queries([f"V{i}" for i in range(12)], 10, 8, 1)) == 10
 
 
 def test_every_row_has_a_plan():
@@ -156,7 +170,7 @@ def test_run_file_shape_and_budget_skip(small, monkeypatch):
     assert {"date", "cpu", "versions", "power", "harness_floor_ms", "passes"} <= set(run["meta"])
     sw = run["results"]["fisher_z"]["sweeps"]
     assert sw["n"]["x"] == [100, 300] and sw["n"]["fixed"] == {"z": 1}
-    assert sw["z"]["x"] == [0, 1, 2, 3, 4] and sw["z"]["fixed"] == {"n": 200}
+    assert sw["z"]["x"] == [0, 1, 2, 3, 4, 6, 8] and sw["z"]["fixed"] == {"n": 200}
     assert len(sw["z"]["engines"]["good"][0]["ms"]) == 20
     good = sw["n"]["engines"]["good"]
     assert good[0]["skipped"] is None and good[0]["passes"] == 1

@@ -57,7 +57,7 @@ Copy the files of an existing test with the same options as your test.
    - R: `Rscript crates/ci-r/inst/examples/tests/<key>.R` runs the file.
    - JavaScript: first run `wasm-pack build --target nodejs --out-dir pkg` in `crates/ci-js`.
      The examples load `fastcit` as a package, so copy `pkg/` into a scratch `node_modules`:
-     `mkdir -p "$TMPDIR/nm" && cp -r crates/ci-js/pkg "$TMPDIR/nm/fastcit" && NODE_PATH="$TMPDIR/nm" node crates/ci-js/examples/<key>.js`.
+     `nm=$(mktemp -d) && cp -r crates/ci-js/pkg "$nm/fastcit" && NODE_PATH="$nm" node crates/ci-js/examples/<key>.js`.
      On a mismatch, `npm test` in `crates/ci-js` prints "shows X, but prints Y".
    - Rust: `cargo run -p fastcit-core --example <key>` runs the example.
 

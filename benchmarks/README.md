@@ -331,6 +331,9 @@ Do not commit them.
 
 The sweep benchmark times each test at growing sample sizes n and growing conditioning-set sizes |Z|.
 The documentation page [Benchmark](../docs/benchmark.md) shows the result as a chart.
+The sample size n goes from 100 to 100 000 (HSIC and KCI: 100 to 2 000).
+The conditioning-set size |Z| takes the values 0, 1, 2, 3, 4, 6 and 8.
+A query with |Z| = 8 needs 10 distinct columns, so the mixed data have 12 columns and the nonlinear data have 12 columns.
 
 Install the packages as in the [Install](#install) section.
 The Python 3.11 environment for dowhy is optional.
@@ -365,7 +368,8 @@ It warns when the machine is not on AC power or the profile is not `performance`
 The script never changes the power profile.
 Stop other jobs before the run.
 
-The full run takes about 15 to 30 minutes for Python, about 2 minutes for dowhy and about 15 minutes for R.
+The full run takes about 20 to 35 minutes for Python, about 2 minutes for dowhy and about 16 minutes for R.
+The two largest |Z| values (6 and 8) add about 5 minutes to the Python run and about 1 minute to the R run.
 These times are an estimate.
 The script stops at the first error and names the step.
 To run a failed step again, use its own command (the script runs the same commands in this order):
