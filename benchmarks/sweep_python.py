@@ -38,6 +38,7 @@ POINT = {"median_ms": float | null,    # median over the queries that gave a val
          "ms": [float | null, ...],     # best time of each query in ms; null for an error or NaN
          "errors": int, "nan": int,     # queries that raised an error, queries with a NaN p-value
          "n_queries": int, "n_timed": int, "passes": int,
+         "setup_ms": float, "total_ms": float,   # best pass: the factory call (setup) and setup + all queries
          "skipped": null | "time budget",
          "error": null | str,           # set when the engine could not run at all at this point
          "note": str}                   # only for engines with a known caveat (as in bench_python.py)
@@ -112,7 +113,8 @@ def time_point(engines, data, queries, rng, passes, budget=None):
         ok = [not st["err"][i] and not st["nan"][i] for i in range(len(queries))]
         out[name] = point_result(median_ms=res["median_ms"], ms=[t if g else None for t, g in zip(res["ms"], ok)],
                                  errors=res["errors"], nan=res["nan"], n_queries=res["n_queries"],
-                                 n_timed=res["n_timed"], passes=len(st["totals"]))
+                                 n_timed=res["n_timed"], passes=len(st["totals"]),
+                                 setup_ms=res["setup_ms"], total_ms=res["total_ms"])
     return out, over
 
 
@@ -192,8 +194,13 @@ def build_meta(engines, quick, rows, seed, grids):
 def main(outdir, quick, engines, rows, sweeps, seed, out_name):
     outdir = Path(outdir)
     spec = json.loads((outdir / "sweep-queries.json").read_text())
+    if "plan" not in spec:
+        sys.exit("sweep-queries.json has no plan; run sweep_data.py again")
     if engines is None:
         engines = [e for e in bp.ENGINE_MODULES if bp.importable(e)]
+        if "fastcit" not in engines:
+            sys.exit("fastcit does not import in this interpreter, so the sweep would have no FastCIT line. "
+                     "Install it, or name the engines with --engines.")
     missing = [e for e in engines if e not in bp.ENGINE_MODULES or not bp.importable(e)]
     if missing:
         sys.exit(f"engines not available in this interpreter: {missing}")

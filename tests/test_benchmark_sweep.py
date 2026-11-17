@@ -268,7 +268,7 @@ def test_notes_are_engine_level(summary):
     assert len(s["pgmpy"]["notes"]) == 1 and "random forest" in s["pgmpy"]["notes"][0]
     assert s["fastcit"]["notes"] == []
     _, s = series(data, "r", "g_sq", "n")
-    assert any("n < 5" in n for n in s["pcalg"]["notes"])
+    assert any("n < 10" in n for n in s["pcalg"]["notes"])
     _, s = series(data, "python", "chi_square", "n")  # the Yates note of the existing summary
     assert any("Yates" in n for n in s["pgmpy"]["notes"])
 
@@ -312,3 +312,58 @@ def test_missing_run_file_for_a_language_is_skipped(tmp_path):
     summarize_sweep.main(tmp_path)
     data = json.loads((tmp_path / "sweep.json").read_text())
     assert [x["key"] for x in data["languages"]] == ["r"]
+
+
+# ---- review fixes: setup note, mostly-NaN points, small values, setup_ms ----------------------------------------------
+
+
+def _pt(median, nan=0, n=20, **kw):
+    return {"median_ms": median, "ms": None, "errors": 0, "nan": nan, "n_queries": n, "n_timed": n - nan,
+            "passes": 3, "skipped": None, "error": None, **kw}
+
+
+@pytest.fixture(scope="module")
+def edge(tmp_path_factory):
+    out = tmp_path_factory.mktemp("edge")
+    pts = {"fastcit": [_pt(0.00043, setup_ms=0.1, total_ms=0.2), _pt(0.00044, setup_ms=0.1, total_ms=0.2),
+                       _pt(0.0014, setup_ms=0.1, total_ms=0.2)],
+           "pgmpy": [_pt(5.0, nan=12), _pt(6.0, nan=3), _pt(7.0, nan=10)]}
+    run = {"meta": {"kind": "sweep", "python": "3.14.2", "passes": 3, "time_budget_s": 60.0, "quick": False,
+                    "engines": ["fastcit", "pgmpy"]},
+           "results": {r: {"label": r, "sweeps": {"n": {"fixed": {"z": 1}, "x": [100, 300, 1000], "engines": pts}}}
+                       for r in ("fisher_z", "chi_square")}}
+    (out / "sweep-python.json").write_text(json.dumps(run))
+    summarize_sweep.main(out)
+    return json.loads((out / "sweep.json").read_text()), (out / "sweep.md").read_text()
+
+
+def test_fewer_than_half_of_the_queries_make_the_point_null(edge):
+    data, md = edge
+    _, s = series(data, "python", "fisher_z", "n")
+    assert s["pgmpy"]["values"] == [None, 6.0, 7.0]  # 12 of 20 NaN: null; 3 of 20: kept; 10 of 20: kept (half)
+    assert s["pgmpy"]["skipped"][0] == "12 of 20 queries gave NaN or an error"
+    assert s["pgmpy"]["excluded"] == [12, 3, 10] and s["pgmpy"]["queries"] == [20, 20, 20]
+    assert "at 300: 3 of 20 queries left out" in md
+    assert "at 100: 12 of 20 queries gave NaN or an error" in md
+
+
+def test_setup_note_is_on_the_rows_with_a_precomputed_matrix(edge):
+    data, md = edge
+    _, s = series(data, "python", "fisher_z", "n")
+    assert any("one-time setup" in n for n in s["fastcit"]["notes"])
+    _, s = series(data, "python", "chi_square", "n")
+    assert not any("one-time setup" in n for n in s["fastcit"]["notes"])
+    assert "one-time setup" in md
+
+
+def test_setup_and_total_times_are_carried(edge):
+    data, _ = edge
+    _, s = series(data, "python", "fisher_z", "n")
+    assert s["fastcit"]["setup_ms"] == [0.1] * 3 and s["fastcit"]["total_ms"] == [0.2] * 3
+    assert "setup_ms" not in s["pgmpy"]  # the run file has none
+
+
+def test_small_values_keep_two_significant_digits(edge):
+    _, md = edge
+    assert "| FastCIT | 0.00043 | 0.00044 | 0.0014 |" in md
+    assert summarize_sweep.sfmt(0.5) == "0.500" and summarize_sweep.sfmt(12.34) == "12.3"

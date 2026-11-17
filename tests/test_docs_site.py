@@ -359,6 +359,61 @@ def test_summary_json_matches_the_benchmark_results(tmp_path: Path) -> None:
     assert json.loads(read(tmp_path / "summary.json")) == json.loads(read(RESULTS / "summary.json"))
 
 
+def check_sweep_is_fresh(results: Path, tmp_path: Path) -> None:
+    """sweep.json and sweep.md of `results` must be the output of summarize_sweep.py for its sweep-*.json files."""
+    runs = sorted(results.glob("sweep-*.json"))
+    assert runs, f"{results} has sweep.json but no sweep-*.json run files"
+    for path in runs:
+        shutil.copy(path, tmp_path / path.name)
+    spec = importlib.util.spec_from_file_location("summarize_sweep", REPO_ROOT / "benchmarks" / "summarize_sweep.py")
+    assert spec is not None and spec.loader is not None
+    summarize_sweep = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(summarize_sweep)
+    summarize_sweep.main(tmp_path)
+    assert read(tmp_path / "sweep.json") == read(results / "sweep.json")
+    assert read(tmp_path / "sweep.md") == read(results / "sweep.md")
+    committed = json.loads(read(results / "sweep.json"))
+    assert committed["quick"] is False and not any(m.get("quick") for m in committed["meta"].values()), (
+        "the committed sweep comes from a quick run"
+    )
+
+
+@pytest.mark.skipif(not (RESULTS / "sweep.json").exists(), reason="the owner has not committed the full sweep yet")
+def test_sweep_json_matches_the_sweep_run_files(tmp_path: Path) -> None:
+    check_sweep_is_fresh(RESULTS, tmp_path)
+
+
+def test_sweep_freshness_check_rejects_a_quick_run(tmp_path: Path) -> None:
+    """The check itself: it passes on a full-run folder and fails on quick-run files or a stale sweep.json."""
+    fixture = REPO_ROOT / "tests" / "fixtures" / "sweep"
+    results, work = tmp_path / "results", tmp_path / "work"
+    results.mkdir()
+    work.mkdir()
+    for path in fixture.glob("*.json"):
+        shutil.copy(path, results / path.name)
+    sys.path.insert(0, str(REPO_ROOT / "benchmarks"))
+    try:
+        import summarize_sweep
+    finally:
+        sys.path.pop(0)
+    summarize_sweep.main(results)
+    check_sweep_is_fresh(results, work)  # full run: passes
+    stale = tmp_path / "stale"
+    stale.mkdir()
+    (results / "sweep.md").write_text("old\n", encoding="utf-8")
+    with pytest.raises(AssertionError):
+        check_sweep_is_fresh(results, stale)
+    for path in results.glob("sweep-*.json"):  # make the run files quick runs
+        data = json.loads(path.read_text(encoding="utf-8"))
+        data["meta"]["quick"] = True
+        path.write_text(json.dumps(data), encoding="utf-8")
+    summarize_sweep.main(results)
+    quick = tmp_path / "quick"
+    quick.mkdir()
+    with pytest.raises(AssertionError, match="quick run"):
+        check_sweep_is_fresh(results, quick)
+
+
 def test_cells_carry_the_run_spread() -> None:
     """Each cell with a result has its run values; a cell gets the mark † exactly when its range exceeds the limit."""
     data = json.loads(read(RESULTS / "summary.json"))

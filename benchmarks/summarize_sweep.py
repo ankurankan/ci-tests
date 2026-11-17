@@ -38,7 +38,14 @@ sweep.json (unit: ms; "meta", "languages" and the keys below are stable, the cha
                      # Added fields:
                      "passes": [int, ...],        # passes behind each value. 1 after the time budget (the value
                                                   # is kept); the chart marks values whose passes < meta passes
-                     "excluded": [int, ...]}]}}}  # queries left out of the median (errors + NaN) at each point
+                     "excluded": [int, ...],      # queries left out of the median (errors + NaN) at each point
+                     "queries": [int, ...],       # queries of each point (the chart does not read it)
+                     # Optional, only when the run file has them (the chart does not read them), in ms, best pass:
+                     "setup_ms": [ms | null, ...],  # the factory call of the engine (the one-time setup)
+                     "total_ms": [ms | null, ...]}]}}}  # setup plus all queries
+A point where fewer than half of the queries gave a value is null, with the reason "k of N queries gave NaN or
+an error". The notes of the rows fisher_z, pearson_t and pearson_equivalence say what the time leaves out
+(the one-time setup, see SETUP_NOTES).
  ]} ]
 }
 Series order: "fastcit" first, then the engines in the column order of the tables of summarize.py (Python:
@@ -62,6 +69,15 @@ LABELS = {**sm.PY_LABELS, "hsic": "HSIC", "kci": "KCI", "pearson_equivalence": "
 LABELS_R = {**LABELS, "chi_square": "χ²", "g_sq": "G²"}
 HIDDEN = ("fastcit (yates)",)  # engines of the run files that the sweep does not show
 AXES = ("n", "z")
+SETUP_ROWS = ("fisher_z", "pearson_t", "pearson_equivalence")
+SETUP_NOTES = {  # the row note of summarize.py (sm.FOOT_E), in the words of a sweep
+    "python": ("The time does not include the one-time setup. FastCIT builds the correlation matrix in its first "
+               "call, and the median leaves that call out, so its time stays flat as n grows. causal-learn builds "
+               "it at setup and stays flat too. pgmpy and pingouin build it in every call, so their time grows with n."),
+    "r": ("The time does not include the one-time setup. FastCIT builds the correlation matrix in its first "
+          "call, and the median leaves that call out, so its time stays flat as n grows. pcalg builds it at setup "
+          "and stays flat too. bnlearn and ppcor build it in every call, so their time grows with n."),
+}
 MARKS = ["ᵃ", "ᵇ", "ᶜ", "ᵈ", "ᵉ", "ᶠ", "ᵍ", "ʰ", "ⁱ", "ʲ"]  # marks of the engine notes, per table
 ONE_PASS, BUDGET, FAILED, EXCLUDED = "†", "‡", "§", "*"
 META_KEYS = ("date", "cpu", "logical_cpus", "os", "versions", "commits", "quick", "seed", "power", "power_end",
@@ -106,6 +122,8 @@ def notes_for(lang, row, name, points):
     for p in points:
         if p.get("note") and p["note"] not in notes:
             notes.append(p["note"])
+    if row in SETUP_ROWS:
+        notes.append(SETUP_NOTES[lang])
     marks = MARK_NOTES[lang].get((row, name), "")
     if row in sm.YATES_ROWS and name in sm.YATES_ENGINES and lang == "python":
         marks += "ᵇ"
@@ -120,20 +138,44 @@ def engine_order(cols, names):
     return order + sorted(n for n in names if n not in order)
 
 
+def sfmt(v):
+    """Milliseconds for the sweep: 2 significant digits below 0.01 (FastCIT can take 0.0004 ms), else as sm.fmt."""
+    if 0 < v < 0.01:
+        return f"{v:.{1 - math.floor(math.log10(v))}f}"
+    return sm.fmt(v)
+
+
+def queries_of(p):
+    return p.get("n_queries") or (p.get("errors") or 0) + (p.get("nan") or 0) + (p.get("n_timed") or 0)
+
+
+def thin(p):
+    """The reason when fewer than half of the queries of the point gave a value, else None."""
+    n, bad = queries_of(p), (p.get("errors") or 0) + (p.get("nan") or 0)
+    if good(p.get("median_ms")) and bad and 2 * (n - bad) < n:
+        return f"{bad} of {n} queries gave NaN or an error"
+    return None
+
+
 def make_series(lang, cols, row, sweep, names):
     labels = dict(cols)
     out = []
     for name in engine_order(cols, [n for n in names if n not in HIDDEN]):
         pts = sweep["engines"][name]
-        out.append({
+        item = {
             "engine": name,
             "label": "FastCIT" if name == "fastcit" else labels.get(name, name),
-            "values": [p["median_ms"] if good(p.get("median_ms")) else None for p in pts],
-            "skipped": [reason(p) for p in pts],
+            "values": [p["median_ms"] if good(p.get("median_ms")) and not thin(p) else None for p in pts],
+            "skipped": [thin(p) or reason(p) for p in pts],
             "notes": notes_for(lang, row, name, pts),
             "passes": [p.get("passes", 0) for p in pts],
             "excluded": [(p.get("errors") or 0) + (p.get("nan") or 0) for p in pts],
-        })
+            "queries": [queries_of(p) for p in pts],
+        }
+        for key in ("setup_ms", "total_ms"):
+            if any(good(p.get(key)) for p in pts):
+                item[key] = [p[key] if good(p.get(key)) else None for p in pts]
+        out.append(item)
     out.sort(key=lambda s: s["engine"] != "fastcit")  # stable: FastCIT first
     return out
 
@@ -202,7 +244,7 @@ def build(d):
 
 
 def num(x):
-    return sm.fmt(float(x)) if isinstance(x, float) else f"{x:,}".replace(",", " ")
+    return sfmt(float(x)) if isinstance(x, float) else f"{x:,}".replace(",", " ")
 
 
 def title(lang, row, axis, sweep):
@@ -215,7 +257,7 @@ def title(lang, row, axis, sweep):
 
 def table(sweep, meta):
     """Return the Markdown table of one sweep and the footnotes of its marks."""
-    used, notes = set(), []
+    used, notes, left = set(), [], []
     xs = sweep["x"]
     head = "| Package | " + " | ".join(num(x) for x in xs) + " |\n|---|" + "---:|" * len(xs) + "\n"
     out = head
@@ -226,28 +268,37 @@ def table(sweep, meta):
                 notes.append((MARKS[len(notes)], text))
             marks += next(m for m, t in notes if t == text)
         cells = []
-        for v, why, passes, excl in zip(s["values"], s["skipped"], s["passes"], s["excluded"]):
+        for v, why, passes, excl, nq, x in zip(s["values"], s["skipped"], s["passes"], s["excluded"],
+                                               s["queries"], xs):
             if v is None:
                 mark = BUDGET if why == "time budget" else FAILED
                 used.add(mark)
+                if mark == FAILED and "queries gave" in (why or ""):
+                    left.append((s["label"], why, None, x))
                 cells.append("—" + mark)
                 continue
-            cell = sm.fmt(v)
+            cell = sfmt(v)
             if meta.get("passes") and passes < meta["passes"]:
                 cell += ONE_PASS
                 used.add(ONE_PASS)
             if excl:
+                left.append((s["label"], excl, nq, x))
                 cell += EXCLUDED
                 used.add(EXCLUDED)
             cells.append(cell)
         out += f"| {s['label']}{marks} | " + " | ".join(cells) + " |\n"
     lines = [f"- {m} {t}" for m, t in notes]
     texts = {ONE_PASS: f"The first pass took more than {num(int(meta.get('budget_s') or 60))} s. "
-                       "The cell comes from one pass. Larger points are missing.",
+                       "The cell comes from one pass. Larger points, if any, are missing.",
              BUDGET: "No result. The engine skipped this point after it passed the time budget.",
-             FAILED: "No result. Every query raised an error or returned NaN.",
+             FAILED: "No result. Every query raised an error or returned NaN, or fewer than half of them gave a value.",
              EXCLUDED: "Some queries raised an error or returned NaN. The median uses the other queries."}
     shown = {EXCLUDED: "\\*"}
+    for mark, items in ((EXCLUDED, [t for t in left if t[2] is not None]), (FAILED, [t for t in left if t[2] is None])):
+        if items:
+            texts[mark] += " " + "; ".join(
+                f"{lab} at {num(x)}: " + (f"{k} of {nq} queries left out" if nq is not None else k)
+                for lab, k, nq, x in items) + "."
     lines += [f"- {shown.get(m, m)} {texts[m]}" for m in (ONE_PASS, BUDGET, FAILED, EXCLUDED) if m in used]
     return out + ("\n" + "\n".join(lines) + "\n" if lines else "")
 
@@ -275,7 +326,7 @@ def markdown(data):
             for row, axes in o["reference"].items():
                 for axis, ref in axes.items():
                     out += (f"  - same-interpreter FastCIT reference ({row}, {axis}, not a table row): "
-                            + ", ".join(sm.fmt(v) if v is not None else "—" for v in ref["values"]) + " ms\n")
+                            + ", ".join(sfmt(v) if v is not None else "—" for v in ref["values"]) + " ms\n")
     for lang in data["languages"]:
         meta = data["meta"][lang["key"]]
         for row in lang["rows"]:

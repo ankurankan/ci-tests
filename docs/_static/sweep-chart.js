@@ -69,15 +69,17 @@
     return String(value).replace(/\B(?=(\d{3})+(?!\d))/g, "\u00a0");
   }
 
-  // Milliseconds with the precision of benchmarks/summarize.py (fmt).
+  // Milliseconds with the precision of benchmarks/summarize.py (fmt), but 2 significant digits below 0.01
+  // (the same rule as sfmt in benchmarks/summarize_sweep.py).
   function ms(value) {
+    if (value > 0 && value < 0.01) return value.toFixed(1 - Math.floor(Math.log10(value)));
     if (value >= 100) return grouped(Math.round(value));
     return value.toFixed(value >= 10 ? 1 : value >= 1 ? 2 : 3);
   }
 
-  // Tick labels: 1K, 10K, ... on an axis that reaches 10 000.
-  function tick(value, compact) {
-    if (compact && value >= 1000) return grouped(value / 1000) + "K";
+  // Tick labels in one style on every axis: 0.01, 100, 1K, 10K.
+  function tick(value) {
+    if (value >= 1000) return grouped(value / 1000) + "K";
     return value < 1 ? String(+value.toPrecision(1)) : grouped(value);
   }
 
@@ -271,12 +273,12 @@
       var y = sy(Math.pow(10, e));
       svg(chart, "line", { x1: m.left, x2: width - m.right, y1: y, y2: y }, "sweep-grid");
       svg(chart, "text", { x: m.left - 8, y: y + 4, "text-anchor": "end" }, "sweep-tick",
-        tick(Math.pow(10, e), Math.pow(10, hi) >= 10000));
+        tick(Math.pow(10, e)));
     }
     svg(chart, "line", { x1: m.left, x2: width - m.right, y1: bottom, y2: bottom }, "sweep-axis");
     xs.forEach(function (x) {
       svg(chart, "text", { x: sx(x), y: bottom + 18, "text-anchor": "middle" }, "sweep-tick",
-        tick(x, xs[xs.length - 1] >= 10000));
+        tick(x));
     });
     svg(chart, "text", { x: 0, y: 14 }, "sweep-title", Y_TITLE);
     svg(chart, "text", { x: m.left + (width - m.left - m.right) / 2, y: height - 6, "text-anchor": "middle" },

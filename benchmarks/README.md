@@ -327,6 +327,70 @@ python benchmarks/summarize.py benchmarks/results
 The `data.py` script writes CSV files.
 Do not commit them.
 
+## Sweep
+
+The sweep benchmark times each test at growing sample sizes n and growing conditioning-set sizes |Z|.
+The documentation page [Benchmark](../docs/benchmark.md) shows the result as a chart.
+
+Install the packages as in the [Install](#install) section.
+The Python 3.11 environment for dowhy is optional.
+Without it, the sweep has no dowhy line.
+
+Run this command from the repository root.
+Pick an empty output folder.
+
+```bash
+PYTHON=python3 PYTHON_DOWHY=dowhy-env/bin/python RSCRIPT=Rscript benchmarks/run_sweep.sh OUT
+```
+
+All three variables are optional.
+`PYTHON` is the main interpreter, and its default is `python3`.
+`PYTHON_DOWHY` is the Python 3.11 interpreter with dowhy.
+The script skips the dowhy run when this variable is not set.
+Set `PYTHONPATH_DOWHY` when the dowhy interpreter needs its own `PYTHONPATH`.
+`RSCRIPT` is the R command, and its default is `Rscript`.
+`RSCRIPT` must be one command.
+To run R in a conda environment, write a wrapper script (`conda run -n ENV Rscript "$@"`) and set `RSCRIPT` to it.
+Add `--quick` after `OUT` for a short test run: `benchmarks/run_sweep.sh OUT --quick`.
+
+The script checks the interpreters and all R packages before the first step.
+It stops at once when `fastcit` does not import, when `PYTHON_DOWHY` is set but cannot import dowhy and `fastcit`, or when an R package is missing.
+It prints the Python packages that import.
+
+The script pins the CPUs like the other benchmark: Python to CPUs 0 to 11 and R to CPUs 0 to 3.
+It pins only when `taskset` exists.
+It pins Python only when the machine has at least 12 CPUs.
+The script prints the AC state and the power profile.
+It warns when the machine is not on AC power or the profile is not `performance`.
+The script never changes the power profile.
+Stop other jobs before the run.
+
+The full run takes about 15 to 30 minutes for Python, about 2 minutes for dowhy and about 15 minutes for R.
+These times are an estimate.
+The script stops at the first error and names the step.
+To run a failed step again, use its own command (the script runs the same commands in this order):
+
+```bash
+python3 benchmarks/sweep_data.py OUT
+python3 benchmarks/sweep_python.py OUT          # taskset -c 0-11 before it, when you pin
+$PYTHON_DOWHY benchmarks/sweep_python.py OUT --engines dowhy,fastcit --rows gcm --out sweep-python-dowhy.json
+Rscript benchmarks/sweep_r.R OUT                # taskset -c 0-3 before it, when you pin
+python3 benchmarks/summarize_sweep.py OUT
+```
+
+`--quick` goes after `OUT` in each command.
+
+To publish the result, copy these files from `OUT` into `benchmarks/results/` and commit them:
+
+- `sweep-python.json`
+- `sweep-python-dowhy.json`, when the dowhy run was made
+- `sweep-r.json`
+- `sweep.json`
+- `sweep.md`
+
+Do not commit the files of a `--quick` run.
+After this, the documentation page shows the chart.
+
 ## Results
 
 The `results` folder holds the files of the last full run.

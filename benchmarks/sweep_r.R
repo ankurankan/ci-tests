@@ -54,6 +54,7 @@ script_dir <- dirname(sub("^--file=", "", grep("^--file=", commandArgs(), value 
 source(file.path(script_dir, "r_engines.R"))  # engines, timing core, metadata helpers
 spec <- fromJSON(file.path(outdir, "sweep-queries.json"), simplifyVector = FALSE)
 
+if (is.null(spec$plan)) stop("sweep-queries.json has no plan; run sweep_data.py again")
 # The plan (grids, and per row the generator, n grid, n_z and z_n) comes from sweep-queries.json, written by
 # sweep_data.py. z_n is null for a row without |Z| sweep (HSIC).
 grids <- lapply(spec$plan$grids, unlist)
@@ -98,9 +99,10 @@ head_frame <- function(df, gen, n) {
 }
 
 point_result <- function(median_ms = NA_real_, ms = NA, errors = 0L, nan = 0L, n_queries = 0L, n_timed = 0L,
-                         passes = 0L, skipped = NA_character_, error = NA_character_) {
+                         passes = 0L, skipped = NA_character_, error = NA_character_, setup_ms = NA_real_, total_ms = NA_real_) {
   list(median_ms = median_ms, ms = if (identical(ms, NA)) NA else I(ms), errors = errors, nan = nan,
-       n_queries = n_queries, n_timed = n_timed, passes = passes, skipped = skipped, error = error)
+       n_queries = n_queries, n_timed = n_timed, passes = passes, skipped = skipped, error = error,
+       setup_ms = setup_ms, total_ms = total_ms)
 }
 skipped_point <- function(n_queries) point_result(n_queries = n_queries, skipped = "time budget")
 
@@ -128,7 +130,8 @@ time_point <- function(engines, qs, key) {
     if (!is.null(failed[[name]])) return(point_result(error = failed[[name]], errors = length(qs), n_queries = length(qs)))
     st <- states[[name]]; res <- result(st); ok <- !st$err & !st$nan
     point_result(median_ms = res$median_ms, ms = ifelse(ok, res$ms, NA_real_), errors = res$errors, nan = res$nan,
-                 n_queries = res$n_queries, n_timed = res$n_timed, passes = length(st$totals))
+                 n_queries = res$n_queries, n_timed = res$n_timed, passes = length(st$totals),
+                 setup_ms = res$setup_ms, total_ms = res$total_ms)
   })
   list(points = setNames(out, names(engines)), over = over)
 }
@@ -194,7 +197,7 @@ for (row in rows_wanted) {
       for (e in names(engines)) {
         p <- res$points[[e]]
         if (is.null(p)) p <- skipped_point(length(qs))
-        if (row == "g_sq" && e == "pcalg") p$note <- "pcalg returns p = 1 without a test when n is small (n < 5 x degrees of freedom)"
+        if (row == "g_sq" && e == "pcalg") p$note <- "pcalg returns p = 1 without running the test when n < 10 x the degrees of freedom. This happens at small n and at large |Z|, so these times are not comparable."
         series[[e]][[i]] <- p
         cat(sprintf("%-19s %s x=%-7d %-16s %s (%d q, %d errors, %d NaN)%s\n", row, which, xs[i], e,
                     if (!is.na(p$skipped)) paste0("skipped (", p$skipped, ")") else sprintf("median %s ms", format(p$median_ms)),

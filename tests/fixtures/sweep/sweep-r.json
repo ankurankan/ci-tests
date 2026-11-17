@@ -80,7 +80,7 @@
         "passes": 3,
         "skipped": null,
         "error": null,
-        "note": "pcalg returns p = 1 without a test when n is small (n < 5 x degrees of freedom)"
+        "note": "pcalg returns p = 1 without running the test when n < 10 x the degrees of freedom"
        },
        {
         "median_ms": 0.2,
@@ -94,7 +94,7 @@
         "passes": 3,
         "skipped": null,
         "error": null,
-        "note": "pcalg returns p = 1 without a test when n is small (n < 5 x degrees of freedom)"
+        "note": "pcalg returns p = 1 without running the test when n < 10 x the degrees of freedom"
        }
       ],
       "fastcit": [
