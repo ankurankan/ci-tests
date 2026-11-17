@@ -10,6 +10,10 @@ Build: sphinx-build -W -b html docs site
 
 from __future__ import annotations
 
+import os
+import shutil
+from pathlib import Path
+
 # -- General configuration ------------------------------------------------
 
 extensions = [
@@ -46,6 +50,7 @@ html_sidebars = {
     "**": ["sidebar-nav-bs.html"],
     "index": [],
     "api": [],  # no child pages, so the section navigation would be empty
+    "benchmark": [],
 }
 
 html_theme_options = {
@@ -64,6 +69,7 @@ html_theme_options = {
     "secondary_sidebar_items": {
         "**": ["page-toc"],
         "index": [],
+        "benchmark": [],  # the chart gets the full width
     },
     "primary_sidebar_end": [],
     "footer_start": ["copyright"],
@@ -94,3 +100,30 @@ mathjax4_config = {"options": {"menuOptions": {"settings": {"assistiveMml": True
 html_search_language = "en"
 htmlhelp_basename = "fastcitdoc"
 
+
+# -- The chart on the Benchmark page ----------------------------------------
+
+# benchmarks/summarize_sweep.py writes the chart data. Without the file, docs/benchmark.md shows a notice
+# instead of the chart. The tests set FASTCIT_SWEEP_JSON to build the page with other data.
+SWEEP_JSON = Path(os.environ.get("FASTCIT_SWEEP_JSON") or Path(__file__).parents[1] / "benchmarks/results/sweep.json")
+if SWEEP_JSON.is_file():
+    tags.add("sweep")  # noqa: F821 (Sphinx gives conf.py the build tags)
+
+
+def _add_chart_assets(app, pagename, templatename, context, doctree):
+    """Load the chart script and styles on the Benchmark page only."""
+    if pagename == "benchmark":
+        app.add_css_file("sweep-chart.css")
+        app.add_js_file("sweep-chart.js", loading_method="defer")
+
+
+def _copy_sweep_data(app, exception):
+    """Copy the chart data to <output>/sweep.json, next to benchmark.html."""
+    if exception is None and app.builder.format == "html" and SWEEP_JSON.is_file():
+        shutil.copyfile(SWEEP_JSON, Path(app.outdir) / "sweep.json")
+
+
+def setup(app):
+    app.connect("html-page-context", _add_chart_assets)
+    app.connect("build-finished", _copy_sweep_data)
+    return {"parallel_read_safe": True, "parallel_write_safe": True}

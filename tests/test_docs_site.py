@@ -3,7 +3,8 @@
 The home page repeats the install commands and the quickstart examples of the README. These tests
 fail when the two copies differ. The home page includes the two tables of median call times from
 benchmarks/results/summary.md. Each test page must show the CI-run example file of each language
-in a synced language tab set. The tests also check the benchmark summary and the docs workflow.
+in a synced language tab set. The Benchmark page shows the chart of benchmarks/results/sweep.json,
+or a notice when the file does not exist. The tests also check the benchmark summary and the docs workflow.
 
 The tests at the end build the site with Sphinx. They skip when the Sphinx stack of
 docs/requirements.txt is not installed (for example in the golden-fixture job of python.yml).
@@ -11,6 +12,7 @@ docs/requirements.txt is not installed (for example in the golden-fixture job of
 
 from __future__ import annotations
 
+import ast
 import html
 import importlib.util
 import json
@@ -28,10 +30,14 @@ import yaml
 REPO_ROOT = Path(__file__).resolve().parents[1]
 DOCS = REPO_ROOT / "docs"
 INDEX = DOCS / "index.md"
+BENCHMARK = DOCS / "benchmark.md"
 TEST_PAGES = DOCS / "tests"
 STATIC = DOCS / "_static"
 README = REPO_ROOT / "README.md"
 RESULTS = REPO_ROOT / "benchmarks" / "results"
+SWEEP_JSON = RESULTS / "sweep.json"
+CHART_JS = STATIC / "sweep-chart.js"
+CHART_CSS = STATIC / "sweep-chart.css"
 WORKFLOW = REPO_ROOT / ".github" / "workflows" / "docs.yml"
 CHECK_WORKFLOW = REPO_ROOT / ".github" / "workflows" / "docs-check.yml"
 # Set in docs-check.yml: there the Sphinx tests must run, not skip.
@@ -74,6 +80,10 @@ RUNTIME_TABLES = {
 }
 # The relative targets of the API reference cards. The deploy job adds these sites next to the Sphinx output.
 API_TARGETS = ("python/fastcit.html", "r/index.html", "js/index.html", "rust/fastcit_core/index.html")
+# The navbar of every page: the hidden toctree of the home page.
+NAVBAR = ["Conditional Independence Tests", "Benchmark", "API reference"]
+# The notice of the Benchmark page when sweep.json does not exist.
+SWEEP_NOTICE = "The benchmark results are not available at this time."
 # External URLs that a page may contain.
 ALLOWED_EXTERNAL = (
     "https://github.com/pgmpy/FastCIT",
@@ -168,6 +178,83 @@ def test_home_page_includes_the_runtime_tables() -> None:
         assert include == [("../benchmarks/results/summary.md", start, end)], key
         # Each marker must occur, and the first match of the end marker must follow the start marker.
         assert summary.index(start) < summary.index(end, summary.index(start))
+
+
+def test_navbar_order() -> None:
+    toctree = re.findall(r"```\{toctree\}\n:hidden:\n\n(.*?)```", read(INDEX), re.S)
+    assert len(toctree) == 1
+    assert [line.split(" <")[0] for line in toctree[0].splitlines() if line] == NAVBAR
+
+
+# -------------------------------------------------------------- benchmark page
+
+
+def test_benchmark_page_has_little_prose() -> None:
+    """A title, the chart (or the notice), and a method note of at most 6 short sentences (ASD-STE100)."""
+    text = read(BENCHMARK)
+    assert re.findall(r"^(#+) (.+)$", text, re.M) == [("#", "Benchmark"), ("##", "Method")]
+    method = " ".join(section(text, "Method").split())
+    sentences = re.split(r"(?<=\.) (?=[A-Z])", method)
+    assert 1 <= len(sentences) <= 6, sentences
+    for sentence in sentences:
+        assert len(sentence.split()) <= 25, sentence
+    assert "(https://github.com/pgmpy/FastCIT/blob/main/benchmarks/README.md)" in method
+    assert "chart" not in method.lower(), "the method shows without data too, so it must not point at the chart"
+    # Before the method: the chart host for the build with data, one notice for the build without.
+    top = text[: text.index("## Method")]
+    assert re.findall(r"^:::\{only\} (.+)$", top, re.M) == ["sweep", "not sweep"]
+    assert '<div class="sweep-chart" data-src="sweep.json"></div>' in top
+    assert re.search(r"^:::\{only\} not sweep\n\n" + re.escape(SWEEP_NOTICE) + r"\n\n:::$", top, re.M)
+
+
+def test_chart_reads_only_fields_of_the_schema() -> None:
+    """The chart reads sweep.json only through the fields of the schema in summarize_sweep.py.
+
+    The script names the variables that hold parts of sweep.json data, lang, row, sweep, series, meta and run.
+    """
+    schema = ast.get_docstring(ast.parse(read(REPO_ROOT / "benchmarks" / "summarize_sweep.py")))
+    assert schema is not None
+    fields = set(re.findall(r'"(\w+)"', schema))
+    script = re.sub(r"/\*.*?\*/|//[^\n]*", "", read(CHART_JS), flags=re.S)  # code only, not the comments
+    used = set(re.findall(r"(?<![\w.])(?:data|lang|row|sweep|series|meta|run)\.(\w+)", script))
+    assert used <= fields, f"not in the schema: {sorted(used - fields)}"
+    # A missing point is a gap with its reason; a one-pass point and left-out queries are marked.
+    assert {"values", "skipped", "passes", "excluded", "notes", "engine", "label", "fixed", "x"} <= used
+
+
+def test_chart_colours_every_package() -> None:
+    """Each package has a fixed palette slot and marker shape (FastCIT: 1, circle).
+
+    Each slot has a light and a dark colour.
+    """
+    spec = importlib.util.spec_from_file_location("summarize", REPO_ROOT / "benchmarks" / "summarize.py")
+    assert spec is not None and spec.loader is not None
+    summarize = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(summarize)
+    script = read(CHART_JS)
+    found = re.findall(r'"?([\w-]+)"?: \[([1-8]), "(\w+)"\]', re.search(r"var PACKAGES = \{(.*?)\};", script, re.S)[1])
+    packages = {key: (slot, shape) for key, slot, shape in found}
+    assert packages["fastcit"] == ("1", "circle")
+    shapes = set(re.findall(r"^    (\w+): \[\[", re.search(r"var SHAPES = \{(.*?)\};", script, re.S)[1], re.M))
+    assert {shape for _, shape in packages.values()} <= shapes | {"circle", "cross"}
+    assert "SHAPES.cross = SHAPES.plus" in script
+    for cols in (summarize.PY_COLS, summarize.R_COLS):
+        engines = [key for key, _ in cols]
+        assert set(engines) <= set(packages), f"no slot and shape: {sorted(set(engines) - set(packages))}"
+        assert len({packages[key][0] for key in engines}) == len(engines), "two packages of a language share a slot"
+        assert len({packages[key] for key in engines}) == len(engines), "two packages share a (colour, shape) pair"
+    css = read(CHART_CSS)
+    light = re.search(r"^\.sweep-chart \{(.*?)^\}", css, re.S | re.M)[1]
+    dark = re.search(r'^html\[data-theme="dark"\] \.sweep-chart \{(.*?)^\}', css, re.S | re.M)[1]
+    for block in (light, dark):
+        assert re.findall(r"--sweep-(\d): #[0-9a-f]{6};", block) == [str(i) for i in range(1, 9)]
+    # Dark mode follows html[data-theme] of the theme, not the browser's colour scheme.
+    assert "prefers-color-scheme" not in css
+
+
+def test_chart_code_stays_small() -> None:
+    assert len(read(CHART_JS).splitlines()) <= 520
+    assert len(read(CHART_CSS).splitlines()) <= 250
 
 
 # ------------------------------------------------------------------ test pages
@@ -353,23 +440,38 @@ def test_docs_check_workflow_builds_the_site_on_pull_requests() -> None:
 SPHINX_MODULES = ("sphinx", "myst_parser", "sphinx_design", "pydata_sphinx_theme", "sphinx_copybutton")
 
 
-@pytest.fixture(scope="module")
-def site(tmp_path_factory: pytest.TempPathFactory) -> Path:
-    """Build the site with warnings as errors, as the docs workflow does."""
+def build(out: Path, sweep_json: Path | None = None) -> Path:
+    """Build the site with warnings as errors, as the docs workflow does. sweep_json replaces the chart data."""
     for module in SPHINX_MODULES:
         if REQUIRE_SPHINX:
             importlib.import_module(module)  # fail, do not skip
         else:
             pytest.importorskip(module, reason="the Sphinx stack of docs/requirements.txt is not installed")
-    out = tmp_path_factory.mktemp("site")
+    env = {key: value for key, value in os.environ.items() if key != "FASTCIT_SWEEP_JSON"}
+    if sweep_json is not None:
+        env["FASTCIT_SWEEP_JSON"] = str(sweep_json)
     result = subprocess.run(
         [sys.executable, "-m", "sphinx", "-W", "-q", "-b", "html", str(DOCS), str(out)],
         capture_output=True,
         text=True,
         check=False,
+        env=env,
     )
     assert result.returncode == 0, result.stdout + result.stderr
     return out
+
+
+@pytest.fixture(scope="module")
+def site(tmp_path_factory: pytest.TempPathFactory) -> Path:
+    return build(tmp_path_factory.mktemp("site"))
+
+
+@pytest.fixture(scope="module")
+def sweep_site(tmp_path_factory: pytest.TempPathFactory) -> tuple[Path, Path]:
+    """A build with chart data, whether or not benchmarks/results/sweep.json exists."""
+    data = tmp_path_factory.mktemp("data") / "sweep.json"
+    data.write_text('{"source": "tests/test_docs_site.py", "languages": []}\n', encoding="utf-8")
+    return build(tmp_path_factory.mktemp("sweep-site"), data), data
 
 
 def code_blocks(page: str) -> list[str]:
@@ -383,8 +485,71 @@ def built_pages(site: Path) -> list[Path]:
 
 
 def test_build_has_every_page(site: Path) -> None:
-    for page in ("index.html", "api.html", "tests/index.html", *(f"tests/{key}.html" for key in TESTS)):
+    pages = ("index.html", "benchmark.html", "api.html", "tests/index.html", *(f"tests/{key}.html" for key in TESTS))
+    for page in pages:
         assert (site / page).is_file(), page
+
+
+def test_built_navbar_order(site: Path) -> None:
+    for page in ("index.html", "benchmark.html", "tests/chi_squared.html"):
+        navbar = re.findall(r'<ul class="bd-navbar-elements navbar-nav">(.*?)</ul>', read(site / page), re.S)
+        assert navbar, page  # the header and the narrow-screen sidebar
+        for items in navbar:
+            assert re.findall(r'<a class="nav-link[^"]*"[^>]*>\s*(.*?)\s*</a>', items) == NAVBAR, page
+
+
+def test_chart_assets_only_on_the_benchmark_page(site: Path) -> None:
+    for path in built_pages(site):
+        page = read(path)
+        expected = path == site / "benchmark.html"
+        for asset in ("_static/sweep-chart.js", "_static/sweep-chart.css"):
+            assert (asset in page) == expected, f"{path.relative_to(site)}: {asset}"
+
+
+def test_built_benchmark_page_follows_the_data(site: Path) -> None:
+    """With sweep.json the page has the chart and the build copies the file; without it, the page has the notice."""
+    page = read(site / "benchmark.html")
+    if SWEEP_JSON.exists():
+        assert (site / "sweep.json").read_bytes() == SWEEP_JSON.read_bytes()
+        assert 'class="sweep-chart"' in page and SWEEP_NOTICE not in page
+    else:
+        assert not (site / "sweep.json").exists()
+        assert 'class="sweep-chart"' not in page and page.count(SWEEP_NOTICE) == 1
+
+
+def test_built_benchmark_page_with_data(sweep_site: tuple[Path, Path]) -> None:
+    site, data = sweep_site
+    assert (site / "sweep.json").read_bytes() == data.read_bytes()
+    page = read(site / "benchmark.html")
+    assert page.count('<div class="sweep-chart" data-src="sweep.json"></div>') == 1
+    assert SWEEP_NOTICE not in page
+    assert "<noscript>" in page
+
+
+def test_chart_reads_the_sphinx_design_tab_storage_key(site: Path) -> None:
+    """The language control starts on the language that sphinx-design stored: localStorage[<prefix><group>].
+
+    This key is internal to sphinx-design (pinned in docs/requirements.txt). The test fails when a
+    new sphinx-design version changes how it stores the selected tab.
+    """
+    page = read(site / "benchmark.html")
+    found = re.findall(r'<script data-sd-tabs-storage-prefix="([^"]*)" src="_static/design-tabs\.js', page)
+    assert len(found) == 1, "design-tabs.js no longer receives its storage prefix on the script tag"
+    prefix = found[0]
+    assert prefix, "sphinx-design does not persist the tab choice (empty prefix)"
+    design_tabs = read(site / "_static" / "design-tabs.js")
+    assert 'getAttribute("data-sd-tabs-storage-prefix")' in design_tabs
+    assert "localStorage.getItem(storageKeyPrefix + group)" in design_tabs
+    assert 'getAttribute("data-sync-group")' in design_tabs
+    home = read(site / "index.html")
+    for language in ("python", "r"):  # the sync ids that the chart's language keys must match
+        label = rf'<label [^>]*class="sd-tab-label" data-sync-group="language" data-sync-id="{language}"'
+        assert re.search(label, home)
+    script = read(site / "_static" / "sweep-chart.js")
+    assert f'var DEFAULT_TABS_PREFIX = "{prefix}";' in script
+    assert 'var LANGUAGE_GROUP = "language";' in script
+    assert 'getAttribute("data-sd-tabs-storage-prefix")' in script
+    assert "prefix + LANGUAGE_GROUP" in script
 
 
 def test_built_home_page_shows_both_runtime_tables(site: Path) -> None:

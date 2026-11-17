@@ -321,5 +321,6 @@ Each language has its own API reference.
 :hidden:
 
 Conditional Independence Tests <tests/index>
+Benchmark <benchmark>
 API reference <api>
 ```

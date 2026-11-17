@@ -1,0 +1,133 @@
+{
+ "meta": {
+  "kind": "sweep",
+  "date": "2026-01-02 03:04:05",
+  "cpu": "Test CPU",
+  "logical_cpus": 4,
+  "os": "Linux test",
+  "quick": false,
+  "passes": 3,
+  "time_budget_s": 60.0,
+  "seed": 1,
+  "power": {
+   "profile": "balanced"
+  },
+  "versions": {
+   "fastcit": "0.0.0.9000",
+   "pcalg": "2.7"
+  },
+  "commits": {
+   "fastcit": "abc1234"
+  },
+  "r": "R version 4.5.3",
+  "engines": [
+   "fastcit",
+   "pcalg",
+   "bnlearn"
+  ]
+ },
+ "results": {
+  "g_sq": {
+   "label": "G-squared",
+   "sweeps": {
+    "n": {
+     "fixed": {
+      "z": 1
+     },
+     "x": [
+      100,
+      300
+     ],
+     "engines": {
+      "bnlearn": [
+       {
+        "median_ms": 0.9,
+        "ms": [
+         0.9
+        ],
+        "errors": 0,
+        "nan": 0,
+        "n_queries": 1,
+        "n_timed": 1,
+        "passes": 3,
+        "skipped": null,
+        "error": null
+       },
+       {
+        "median_ms": 1.9,
+        "ms": [
+         1.9
+        ],
+        "errors": 0,
+        "nan": 0,
+        "n_queries": 1,
+        "n_timed": 1,
+        "passes": 3,
+        "skipped": null,
+        "error": null
+       }
+      ],
+      "pcalg": [
+       {
+        "median_ms": 0.1,
+        "ms": [
+         0.1
+        ],
+        "errors": 0,
+        "nan": 0,
+        "n_queries": 1,
+        "n_timed": 1,
+        "passes": 3,
+        "skipped": null,
+        "error": null,
+        "note": "pcalg returns p = 1 without a test when n is small (n < 5 x degrees of freedom)"
+       },
+       {
+        "median_ms": 0.2,
+        "ms": [
+         0.2
+        ],
+        "errors": 0,
+        "nan": 0,
+        "n_queries": 1,
+        "n_timed": 1,
+        "passes": 3,
+        "skipped": null,
+        "error": null,
+        "note": "pcalg returns p = 1 without a test when n is small (n < 5 x degrees of freedom)"
+       }
+      ],
+      "fastcit": [
+       {
+        "median_ms": 0.01,
+        "ms": [
+         0.01
+        ],
+        "errors": 0,
+        "nan": 0,
+        "n_queries": 1,
+        "n_timed": 1,
+        "passes": 3,
+        "skipped": null,
+        "error": null
+       },
+       {
+        "median_ms": 0.02,
+        "ms": [
+         0.02
+        ],
+        "errors": 0,
+        "nan": 0,
+        "n_queries": 1,
+        "n_timed": 1,
+        "passes": 3,
+        "skipped": null,
+        "error": null
+       }
+      ]
+     }
+    }
+   }
+  }
+ }
+}
