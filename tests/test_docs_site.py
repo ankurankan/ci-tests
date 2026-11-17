@@ -1,9 +1,9 @@
 """Checks for the documentation site in docs/ (Sphinx, MyST pages), published at https://pgmpy.org/FastCIT/.
 
-The home page repeats the install commands and the quick start examples of the README. These tests
-fail when the two copies differ. Each test page must show the CI-run example file of each language
-in a synced language tab set. The tests also check the runtime chart data
-(benchmarks/results/summary.json), the chart script and the docs workflow.
+The home page repeats the install commands and the quickstart examples of the README. These tests
+fail when the two copies differ. The home page includes the two tables of median call times from
+benchmarks/results/summary.md. Each test page must show the CI-run example file of each language
+in a synced language tab set. The tests also check the benchmark summary and the docs workflow.
 
 The tests at the end build the site with Sphinx. They skip when the Sphinx stack of
 docs/requirements.txt is not installed (for example in the golden-fixture job of python.yml).
@@ -59,10 +59,22 @@ TESTS = {
     "gcm": ("GCM", "gcm", "Gcm"),
     "pillai": ("PillaiTrace", "pillai", "Pillai"),
 }
-TEST_PAGE_HEADINGS = ["When to use", "Usage and parameters", "Method", "References"]
+TEST_PAGE_HEADINGS = ["Usage", "Method"]
+# The constructor line of each language tab: key -> (template, field of TESTS).
+SIGNATURES = {
+    "python": "`fastcit.{0}(",
+    "r": "`{1}(",
+    "javascript": "`new {0}(",
+    "rust": "`fastcit_core::ci_tests::{2}",
+}
+# The home page includes these parts of summary.md: (start-after, end-before) per language tab.
+RUNTIME_TABLES = {
+    "python": ("## Python packages, median time of one call", "## R packages, median time of one call"),
+    "r": ("## R packages, median time of one call", "## Python packages, total time of one pass"),
+}
 # The relative targets of the API reference cards. The deploy job adds these sites next to the Sphinx output.
 API_TARGETS = ("python/fastcit.html", "r/index.html", "js/index.html", "rust/fastcit_core/index.html")
-# External URLs that a page may contain outside the References section of a test page.
+# External URLs that a page may contain.
 ALLOWED_EXTERNAL = (
     "https://github.com/pgmpy/FastCIT",
     "https://pgmpy.org/",
@@ -112,8 +124,8 @@ def fenced_code(body: str) -> str:
 
 
 @pytest.mark.parametrize("language", LANGUAGES)
-def test_quick_start_example_matches_readme(language: str) -> None:
-    items = {key: body for _, key, body in tab_items(section(read(INDEX), "Quick start"))}
+def test_quickstart_example_matches_readme(language: str) -> None:
+    items = {key: body for _, key, body in tab_items(section(read(INDEX), "Quickstart"))}
     assert fenced_code(items[language]) == readme_example(LANGUAGES[language])
 
 
@@ -123,7 +135,7 @@ def test_install_command_matches_readme(language: str) -> None:
     assert fenced_code(items[language]) == readme_install(LANGUAGES[language])
 
 
-@pytest.mark.parametrize("heading", ["Install", "Quick start"])
+@pytest.mark.parametrize("heading", ["Install", "Quickstart"])
 def test_home_page_tabs_use_the_language_keys(heading: str) -> None:
     items = tab_items(section(read(INDEX), heading))
     assert [(label, key) for label, key, _ in items] == [(label, key) for key, label in LANGUAGES.items()]
@@ -146,10 +158,16 @@ def test_api_cards_use_relative_links() -> None:
         assert "_includes/api-cards.md" in read(page)
 
 
-def test_home_page_embeds_the_chart() -> None:
-    text = read(INDEX)
-    assert '<div class="bench" data-src="benchmarks.json"' in text
-    assert "<noscript>" in text
+def test_home_page_includes_the_runtime_tables() -> None:
+    items = tab_items(section(read(INDEX), "Runtime Comparison"))
+    assert [(label, key) for label, key, _ in items] == [("Python", "python"), ("R", "r")]
+    summary = read(RESULTS / "summary.md")
+    for _, key, body in items:
+        start, end = RUNTIME_TABLES[key]
+        include = re.findall(r'^```\{include\} (\S+)\n:start-after: "(.+)"\n:end-before: "(.+)"\n```$', body, re.M)
+        assert include == [("../benchmarks/results/summary.md", start, end)], key
+        # Each marker must occur, and the first match of the end marker must follow the start marker.
+        assert summary.index(start) < summary.index(end, summary.index(start))
 
 
 # ------------------------------------------------------------------ test pages
@@ -158,20 +176,21 @@ def test_home_page_embeds_the_chart() -> None:
 @pytest.mark.parametrize("key", TESTS)
 def test_test_page_structure(key: str) -> None:
     text = read(TEST_PAGES / f"{key}.md")
-    headings = re.findall(r"^(#{1,2}) (.+)$", text, re.M)
+    headings = re.findall(r"^(#{1,3}) (.+)$", text, re.M)
     assert headings[0][0] == "#", "the page starts with its title"
     assert [title for level, title in headings[1:]] == TEST_PAGE_HEADINGS
     assert all(level == "##" for level, _ in headings[1:])
-    python_class, r_function, rust_type = TESTS[key]
-    assert f":Python and JavaScript: `{python_class}`" in text
-    assert f":R: `{r_function}()`" in text
-    assert f":Rust: `fastcit_core::ci_tests::{rust_type}`" in text
-    assert re.search(r"^:Data type: (Discrete|Continuous|Mixed .*)$", text, re.M)
+    # The data types come first, right after the title.
+    body = re.sub(r"\A---\n.*?\n---\n", "", text, flags=re.S)
+    assert re.match(r"\s*# .+\n\n:Data types: .+\n\n## Usage\n", body), "the data types must lead the page"
+    for _, language, tab in tab_items(section(text, "Usage")):
+        signature = SIGNATURES[language].format(*TESTS[key])
+        assert tab.lstrip().startswith(signature), f"{key}, {language}: the tab must start with {signature}"
 
 
 @pytest.mark.parametrize("key", TESTS)
 def test_test_page_includes_the_ci_examples(key: str) -> None:
-    items = tab_items(section(read(TEST_PAGES / f"{key}.md"), "Usage and parameters"))
+    items = tab_items(section(read(TEST_PAGES / f"{key}.md"), "Usage"))
     assert [(label, sync) for label, sync, _ in items] == [(label, sync) for sync, label in LANGUAGES.items()]
     for _, language, body in items:
         example = EXAMPLES[language].format(key=key)
@@ -181,11 +200,9 @@ def test_test_page_includes_the_ci_examples(key: str) -> None:
 
 
 @pytest.mark.parametrize("page", sorted(path.name for path in TEST_PAGES.glob("*.md")))
-def test_external_links_are_only_in_references(page: str) -> None:
-    text = read(TEST_PAGES / page)
-    body = re.sub(r"^## References\n.*", "", text, flags=re.S | re.M)
-    for url in re.findall(r"https?://[^\s)>]+", body):
-        assert url.startswith(ALLOWED_EXTERNAL), f"{page}: {url} is outside the References section"
+def test_test_pages_have_no_unexpected_external_links(page: str) -> None:
+    for url in re.findall(r"https?://[^\s)>]+", read(TEST_PAGES / page)):
+        assert url.startswith(ALLOWED_EXTERNAL), f"{page}: unexpected external URL {url}"
 
 
 def test_pages_use_no_root_relative_links() -> None:
@@ -228,16 +245,6 @@ def test_conf_mirrors_the_pgmpy_theme() -> None:
     assert "pgmpy Documentation — Custom Styles" in css
 
 
-def test_chart_follows_the_theme_attribute() -> None:
-    """Dark mode follows html[data-theme] of the theme, not the browser's colour scheme."""
-    css = read(STATIC / "benchmark-chart.css")
-    assert 'html[data-theme="dark"] .bench' in css
-    assert "prefers-color-scheme" not in css
-    conf = read(DOCS / "conf.py")
-    assert 'app.add_js_file("benchmark-chart.js"' in conf
-    assert 'Path(app.outdir) / "benchmarks.json"' in conf
-
-
 def test_narrow_screens_stack_the_field_list() -> None:
     """At 390 px the theme's grid squeezes the field names of a test page into single letters."""
     css = read(STATIC / "fastcit.css")
@@ -276,55 +283,6 @@ def test_cells_carry_the_run_spread() -> None:
                     assert len(cell["runs"]) == eco["spread"]["runs"]
                     assert cell["min"] <= cell["value"] <= cell["max"]
                     assert cell["flagged"] == (cell["spread"] > limit) == ("†" in cell["marks"])
-
-
-def test_summary_json_has_the_fields_the_page_reads() -> None:
-    data = json.loads(read(RESULTS / "summary.json"))
-    assert data["ecosystems"]
-    for eco in data["ecosystems"]:
-        assert {"key", "label", "meta", "per_call", "total_per_pass"} <= eco.keys()
-        assert {"date", "cpu", "os", "versions", "passes"} <= eco["meta"].keys()
-        for table in (eco["per_call"], eco["total_per_pass"]):
-            assert any(column["key"] == "fastcit" for column in table["columns"])
-            marks = {note["mark"] for note in table["footnotes"]}
-            for row in table["rows"]:
-                assert len(row["cells"]) == len(table["columns"])
-                for cell in row["cells"]:
-                    assert cell["value"] is None or cell["value"] > 0
-                    assert set(cell["marks"]) <= marks, f"{row['key']}: a mark has no footnote"
-                assert set(row["marks"]) <= marks
-
-
-def test_ecosystem_keys_match_the_language_tabs() -> None:
-    """The chart shows the ecosystem of the selected language tab, so the keys must be language keys."""
-    data = json.loads(read(RESULTS / "summary.json"))
-    assert {eco["key"] for eco in data["ecosystems"]} <= set(LANGUAGES)
-
-
-def test_fastcit_takes_palette_slot_one_by_key() -> None:
-    """Every table has a `fastcit` column, and the chart gives that key slot 1 whatever its position."""
-    data = json.loads(read(RESULTS / "summary.json"))
-    for eco in data["ecosystems"]:
-        for table in (eco["per_call"], eco["total_per_pass"]):
-            assert [column["key"] for column in table["columns"]].count("fastcit") == 1
-    script = read(STATIC / "benchmark-chart.js")
-    assert 'var FOCUS_KEY = "fastcit";' in script
-    assert re.search(r"column\.key === FOCUS_KEY \? 0 : next\+\+", script), "assignSlots must give FOCUS_KEY slot 0"
-    # No call may colour a package by its column index.
-    assert not re.search(r"slotClass\((i|mark\.index)\)", script)
-    assert not re.search(r"swatch\(i,", script)
-
-
-def test_chart_shows_the_other_runs_and_the_run_range() -> None:
-    """The chart names each extra interpreter with its versions, and the tooltip gives the run range."""
-    data = json.loads(read(RESULTS / "summary.json"))
-    python = next(eco for eco in data["ecosystems"] if eco["key"] == "python")
-    for other in python["meta"]["other_runs"]:
-        assert {"python", "versions", "engines", "runs"} <= other.keys()
-    script = read(STATIC / "benchmark-chart.js")
-    assert "meta.other_runs" in script
-    assert "mark.cell.range_text" in script
-    assert 'plural(compared, "compared test")' in script
 
 
 # ------------------------------------------------------------------- workflow
@@ -422,12 +380,18 @@ def built_pages(site: Path) -> list[Path]:
     return [path for path in site.rglob("*.html") if "_static" not in path.parts]
 
 
-def test_build_has_every_page_and_the_chart_data(site: Path) -> None:
+def test_build_has_every_page(site: Path) -> None:
     for page in ("index.html", "api.html", "tests/index.html", *(f"tests/{key}.html" for key in TESTS)):
         assert (site / page).is_file(), page
-    assert (site / "benchmarks.json").read_bytes() == (RESULTS / "summary.json").read_bytes()
-    assert "benchmark-chart.js" in read(site / "index.html")
-    assert "benchmark-chart.js" not in read(site / "tests" / "chi_squared.html")
+
+
+def test_built_home_page_shows_both_runtime_tables(site: Path) -> None:
+    page = read(site / "index.html")
+    section = re.findall(r'<section id="runtime-comparison">(.*?)</section>', page, re.S)
+    assert len(section) == 1
+    tables = re.findall(r"<table\b.*?</table>", section[0], re.S)
+    assert len(tables) == 2
+    assert "pgmpy dev" in tables[0] and "FastCIT (R)" in tables[1]
 
 
 def test_built_home_page_shows_the_readme_examples(site: Path) -> None:
@@ -481,30 +445,5 @@ def test_built_internal_links_resolve(site: Path) -> None:
 def test_built_pages_have_no_unexpected_external_urls(site: Path) -> None:
     for path in built_pages(site):
         page = read(path)
-        # The References section of a test page may link anywhere.
-        page = re.sub(r'<section id="references">.*?</section>', "", page, flags=re.S)
         for url in re.findall(r'\b(?:href|src)="(https?://[^"]+)"', page):
             assert url.startswith(ALLOWED_EXTERNAL), f"{path.relative_to(site)}: unexpected external URL {url}"
-
-
-def test_chart_reads_the_sphinx_design_tab_storage_key(site: Path) -> None:
-    """The chart starts on the language that sphinx-design stored: localStorage[<prefix><group>].
-
-    This key is internal to sphinx-design (pinned in docs/requirements.txt). The test fails when a
-    new sphinx-design version changes how it stores the selected tab.
-    """
-    page = read(site / "index.html")
-    found = re.findall(r'<script data-sd-tabs-storage-prefix="([^"]*)" src="_static/design-tabs\.js', page)
-    assert len(found) == 1, "design-tabs.js no longer receives its storage prefix on the script tag"
-    prefix = found[0]
-    assert prefix, "sphinx-design does not persist the tab choice (empty prefix)"
-    design_tabs = read(site / "_static" / "design-tabs.js")
-    assert 'getAttribute("data-sd-tabs-storage-prefix")' in design_tabs
-    assert "localStorage.getItem(storageKeyPrefix + group)" in design_tabs
-    assert 'getAttribute("data-sync-group")' in design_tabs
-    assert re.search(r'<label [^>]*class="sd-tab-label" data-sync-group="language" data-sync-id="python"', page)
-    script = read(site / "_static" / "benchmark-chart.js")
-    assert f'var DEFAULT_TABS_PREFIX = "{prefix}";' in script
-    assert 'var LANGUAGE_GROUP = "language";' in script
-    assert 'getAttribute("data-sd-tabs-storage-prefix")' in script
-    assert "prefix + LANGUAGE_GROUP" in script

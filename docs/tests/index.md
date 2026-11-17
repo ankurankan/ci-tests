@@ -3,7 +3,7 @@
 FastCIT has twelve conditional independence tests.
 A test checks whether X and Y are independent given a set Z of other variables.
 HSIC has no Z: it checks only whether X and Y are independent.
-Select a test to see its parameters in each language, a runnable example and the method.
+Select a test to see an example in each language and the method.
 
 ```{include} ../_includes/test-table.md
 ```

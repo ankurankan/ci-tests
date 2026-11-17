@@ -1486,11 +1486,11 @@
           },
           {
             "mark": "ᵈ",
-            "text": "The time does not include the one-time setup. FastCIT and causal-learn precompute the correlation matrix. FastCIT computes it in the first call and keeps it. The other packages in these rows compute it in every call. See the total-time tables."
+            "text": "The time does not include the one-time setup. FastCIT and causal-learn precompute the correlation matrix. FastCIT computes it in the first call and keeps it. The other packages in these rows compute it in every call. The total-time tables in [summary.md](https://github.com/pgmpy/FastCIT/blob/main/benchmarks/results/summary.md) include the setup."
           },
           {
             "mark": "*",
-            "text": "The engine raised an error or returned NaN on some queries. See the lists below. The median uses only the queries with a result. Those queries can cost less or more than the excluded ones. Compare such a cell with care."
+            "text": "The engine raised an error or returned NaN on some queries. [summary.md](https://github.com/pgmpy/FastCIT/blob/main/benchmarks/results/summary.md) lists them. The median uses only the queries with a result. Those queries can cost less or more than the excluded ones. Compare such a cell with care."
           }
         ]
       },
@@ -3325,7 +3325,7 @@
           },
           {
             "mark": "ᵈ",
-            "text": "The time does not include the one-time setup. FastCIT and pcalg precompute the correlation matrix. FastCIT computes it in the first call and keeps it. bnlearn and ppcor compute it in every call. See the total-time tables."
+            "text": "The time does not include the one-time setup. FastCIT and pcalg precompute the correlation matrix. FastCIT computes it in the first call and keeps it. bnlearn and ppcor compute it in every call. The total-time tables in [summary.md](https://github.com/pgmpy/FastCIT/blob/main/benchmarks/results/summary.md) include the setup."
           },
           {
             "mark": "ᵉ",
@@ -3341,7 +3341,7 @@
           },
           {
             "mark": "*",
-            "text": "The engine raised an error or returned NaN on some queries. See the lists below. The median uses only the queries with a result. Those queries can cost less or more than the excluded ones. Compare such a cell with care."
+            "text": "The engine raised an error or returned NaN on some queries. [summary.md](https://github.com/pgmpy/FastCIT/blob/main/benchmarks/results/summary.md) lists them. The median uses only the queries with a result. Those queries can cost less or more than the excluded ones. Compare such a cell with care."
           }
         ]
       },

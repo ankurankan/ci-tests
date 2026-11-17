@@ -99,11 +99,11 @@ Quick run (2 queries per group): no
 | GCM | 0.404 | 4.03 | — | — | — | — | — | 1.65 |
 | Pillai | 0.143 | 141ᵃ | — | — | — | — | — | — |
 
-ᵃ pgmpy runs a random-forest Pillai test. FastCIT runs a linear Pillai test. The two tests differ.
-ᵇ pgmpy and gcastle apply the Yates correction on 2 × 2 tables and cannot turn it off. FastCIT runs without it.
-ᶜ Different null approximation or kernel width rule from FastCIT.
-ᵈ The time does not include the one-time setup. FastCIT and causal-learn precompute the correlation matrix. FastCIT computes it in the first call and keeps it. The other packages in these rows compute it in every call. See the total-time tables.
-\* The engine raised an error or returned NaN on some queries. See the lists below. The median uses only the queries with a result. Those queries can cost less or more than the excluded ones. Compare such a cell with care.
+- ᵃ pgmpy runs a random-forest Pillai test. FastCIT runs a linear Pillai test. The two tests differ.
+- ᵇ pgmpy and gcastle apply the Yates correction on 2 × 2 tables and cannot turn it off. FastCIT runs without it.
+- ᶜ Different null approximation or kernel width rule from FastCIT.
+- ᵈ The time does not include the one-time setup. FastCIT and causal-learn precompute the correlation matrix. FastCIT computes it in the first call and keeps it. The other packages in these rows compute it in every call. The total-time tables in [summary.md](https://github.com/pgmpy/FastCIT/blob/main/benchmarks/results/summary.md) include the setup.
+- \* The engine raised an error or returned NaN on some queries. [summary.md](https://github.com/pgmpy/FastCIT/blob/main/benchmarks/results/summary.md) lists them. The median uses only the queries with a result. Those queries can cost less or more than the excluded ones. Compare such a cell with care.
 
 ## R packages, median time of one call
 
@@ -116,12 +116,12 @@ Quick run (2 queries per group): no
 | HSIC (median width) | 1.41 | — | — | 5.79ᶜ | — | — | — |
 | GCM | 0.479 | — | — | — | — | — | 20.8 |
 
-ᶜ Different null approximation or kernel width rule from FastCIT.
-ᵈ The time does not include the one-time setup. FastCIT and pcalg precompute the correlation matrix. FastCIT computes it in the first call and keeps it. bnlearn and ppcor compute it in every call. See the total-time tables.
-ᵉ Uses the nominal degrees of freedom. FastCIT uses the adjusted degrees of freedom.
-ᶠ bnlearn ci.test() checks the whole data frame in each call. The benchmark gives it only the columns of the query.
-ᵍ ppcor needs at least one conditioning variable. For a query with an empty set, the benchmark calls stats::cor.test, which runs the same t-test.
-\* The engine raised an error or returned NaN on some queries. See the lists below. The median uses only the queries with a result. Those queries can cost less or more than the excluded ones. Compare such a cell with care.
+- ᶜ Different null approximation or kernel width rule from FastCIT.
+- ᵈ The time does not include the one-time setup. FastCIT and pcalg precompute the correlation matrix. FastCIT computes it in the first call and keeps it. bnlearn and ppcor compute it in every call. The total-time tables in [summary.md](https://github.com/pgmpy/FastCIT/blob/main/benchmarks/results/summary.md) include the setup.
+- ᵉ Uses the nominal degrees of freedom. FastCIT uses the adjusted degrees of freedom.
+- ᶠ bnlearn ci.test() checks the whole data frame in each call. The benchmark gives it only the columns of the query.
+- ᵍ ppcor needs at least one conditioning variable. For a query with an empty set, the benchmark calls stats::cor.test, which runs the same t-test.
+- \* The engine raised an error or returned NaN on some queries. [summary.md](https://github.com/pgmpy/FastCIT/blob/main/benchmarks/results/summary.md) lists them. The median uses only the queries with a result. Those queries can cost less or more than the excluded ones. Compare such a cell with care.
 
 ## Python packages, total time of one pass
 
@@ -142,10 +142,10 @@ Each pass builds the state of the engine (data conversion, test object, correlat
 | GCM | 23.4 | 210 | — | — | — | — | — | 82.2 |
 | Pillai | 6.63 | 9 784ᵃ | — | — | — | — | — | — |
 
-ᵃ pgmpy runs a random-forest Pillai test. FastCIT runs a linear Pillai test. The two tests differ.
-ᵇ pgmpy and gcastle apply the Yates correction on 2 × 2 tables and cannot turn it off. FastCIT runs without it.
-ᶜ Different null approximation or kernel width rule from FastCIT.
-\* The engine raised an error or returned NaN on some queries. The total includes the time of those queries.
+- ᵃ pgmpy runs a random-forest Pillai test. FastCIT runs a linear Pillai test. The two tests differ.
+- ᵇ pgmpy and gcastle apply the Yates correction on 2 × 2 tables and cannot turn it off. FastCIT runs without it.
+- ᶜ Different null approximation or kernel width rule from FastCIT.
+- \* The engine raised an error or returned NaN on some queries. The total includes the time of those queries.
 
 ## R packages, total time of one pass
 
@@ -160,11 +160,11 @@ Each run keeps its fastest of 5 passes. The table shows the median of the 3 run 
 | HSIC (median width) | 40.3 | — | — | 184ᶜ | — | — | — |
 | GCM | 27.7 | — | — | — | — | — | 1 211 |
 
-ᶜ Different null approximation or kernel width rule from FastCIT.
-ᵉ Uses the nominal degrees of freedom. FastCIT uses the adjusted degrees of freedom.
-ᶠ bnlearn ci.test() checks the whole data frame in each call. The benchmark gives it only the columns of the query.
-ᵍ ppcor needs at least one conditioning variable. For a query with an empty set, the benchmark calls stats::cor.test, which runs the same t-test.
-\* The engine raised an error or returned NaN on some queries. The total includes the time of those queries.
+- ᶜ Different null approximation or kernel width rule from FastCIT.
+- ᵉ Uses the nominal degrees of freedom. FastCIT uses the adjusted degrees of freedom.
+- ᶠ bnlearn ci.test() checks the whole data frame in each call. The benchmark gives it only the columns of the query.
+- ᵍ ppcor needs at least one conditioning variable. For a query with an empty set, the benchmark calls stats::cor.test, which runs the same t-test.
+- \* The engine raised an error or returned NaN on some queries. The total includes the time of those queries.
 
 ## Spread across runs
 

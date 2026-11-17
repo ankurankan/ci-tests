@@ -34,11 +34,11 @@ FastCIT is part of the [pgmpy](https://pgmpy.org/) project.
 
 ::::{container} hero-actions
 
-```{button-link} #quick-start
+```{button-link} #quickstart
 :color: primary
 :outline:
 
-Quick start
+Quickstart
 ```
 
 ```{button-ref} tests/index
@@ -53,7 +53,7 @@ Available tests
 :color: primary
 :outline:
 
-Runtime comparison
+Runtime Comparison
 ```
 
 ```{button-ref} api
@@ -69,8 +69,6 @@ API reference
 ::::::
 
 ## Install
-
-Select your language. Run the command.
 
 ::::{tab-set}
 :sync-group: language
@@ -112,9 +110,7 @@ cargo add fastcit-core
 :::
 ::::
 
-## Quick start
-
-Each example makes a dataset, runs one test and prints the p-value.
+## Quickstart
 
 ::::{tab-set}
 :sync-group: language
@@ -216,21 +212,33 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 :::
 ::::
 
-## Runtime comparison
+## Runtime Comparison
 
-The chart compares FastCIT with other packages on the same tests and the same data.
-It shows the median time of one test call, in milliseconds. Lower is better.
+::::{tab-set}
+:sync-group: language
 
-```{raw} html
-<div class="bench" data-src="benchmarks.json" data-benchmarks-url="https://github.com/pgmpy/FastCIT/tree/main/benchmarks" data-summary-url="https://github.com/pgmpy/FastCIT/blob/main/benchmarks/results/summary.md"></div>
-<noscript>
-  <p class="bench-notice">Turn on JavaScript to see the chart. You can also read the results in <a href="https://github.com/pgmpy/FastCIT/blob/main/benchmarks/results/summary.md">summary.md</a>. The <a href="https://github.com/pgmpy/FastCIT/tree/main/benchmarks">benchmark folder</a> gives the method.</p>
-</noscript>
+:::{tab-item} Python
+:sync: python
+
+```{include} ../benchmarks/results/summary.md
+:start-after: "## Python packages, median time of one call"
+:end-before: "## R packages, median time of one call"
 ```
 
-## Available tests
+:::
 
-Each page gives the parameters in each language, a runnable example and the method.
+:::{tab-item} R
+:sync: r
+
+```{include} ../benchmarks/results/summary.md
+:start-after: "## R packages, median time of one call"
+:end-before: "## Python packages, total time of one pass"
+```
+
+:::
+::::
+
+## Available tests
 
 ```{include} _includes/test-table.md
 ```

@@ -11,7 +11,7 @@ the same interpreter. The summary records it with the run details, not as a tabl
 The runs of one group are independent runs in new processes. Each cell gives the median of the run values and
 the range (smallest and largest run value). A cell whose range is more than 25 % of its median gets the mark †.
 The script writes DIR/summary.md and DIR/summary.json. Both files come from the same tables. The documentation
-home page reads summary.json.
+home page includes the two tables of median call times from summary.md.
 """
 import json
 import math
@@ -57,17 +57,20 @@ FOOT = {
     "ᵍ": ("ppcor needs at least one conditioning variable. "
           "For a query with an empty set, the benchmark calls stats::cor.test, which runs the same t-test."),
 }
+# The documentation home page shows the footnotes without the rest of summary.md, so they link to it.
+SUMMARY_URL = "https://github.com/pgmpy/FastCIT/blob/main/benchmarks/results/summary.md"
+TOTALS = f"The total-time tables in [summary.md]({SUMMARY_URL}) include the setup."
 # The footnote of the setup mark differs for each table, because each table has its own packages.
 FOOT_E = {
     "python": ("The time does not include the one-time setup. FastCIT and causal-learn precompute "
                "the correlation matrix. FastCIT computes it in the first call and keeps it. "
-               "The other packages in these rows compute it in every call. See the total-time tables."),
+               "The other packages in these rows compute it in every call. " + TOTALS),
     "r": ("The time does not include the one-time setup. FastCIT and pcalg precompute the correlation matrix. "
-          "FastCIT computes it in the first call and keeps it. bnlearn and ppcor compute it in every call. "
-          "See the total-time tables."),
+          "FastCIT computes it in the first call and keeps it. bnlearn and ppcor compute it in every call. " + TOTALS),
 }
 MARK_ORDER = "ᵃᵇᶜᵈᵉᶠᵍ*†"
-STAR_TABLE = ("The engine raised an error or returned NaN on some queries. See the lists below. "
+STAR_TABLE = ("The engine raised an error or returned NaN on some queries. "
+              f"[summary.md]({SUMMARY_URL}) lists them. "
               "The median uses only the queries with a result. "
               "Those queries can cost less or more than the excluded ones. "
               "Compare such a cell with care.")
@@ -187,7 +190,7 @@ def footnote_data(table, foot_d, star, spread_note):
 
 
 def footnotes(notes):
-    lines = [("\\*" if n["mark"] == "*" else n["mark"]) + " " + n["text"] for n in notes]
+    lines = ["- " + ("\\*" if n["mark"] == "*" else n["mark"]) + " " + n["text"] for n in notes]
     return "\n" + "\n".join(lines) + "\n" if lines else ""
 
 

@@ -10,14 +10,6 @@ Build: sphinx-build -W -b html docs site
 
 from __future__ import annotations
 
-import shutil
-from pathlib import Path
-
-DOCS = Path(__file__).resolve().parent
-REPO_ROOT = DOCS.parent
-# The home page chart reads this file as benchmarks.json, next to index.html.
-BENCHMARK_SUMMARY = REPO_ROOT / "benchmarks" / "results" / "summary.json"
-
 # -- General configuration ------------------------------------------------
 
 extensions = [
@@ -102,24 +94,3 @@ mathjax4_config = {"options": {"menuOptions": {"settings": {"assistiveMml": True
 html_search_language = "en"
 htmlhelp_basename = "fastcitdoc"
 
-
-# -- The runtime chart on the home page ------------------------------------
-
-
-def _add_chart_assets(app, pagename, templatename, context, doctree):
-    """Load the chart script and styles on the home page only."""
-    if pagename == root_doc:
-        app.add_css_file("benchmark-chart.css")
-        app.add_js_file("benchmark-chart.js", loading_method="defer")
-
-
-def _copy_benchmark_data(app, exception):
-    """Copy benchmarks/results/summary.json to <output>/benchmarks.json."""
-    if exception is None and app.builder.format == "html":
-        shutil.copyfile(BENCHMARK_SUMMARY, Path(app.outdir) / "benchmarks.json")
-
-
-def setup(app):
-    app.connect("html-page-context", _add_chart_assets)
-    app.connect("build-finished", _copy_benchmark_data)
-    return {"parallel_read_safe": True, "parallel_write_safe": True}
