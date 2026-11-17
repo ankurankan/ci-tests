@@ -1,27 +1,32 @@
 /*
- * FastCIT documentation home page.
+ * FastCIT runtime comparison: the chart, table, footnotes, verdict sentences and run details on
+ * the home page. Ported from the earlier hand-written page (docs/site/site.js).
  *
- * - Language tabs (WAI-ARIA tabs pattern). One language choice drives every language tab group.
- *   The choice is kept in localStorage when the browser allows it. Without JavaScript, the page
- *   shows every language one after another.
- * - Copy buttons for the code blocks.
- * - The runtime comparison. It reads benchmarks.json (benchmarks/results/summary.json) and draws
- *   every package and test that the file contains. Nothing about the packages is fixed here,
- *   except that the FastCIT column has the key "fastcit".
+ * It reads benchmarks.json (a copy of benchmarks/results/summary.json, see docs/conf.py) and draws
+ * every package and test that the file contains. Nothing about the packages is fixed here, except
+ * that the FastCIT column has the key "fastcit".
+ *
+ * The package ecosystem tabs follow the language tabs of the page (sphinx-design sync group
+ * "language"), until the reader picks an ecosystem tab. Colours come from CSS variables in
+ * benchmark-chart.css, which follow the theme's html[data-theme] attribute.
  */
 (function () {
   "use strict";
 
-  var STORAGE_KEY = "fastcit-language";
+  // Coupling with sphinx-design (pinned in docs/requirements.txt): its design-tabs.js keeps the
+  // selected tab of each sync group in localStorage under <prefix><group>. The prefix comes from the
+  // data-sd-tabs-storage-prefix attribute of its script tag (config sd_tabs_storage_prefix, default
+  // "sphinx-design-tab-id-"). This is internal to sphinx-design. tests/test_docs_site.py checks that
+  // the built site still uses this key format; update languageKey() if that test fails.
+  var DEFAULT_TABS_PREFIX = "sphinx-design-tab-id-";
+  var LANGUAGE_GROUP = "language"; // the :sync-group: of the language tab sets in docs/*.md
   var FOCUS_KEY = "fastcit";
   var SLOTS = 8;
   var SVG_NS = "http://www.w3.org/2000/svg";
 
-  var languageGroups = [];
   var ecosystemTabs = null;
   var ecosystemPicked = false; // true after the reader picks an ecosystem tab
   var tabsCount = 0;
-  var liveRegion = null;
 
   // ----------------------------------------------------------------- helpers
 
@@ -33,12 +38,12 @@
     }
   }
 
-  function writeStorage(key, value) {
-    try {
-      window.localStorage.setItem(key, value);
-    } catch (error) {
-      // The page works without storage.
-    }
+  // The localStorage key under which sphinx-design keeps the selected language tab, or null when
+  // sphinx-design does not persist tabs (empty prefix). See the coupling note at the top.
+  function languageKey() {
+    var script = document.querySelector("script[data-sd-tabs-storage-prefix]");
+    var prefix = script ? script.getAttribute("data-sd-tabs-storage-prefix") : DEFAULT_TABS_PREFIX;
+    return prefix ? prefix + LANGUAGE_GROUP : null;
   }
 
   function el(tag, className, text) {
@@ -63,18 +68,6 @@
     return a;
   }
 
-  function announce(message) {
-    if (!liveRegion) {
-      liveRegion = el("div", "visually-hidden");
-      liveRegion.setAttribute("aria-live", "polite");
-      document.body.appendChild(liveRegion);
-    }
-    liveRegion.textContent = "";
-    window.setTimeout(function () {
-      liveRegion.textContent = message;
-    }, 50);
-  }
-
   function joinNames(names) {
     if (names.length <= 1) return names.join("");
     return names.slice(0, -1).join(", ") + " and " + names[names.length - 1];
@@ -92,8 +85,8 @@
 
   // Build a WAI-ARIA tablist for items [{key, label, panel}]. Returns {tablist, show, has}.
   function createTabs(label, items, initial, onSelect) {
-    var id = "tabs-" + ++tabsCount;
-    var tablist = el("div", "tablist");
+    var id = "bench-tabs-" + ++tabsCount;
+    var tablist = el("div", "bench-tablist");
     tablist.setAttribute("role", "tablist");
     tablist.setAttribute("aria-label", label);
 
@@ -153,101 +146,18 @@
     return { tablist: tablist, show: show, has: has };
   }
 
-  function setLanguage(language) {
-    languageGroups.forEach(function (group) {
-      group.show(language);
-    });
-    // A later language click does not change the chart once the reader has picked an ecosystem.
-    if (ecosystemTabs && !ecosystemPicked) ecosystemTabs.show(language);
-    writeStorage(STORAGE_KEY, language);
-  }
-
-  function enhanceLanguageTabs() {
-    var stored = readStorage(STORAGE_KEY);
-    Array.prototype.forEach.call(document.querySelectorAll(".lang-tabs"), function (group) {
-      var items = Array.prototype.filter
-        .call(group.children, function (child) {
-          return child.classList.contains("lang-panel");
-        })
-        .map(function (panel) {
-          var heading = panel.querySelector(".lang-heading");
-          heading.hidden = true;
-          return { key: panel.getAttribute("data-lang"), label: heading.textContent.trim(), panel: panel };
-        });
-      if (!items.length) return;
-      var tabs = createTabs(group.getAttribute("data-tabs-label") || "Language", items, stored, setLanguage);
-      group.insertBefore(tabs.tablist, group.firstChild);
-      group.classList.add("is-enhanced");
-      languageGroups.push(tabs);
-    });
-  }
-
-  // ------------------------------------------------------------ copy buttons
-
-  function copyText(text) {
-    function fallback() {
-      var area = el("textarea");
-      area.value = text;
-      area.setAttribute("readonly", "");
-      area.style.position = "fixed";
-      area.style.opacity = "0";
-      document.body.appendChild(area);
-      area.select();
-      var ok = false;
-      try {
-        ok = document.execCommand("copy");
-      } catch (error) {
-        ok = false;
-      }
-      document.body.removeChild(area);
-      return ok;
-    }
-    try {
-      if (navigator.clipboard && window.isSecureContext) {
-        return navigator.clipboard.writeText(text).then(
-          function () {
-            return true;
-          },
-          function () {
-            return fallback();
-          }
-        );
-      }
-    } catch (error) {
-      // Use the fallback below.
-    }
-    return Promise.resolve(fallback());
-  }
-
-  function addCopyButtons() {
-    Array.prototype.forEach.call(document.querySelectorAll("code[data-copy]"), function (code) {
-      var pre = code.parentElement;
-      var wrapper = el("div", "code-block");
-      pre.parentNode.insertBefore(wrapper, pre);
-      wrapper.appendChild(pre);
-      var panel = code.closest(".lang-panel");
-      var heading = panel ? panel.querySelector(".lang-heading") : null;
-      var language = heading ? heading.textContent.trim() + " " : "";
-      var what = code.hasAttribute("data-install") ? "install command" : "example";
-      var button = el("button", "copy-button", "Copy");
-      button.type = "button";
-      button.setAttribute("aria-label", "Copy the " + language + what);
-      var timer = null;
-      button.addEventListener("click", function () {
-        copyText(code.textContent).then(function (ok) {
-          button.textContent = ok ? "Copied" : "Not copied";
-          announce(
-            ok
-              ? "The " + language + what + " is on the clipboard."
-              : "The browser did not copy the text. Select the text. Then copy it."
-          );
-          window.clearTimeout(timer);
-          timer = window.setTimeout(function () {
-            button.textContent = "Copy";
-          }, 2000);
-        });
-      });
-      wrapper.appendChild(button);
+  // Follow the language tabs of the page: a click on "Python" or "R" shows that ecosystem.
+  // sphinx-design fires "change" on the radio input of the tab that the reader selects. The label
+  // after the input carries data-sync-group and data-sync-id (sphinx-design markup, see the coupling
+  // note at the top).
+  function followLanguageTabs() {
+    document.addEventListener("change", function (event) {
+      var input = event.target;
+      if (!input || !input.checked || !input.closest || !input.closest(".sd-tab-set")) return;
+      var label = input.nextElementSibling;
+      if (!label || label.getAttribute("data-sync-group") !== LANGUAGE_GROUP) return;
+      // A later language click does not change the chart once the reader has picked an ecosystem.
+      if (ecosystemTabs && !ecosystemPicked) ecosystemTabs.show(label.getAttribute("data-sync-id"));
     });
   }
 
@@ -654,6 +564,13 @@
     };
     if (window.ResizeObserver) new window.ResizeObserver(redraw).observe(host);
     else window.addEventListener("resize", redraw);
+    // The web font can arrive after the first draw. Measure the labels again with it.
+    if (document.fonts && document.fonts.ready) {
+      document.fonts.ready.then(function () {
+        self.width = 0;
+        redraw();
+      });
+    }
     redraw();
   }
 
@@ -1037,12 +954,15 @@
     });
     if (!ecosystems.length) throw new Error("benchmarks.json has no tables");
     if (data.quick) {
-      host.appendChild(el("p", "notice", "This is a quick run with few queries. The numbers are not final."));
+      host.appendChild(el("p", "bench-notice", "This is a quick run with few queries. The numbers are not final."));
     }
     var items = ecosystems.map(function (eco) {
       return { key: eco.key, label: eco.label, panel: ecosystemPanel(eco, urls) };
     });
-    var stored = readStorage(STORAGE_KEY);
+    // Start on the ecosystem of the language that the reader chose last (sphinx-design's stored
+    // choice, see languageKey); fall back to the first ecosystem.
+    var key = languageKey();
+    var stored = key ? readStorage(key) : null;
     ecosystemTabs = createTabs("Package ecosystem", items, stored, function () {
       ecosystemPicked = true;
     });
@@ -1073,7 +993,7 @@
       })
       .catch(function () {
         host.textContent = "";
-        var message = el("p", "notice", "The page cannot show the benchmark results. Read them in ");
+        var message = el("p", "bench-notice", "The page cannot show the benchmark results. Read them in ");
         message.appendChild(link(urls.summary, "summary.md"));
         message.appendChild(document.createTextNode("."));
         host.appendChild(message);
@@ -1081,8 +1001,7 @@
   }
 
   function init() {
-    enhanceLanguageTabs();
-    addCopyButtons();
+    followLanguageTabs();
     loadBenchmarks();
   }
 

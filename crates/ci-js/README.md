@@ -54,9 +54,9 @@ regression (pgmpy's Pillai default is a random forest). In PillaiTrace,
 conditioning variables enter as one-hot columns minus one level; a categorical X or Y becomes K-1 level
 indicators, residualized with a linear probability model. Canonical
 correlations are computed exactly. Degenerate inputs throw instead of returning
-NaN (both tests). Conditioning sets whose columns are linearly dependent (duplicate or nested categorical variables, a constant column) raise a degenerate-data error, whereas pgmpy fits them by least squares. With few rows relative to the conditioning columns and
-categorical levels (`n - columns < p + q`), PillaiTrace returns `p = 0`
-("dependent"), as pgmpy does. GCM is continuous-only; a discrete X, Y or Z
+NaN (both tests). Conditioning sets whose columns are linearly dependent (duplicate or nested categorical variables, a constant column) raise a degenerate-data error, whereas pgmpy fits them by least squares. When `Z` is not empty and
+`n - columns == max(p, q)`, PillaiTrace returns `p = 0` ("dependent"), as
+pgmpy does. When `n - columns < max(p, q)`, it throws. GCM is continuous-only; a discrete X, Y or Z
 throws.
 
 Run the JavaScript checks from the package directory:

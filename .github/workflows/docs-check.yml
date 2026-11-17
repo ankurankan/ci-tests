@@ -1,0 +1,51 @@
+name: Docs Check
+
+# Build the documentation site on pull requests, with warnings as errors, and run the tests that
+# need the built site. The deploy (docs.yml) runs only on main; this workflow has no Pages access.
+on:
+  pull_request:
+    paths:
+      - "docs/**"
+      - "crates/*/examples/**"
+      - "crates/ci-r/inst/examples/**"
+      - "benchmarks/results/**"
+      - "README.md"
+      - "tests/test_docs_site.py"
+      - ".github/workflows/docs.yml"
+      - ".github/workflows/docs-check.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+concurrency:
+  group: docs-check-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-site:
+    name: Build Documentation Site
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      # myst-parser 5.2 needs Python 3.13 or later.
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install the Sphinx stack and the test tools
+        run: pip install -r docs/requirements.txt -c docs/constraints.txt pytest PyYAML
+
+      - name: Build the documentation site
+        run: sphinx-build -W -b html -d "$RUNNER_TEMP/doctrees" docs site
+
+      # Includes the tests that build the site. They skip when Sphinx is missing; the variable
+      # makes them fail instead, so this job always runs them.
+      - name: Test the documentation site
+        env:
+          FASTCIT_DOCS_REQUIRE_SPHINX: "1"
+        run: pytest tests/test_docs_site.py

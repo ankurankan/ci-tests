@@ -12,10 +12,10 @@
 //! effect size is `V/s`; the statistic is `V`.
 //!
 //! As in pgmpy, `df2` ignores the number of conditioning columns. When `n`
-//! minus the number of design columns is smaller than `p + q` (few rows
-//! relative to the conditioning columns and categorical levels), the residual
-//! space forces `V = s` and the test returns `p = 0` ("dependent"), exactly as
-//! pgmpy does. Linearly dependent conditioning columns (duplicate or nested
+//! minus the number of design columns (`[1, Z]`) equals `max(p, q)` and `Z` is
+//! not empty, the residuals force `V = s` and the test returns `p = 0`
+//! ("dependent"), exactly as pgmpy does. When it is smaller than `max(p, q)`,
+//! a residual block is singular and the test returns an error. Linearly dependent conditioning columns (duplicate or nested
 //! categoricals, a constant column) raise a degenerate-data error, whereas
 //! pgmpy fits them by least squares.
 

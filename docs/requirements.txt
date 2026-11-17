@@ -1,0 +1,8 @@
+# Sphinx stack for the FastCIT documentation site (docs/conf.py). Needs Python 3.13 or later (myst-parser 5.2).
+# Build: pip install -r docs/requirements.txt -c docs/constraints.txt && sphinx-build -W -b html docs site
+sphinx==9.2.0
+pydata-sphinx-theme==0.24.0
+sphinx-design==0.8.0
+myst-parser==5.2.0
+sphinx-copybutton==0.5.2
+docutils==0.23

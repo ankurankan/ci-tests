@@ -1,0 +1,250 @@
+---
+myst:
+  html_meta:
+    description: FastCIT is a Rust library of conditional independence tests for causal discovery, with bindings for Python, R and JavaScript.
+---
+
+# FastCIT: Fast Conditional Independence Tests
+
+::::::{grid} 1 1 2 2
+:gutter: 3
+:class-container: hero-grid
+
+:::::{grid-item}
+:class: hero-logo-panel
+
+```{image} _static/images/logo.png
+:alt: pgmpy logo
+:width: 220px
+:align: center
+```
+
+:::::
+
+:::::{grid-item}
+:class: hero-copy-panel
+
+::::{container} hero-subtitle
+Conditional independence tests for causal discovery
+::::
+
+FastCIT is a library of conditional independence tests for causal discovery.
+It has a Rust core and bindings for Python, R and JavaScript.
+FastCIT is part of the [pgmpy](https://pgmpy.org/) project.
+
+::::{container} hero-actions
+
+```{button-link} #quick-start
+:color: primary
+:outline:
+
+Quick start
+```
+
+```{button-ref} tests/index
+:ref-type: doc
+:color: primary
+:outline:
+
+Available tests
+```
+
+```{button-link} #runtime-comparison
+:color: primary
+:outline:
+
+Runtime comparison
+```
+
+```{button-ref} api
+:ref-type: doc
+:color: primary
+:outline:
+
+API reference
+```
+
+::::
+:::::
+::::::
+
+## Install
+
+Select your language. Run the command.
+
+::::{tab-set}
+:sync-group: language
+
+:::{tab-item} Python
+:sync: python
+
+```bash
+pip install fastcit
+```
+
+:::
+
+:::{tab-item} R
+:sync: r
+
+```r
+install.packages("fastcit")
+```
+
+:::
+
+:::{tab-item} JavaScript
+:sync: javascript
+
+```bash
+npm install fastcit
+```
+
+:::
+
+:::{tab-item} Rust
+:sync: rust
+
+```bash
+cargo add fastcit-core
+```
+
+:::
+::::
+
+## Quick start
+
+Each example makes a dataset, runs one test and prints the p-value.
+
+::::{tab-set}
+:sync-group: language
+
+:::{tab-item} Python
+:sync: python
+
+```python
+import numpy as np
+import pandas as pd
+import fastcit
+
+rng = np.random.default_rng(0)
+z = rng.standard_normal(500)
+df = pd.DataFrame({
+    "X": z + rng.standard_normal(500),
+    "Y": z + rng.standard_normal(500),
+    "Z": z,
+})
+
+data = fastcit.Dataset.from_pandas(df)
+test = fastcit.FisherZ(data)
+result = test.run_test("X", "Y", ["Z"])
+print(result.p_value)
+```
+
+:::
+
+:::{tab-item} R
+:sync: r
+
+```r
+library(fastcit)
+
+set.seed(0)
+z <- rnorm(500)
+df <- data.frame(X = z + rnorm(500), Y = z + rnorm(500), Z = z)
+
+data <- dataset(df)
+test <- fisher_z(data)
+res <- run_test(test, "X", "Y", "Z")
+print(res$p_value)
+```
+
+:::
+
+:::{tab-item} JavaScript
+:sync: javascript
+
+```javascript
+const { Dataset, FisherZ } = require("fastcit");
+
+const n = 500;
+const z = Array.from({ length: n }, () => Math.random());
+const x = z.map((v) => v + Math.random());
+const y = z.map((v) => v + Math.random());
+
+const data = new Dataset({
+  X: { kind: "continuous", values: x },
+  Y: { kind: "continuous", values: y },
+  Z: { kind: "continuous", values: z },
+});
+const test = new FisherZ(data);
+const result = test.runTest("X", "Y", ["Z"]);
+console.log(result.pValue);
+```
+
+:::
+
+:::{tab-item} Rust
+:sync: rust
+
+```rust
+use fastcit_core::ci_tests::FisherZ;
+use fastcit_core::dataset::{ColumnKind, Dataset};
+use fastcit_core::strategy::CITest;
+
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let z: Vec<f64> = (0..500).map(|i| ((i * 37 % 101) as f64) / 10.0).collect();
+    let x: Vec<f64> = z.iter().enumerate().map(|(i, v)| v + ((i * 53 % 97) as f64) / 10.0).collect();
+    let y: Vec<f64> = z.iter().enumerate().map(|(i, v)| v + ((i * 29 % 89) as f64) / 10.0).collect();
+
+    let data = Dataset::from_columns(vec![
+        ("X".into(), ColumnKind::Continuous, x),
+        ("Y".into(), ColumnKind::Continuous, y),
+        ("Z".into(), ColumnKind::Continuous, z),
+    ])?;
+    let (x, y, z) = (
+        data.index_of("X").unwrap(),
+        data.index_of("Y").unwrap(),
+        data.index_of("Z").unwrap(),
+    );
+    let result = FisherZ::new().test(&data, x, y, &[z])?;
+    println!("{}", result.p_value);
+    Ok(())
+}
+```
+
+:::
+::::
+
+## Runtime comparison
+
+The chart compares FastCIT with other packages on the same tests and the same data.
+It shows the median time of one test call, in milliseconds. Lower is better.
+
+```{raw} html
+<div class="bench" data-src="benchmarks.json" data-benchmarks-url="https://github.com/pgmpy/FastCIT/tree/main/benchmarks" data-summary-url="https://github.com/pgmpy/FastCIT/blob/main/benchmarks/results/summary.md"></div>
+<noscript>
+  <p class="bench-notice">Turn on JavaScript to see the chart. You can also read the results in <a href="https://github.com/pgmpy/FastCIT/blob/main/benchmarks/results/summary.md">summary.md</a>. The <a href="https://github.com/pgmpy/FastCIT/tree/main/benchmarks">benchmark folder</a> gives the method.</p>
+</noscript>
+```
+
+## Available tests
+
+Each page gives the parameters in each language, a runnable example and the method.
+
+```{include} _includes/test-table.md
+```
+
+## API reference
+
+Each language has its own API reference.
+
+```{include} _includes/api-cards.md
+```
+
+```{toctree}
+:hidden:
+
+Tests <tests/index>
+API reference <api>
+```

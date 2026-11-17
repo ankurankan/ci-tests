@@ -8,7 +8,7 @@ on:
       - "crates/ci-js/**"
       - "crates/ci-python/**"
       - "crates/ci-r/**"
-      - "docs/site/**"
+      - "docs/**"
       - "benchmarks/results/**"
       - "README.md"
       - ".github/workflows/docs.yml"
@@ -154,6 +154,21 @@ jobs:
       # Check out first: checkout cleans the workspace, so it must run before the downloads.
       - uses: actions/checkout@v5
 
+      # myst-parser 5.2 needs Python 3.13 or later.
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install the Sphinx stack
+        run: pip install -r docs/requirements.txt -c docs/constraints.txt
+
+      # Warnings are errors. docs/conf.py also copies benchmarks/results/summary.json to
+      # site/benchmarks.json, which the runtime chart on the home page reads.
+      - name: Build the documentation site
+        run: |
+          sphinx-build -W -b html -d "$RUNNER_TEMP/doctrees" docs site
+          rm -f site/.buildinfo
+
       - name: Download Rust docs
         uses: actions/download-artifact@v4
         with:
@@ -178,10 +193,13 @@ jobs:
           name: python-docs
           path: site/python/
 
-      - name: Add the home page and the benchmark data
+      # The home page and the API reference page link to these files.
+      - name: Check the site
         run: |
-          cp -R docs/site/. site/
-          cp benchmarks/results/summary.json site/benchmarks.json
+          for file in index.html benchmarks.json tests/chi_squared.html \
+                      rust/fastcit_core/index.html r/index.html js/index.html python/fastcit.html; do
+            test -f "site/$file" || { echo "site/$file is missing"; exit 1; }
+          done
 
       - uses: actions/upload-pages-artifact@v3
         with:

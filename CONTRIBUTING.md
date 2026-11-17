@@ -73,7 +73,7 @@ FastCIT/
 │   ├── ci-r/              # R bindings (extendr); R package name is `fastcit`
 │   └── ci-js/             # JavaScript/WASM bindings (wasm-pack)
 ├── tests/fixtures/        # Shared golden.json + generate_golden.py (cross-language parity)
-├── docs/                  # API examples and design docs
+├── docs/                  # Documentation site (Sphinx, MyST pages), published at pgmpy.org/FastCIT
 └── .github/               # CI/CD workflows (one per language)
 ```
 
@@ -268,7 +268,18 @@ for it to the shared golden fixture (see [Testing](#testing)) so every language 
 
 - Add doc comments to your test struct and methods
 - Add the test to the "Available Tests" table in `README.md`
-- If it has a notable usage pattern, document it (e.g. in `docs/api-examples.md`)
+- Add one example per language (`crates/ci-python/examples/<key>.py`, `crates/ci-r/inst/examples/tests/<key>.R`,
+  `crates/ci-js/examples/<key>.js`, `crates/ci-core/examples/<key>.rs`)
+- Add the page `docs/tests/<key>.md` (copy the layout of `docs/tests/chi_squared.md`), a row in
+  `docs/_includes/test-table.md` and an entry in the toctree of `docs/tests/index.md`
+- Add the key to the `TESTS` dict in `tests/test_docs_site.py`
+- Raise the example count (12) in `crates/ci-python/test/test_examples.py`,
+  `crates/ci-r/tests/testthat/test-examples.R` and `crates/ci-js/tests/examples.test.js`
+- If the example's expected p-value is not `> 0.05`, add its key to the `case` table in the "Run examples" step of
+  `.github/workflows/rust.yml`
+- Build the site with warnings as errors:
+  `pip install -r docs/requirements.txt -c docs/constraints.txt` (Python 3.13 or later), then
+  `sphinx-build -W -b html docs site`
 
 ## Testing
 

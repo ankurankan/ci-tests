@@ -1,0 +1,127 @@
+/*
+ * FastCIT styles on top of pgmpy's custom.css. Colours come from the theme variables,
+ * so the light and dark themes (html[data-theme]) both work.
+ */
+
+/* The hero has the page title above it, so it needs less space on top than on pgmpy.org. */
+.hero-grid {
+    padding-top: 0;
+}
+
+/* The summary of a test page (data type and API names). */
+.bd-article dl.field-list {
+    column-gap: 1rem;
+    margin: 0 0 1.25rem;
+}
+
+.bd-article dl.field-list > dt {
+    color: var(--pst-color-text-muted);
+    font-weight: 600;
+}
+
+/*
+ * Narrow screens: the theme's two-column grid (basic.css: fit-content(30%) for the names) breaks
+ * the field names into single letters. Show each name above its value instead.
+ */
+@media (max-width: 40rem) {
+    .bd-article dl.field-list {
+        display: block;
+    }
+
+    .bd-article dl.field-list > dt {
+        padding-left: 0;
+        word-break: normal;
+    }
+
+    .bd-article dl.field-list > dd {
+        margin: 0 0 0.5rem;
+        padding-left: 0;
+    }
+
+    .bd-article dl.field-list > dd code.literal span.pre {
+        white-space: normal;
+        overflow-wrap: break-word;
+    }
+}
+
+/* Parameter tables: let long type names wrap instead of making the page scroll. */
+.sd-tab-content .pst-scrollable-table-container table {
+    margin-bottom: 0;
+}
+
+.sd-tab-content .pst-scrollable-table-container {
+    margin-bottom: 1rem;
+}
+
+.sd-tab-content table code {
+    white-space: normal;
+    overflow-wrap: anywhere;
+}
+
+/* Long inline code, such as a full function call, wraps on narrow screens instead of leaving the column. */
+.bd-article p code.literal span.pre,
+.bd-article li code.literal span.pre {
+    white-space: normal;
+    overflow-wrap: break-word;
+}
+
+/* The file name above each example. */
+.sd-tab-content .code-block-caption {
+    font-size: 0.85rem;
+    color: var(--pst-color-text-muted);
+}
+
+/*
+ * Narrow screens: show each row of a table in a language tab as a block, so the reader
+ * does not scroll sideways. The 4-column parameter tables get a label for the type and default.
+ */
+@media (max-width: 40rem) {
+    .sd-tab-content .pst-scrollable-table-container {
+        overflow-x: visible;
+    }
+
+    .sd-tab-content table,
+    .sd-tab-content table tbody,
+    .sd-tab-content table tr,
+    .sd-tab-content table td {
+        display: block;
+        width: 100%;
+    }
+
+    .sd-tab-content table thead {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        clip: rect(0 0 0 0);
+        white-space: nowrap;
+    }
+
+    .sd-tab-content table tr {
+        padding: 0.6rem 0.8rem;
+        border-top: 1px solid var(--pgmpy-divider);
+    }
+
+    .sd-tab-content table tr:first-child {
+        border-top: 0;
+    }
+
+    .sd-tab-content table td {
+        padding: 0.1rem 0;
+        border: 0;
+    }
+
+    .sd-tab-content table td:first-child {
+        font-weight: 600;
+    }
+
+    .sd-tab-content table:has(thead th:nth-child(4)) td:nth-child(2)::before {
+        content: "Type: ";
+        color: var(--pst-color-text-muted);
+    }
+
+    .sd-tab-content table:has(thead th:nth-child(4)) td:nth-child(3)::before {
+        content: "Default: ";
+        color: var(--pst-color-text-muted);
+    }
+}

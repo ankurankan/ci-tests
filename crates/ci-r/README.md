@@ -73,9 +73,9 @@ run_test(kci(df, kernel = list(X = linear_kernel())), "X", "Y", "Z")
 `gcm()` and `pillai()` use linear residualization (pgmpy's Pillai default is a
 random forest); in `pillai()` conditioning variables are one-hot encoded minus one level and a
 categorical `X`/`Y` becomes `K - 1` level indicators fitted with a linear
-probability model. Degenerate inputs raise errors instead of `NaN`. Conditioning sets whose columns are linearly dependent (duplicate or nested categorical variables, a constant column) raise a degenerate-data error, whereas pgmpy fits them by least squares. With few rows relative to the conditioning
-columns and categorical levels (`n - columns < p + q`), `pillai()` returns
-`p = 0` ("dependent"), as pgmpy does. `gcm()` is continuous-only; `pillai()` accepts mixed factor and numeric columns.
+probability model. Degenerate inputs raise errors instead of `NaN`. Conditioning sets whose columns are linearly dependent (duplicate or nested categorical variables, a constant column) raise a degenerate-data error, whereas pgmpy fits them by least squares. When `Z` is not empty and
+`n - columns == max(p, q)`, `pillai()` returns
+`p = 0` ("dependent"), as pgmpy does. When `n - columns < max(p, q)`, it raises an error. `gcm()` is continuous-only; `pillai()` accepts mixed factor and numeric columns.
 
 `is_independent()` applies each test's own decision rule, so the caller never
 writes it — including the equivalence test's inverted rule.

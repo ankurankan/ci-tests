@@ -55,6 +55,8 @@ line-length = 120
 # The hand-maintained native stubs use their own compact formatting.
 extend-exclude = [
     "fastcit/_fastcit",
+    # Documentation examples are plain scripts shown verbatim on the docs site.
+    "examples",
 ]
 
 [tool.ruff.lint]

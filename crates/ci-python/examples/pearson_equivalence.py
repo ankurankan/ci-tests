@@ -1,0 +1,18 @@
+import numpy as np
+import fastcit
+
+rng = np.random.default_rng(0)
+n = 2000
+z = rng.standard_normal(n)
+x = z + rng.standard_normal(n)  # X and Y depend on Z only
+y = z + rng.standard_normal(n)
+data = fastcit.Dataset({
+    "X": ("continuous", x),
+    "Y": ("continuous", y),
+    "Z": ("continuous", z),
+})
+
+# A small p-value supports equivalence: |rho| < threshold, so X and Y are independent given Z.
+test = fastcit.PearsonEquivalence(data, delta_threshold=0.1)
+result = test.run_test("X", "Y", ["Z"])
+print(result.p_value)

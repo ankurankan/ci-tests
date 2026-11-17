@@ -46,10 +46,9 @@ variables are one-hot encoded minus one level, and a categorical `X` or `Y`
 becomes K-1 level indicators residualized with a linear probability model;
 canonical correlations are exact. `GCM` raises `CiError` for any discrete
 column; `PillaiTrace` raises `CiError` on degenerate data (e.g. `X` fully
-determined by `Z`). Conditioning sets whose columns are linearly dependent (duplicate or nested categorical variables, a constant column) raise a degenerate-data error, whereas pgmpy fits them by least squares. With few
-rows relative to the conditioning columns and categorical levels
-(`n - columns < p + q`), `PillaiTrace` returns `p = 0` ("dependent"), as pgmpy
-does.
+determined by `Z`). Conditioning sets whose columns are linearly dependent (duplicate or nested categorical variables, a constant column) raise a degenerate-data error, whereas pgmpy fits them by least squares. When `Z` is not empty and
+`n - columns == max(p, q)`, `PillaiTrace` returns `p = 0` ("dependent"), as pgmpy
+does. When `n - columns < max(p, q)`, it raises an error.
 
 ### Kernel tests (HSIC and KCI)
 
