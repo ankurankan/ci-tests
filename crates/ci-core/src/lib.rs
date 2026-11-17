@@ -57,6 +57,12 @@ mod rng;
 mod strata;
 pub mod strategy;
 
+// Compiles the extension template, so it stays correct. Test builds only: it adds no public API
+// and the registry does not list it.
+#[cfg(test)]
+#[path = "../../../devtools/extension_templates/_ci_test.rs"]
+mod extension_template;
+
 pub use dataset::{ColumnKind, Dataset};
 pub use error::CiError;
 pub use registry::{all_metas, make_default};

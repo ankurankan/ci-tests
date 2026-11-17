@@ -175,6 +175,12 @@ the core, registering it, and adding a thin wrapper in each binding. Unlike the 
 path, the bindings are now hand-written (one small wrapper per language), so a new test is a
 handful of mechanical additions.
 
+**Start from the template.** Copy [`devtools/extension_templates/_ci_test.rs`](devtools/extension_templates/_ci_test.rs)
+for the core test. The compiler checks it in `cargo test -p fastcit-core`, so it follows the current `CITest` trait.
+[`devtools/extension_templates/README.md`](devtools/extension_templates/README.md) lists every file a new test touches,
+and [`_docs_page.md`](devtools/extension_templates/_docs_page.md) is the docs page template. The sections below explain
+the same steps in more detail.
+
 ### 1. Create the Core Implementation
 
 Create a new file in `crates/ci-core/src/ci_tests/`:
