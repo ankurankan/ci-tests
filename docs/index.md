@@ -30,6 +30,7 @@ Conditional independence tests for causal discovery
 
 FastCIT is a library of conditional independence tests for causal discovery.
 It has a Rust core and bindings for Python, R and JavaScript.
+All tests share one API in each language.
 FastCIT is part of the [pgmpy](https://pgmpy.org/) project.
 
 ::::{container} hero-actions
@@ -212,6 +213,72 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 :::
 ::::
 
+## One API for all tests
+
+Every test has the same calls and the same result fields.
+To change the test, change only the constructor.
+HSIC takes no Z.
+
+::::{tab-set}
+:sync-group: language
+
+:::{tab-item} Python
+:sync: python
+
+```python
+test = fastcit.FisherZ(data)  # or fastcit.KCI(data), fastcit.GCM(data), ...
+
+result = test.run_test("X", "Y", ["Z"])
+# result has statistic, p_value, dof and effect_size
+
+test.is_independent("X", "Y", ["Z"], significance_level=0.05)
+```
+
+:::
+
+:::{tab-item} R
+:sync: r
+
+```r
+test <- fisher_z(data)  # or kci(data), gcm(data), ...
+
+res <- run_test(test, "X", "Y", "Z")
+# res has statistic, p_value, dof and effect_size
+
+is_independent(test, "X", "Y", "Z", significance_level = 0.05)
+```
+
+:::
+
+:::{tab-item} JavaScript
+:sync: javascript
+
+```javascript
+const test = new FisherZ(data); // or new KCI(data), new GCM(data), ...
+
+const result = test.runTest("X", "Y", ["Z"]);
+// result has statistic, pValue, dof and effectSize
+
+test.isIndependent("X", "Y", ["Z"], 0.05);
+```
+
+:::
+
+:::{tab-item} Rust
+:sync: rust
+
+```rust
+let test = FisherZ::new(); // or Kci::new(), Gcm::new(), ...
+
+let result = test.test(&data, x, y, &[z])?;
+// result has statistic, p_value, dof and effect_size
+
+let independent = test.is_independent(&data, x, y, &[z], 0.05)?;
+```
+
+:::
+::::
+
 ## Runtime Comparison
 
 ::::{tab-set}
@@ -253,6 +320,6 @@ Each language has its own API reference.
 ```{toctree}
 :hidden:
 
-Tests <tests/index>
+Conditional Independence Tests <tests/index>
 API reference <api>
 ```

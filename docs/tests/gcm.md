@@ -7,6 +7,7 @@ myst:
 # GCM test
 
 :Data types: X, Y and Z must be continuous.
+:API: All tests use the same API. See [one API for all tests](../index.md#one-api-for-all-tests).
 
 ## Usage
 
@@ -71,6 +72,5 @@ p &= 2 \left( 1 - \Phi\left( |T| \right) \right).
 \end{aligned}
 $$
 
-$\hat\sigma_R$ divides by $n$, not by $n - 1$.
 $\Phi$ is the standard normal distribution function.
 The effect size is the absolute Pearson correlation of $r_X$ and $r_Y$.

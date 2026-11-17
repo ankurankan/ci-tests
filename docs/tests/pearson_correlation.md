@@ -7,6 +7,7 @@ myst:
 # Pearson correlation test
 
 :Data types: X, Y and Z must be continuous.
+:API: All tests use the same API. See [one API for all tests](../index.md#one-api-for-all-tests).
 
 ## Usage
 
@@ -61,7 +62,8 @@ myst:
 ## Method
 
 FastCIT regresses X and Y on $[1, Z]$ with ordinary least squares.
-$r$ is the Pearson correlation of the two residual vectors, and $n$ is the number of rows.
+$r$ is the Pearson correlation of the two residual vectors.
+$n$ is the number of rows, and $|Z|$ is the number of columns in Z.
 
 $$
 \begin{aligned}

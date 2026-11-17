@@ -7,6 +7,7 @@ myst:
 # Pearson equivalence test
 
 :Data types: X, Y and Z must be continuous.
+:API: All tests use the same API. See [one API for all tests](../index.md#one-api-for-all-tests).
 
 ## Usage
 
@@ -61,7 +62,8 @@ myst:
 ## Method
 
 FastCIT regresses X and Y on $[1, Z]$ with ordinary least squares.
-$r$ is the Pearson correlation of the two residual vectors, and $n$ is the number of rows.
+$r$ is the Pearson correlation of the two residual vectors.
+$n$ is the number of rows, and $|Z|$ is the number of columns in Z.
 
 The test checks $H_0: |\rho| \geq \delta$ against $H_1: |\rho| < \delta$.
 $\rho$ is the partial correlation in the population, and $\delta$ is `delta_threshold`.
@@ -77,6 +79,6 @@ p &= \max\left(p_{\mathrm{lower}}, p_{\mathrm{upper}}\right).
 $$
 
 The statistic is $z_r$.
-X and Y are independent when $p < \alpha$.
+`is_independent` returns true when $p$ is less than the significance level.
 This rule is the opposite of the rule of the other tests.
 The effect size is $|r|$, before the clip.

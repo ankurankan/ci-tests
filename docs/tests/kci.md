@@ -7,6 +7,7 @@ myst:
 # KCI test
 
 :Data types: X, Y and Z must be continuous.
+:API: All tests use the same API. See [one API for all tests](../index.md#one-api-for-all-tests).
 
 ## Usage
 
@@ -38,7 +39,7 @@ myst:
 :::{tab-item} JavaScript
 :sync: javascript
 
-`new KCI(data, { kernel: undefined, kernels: undefined, bandwidth: "heuristic", epsilon: 0.001 })`
+`new KCI(data, { bandwidth: "heuristic", epsilon: 0.001 })`
 
 ```{literalinclude} ../../crates/ci-js/examples/kci.js
 :language: javascript
@@ -65,7 +66,7 @@ Otherwise, FastCIT standardises X, Y and Z with the sample standard deviation, w
 The kernel of X uses $\ddot X = (X, Z/2)$.
 The kernel of Y uses Y, and the kernel of Z uses Z.
 The default kernel is the RBF kernel $k(a, b) = \exp\left(-\lVert a - b \rVert^2 / (2 \ell^2)\right)$.
-With `bandwidth = "heuristic"`, $\ell = w \sqrt{|Z|}$ for all three kernels.
+With `bandwidth = "heuristic"`, $\ell = w \sqrt{|Z|}$ for all three kernels, where $|Z|$ is the number of columns in Z.
 $w$ is 1.2 for $n < 200$, 0.7 for $200 \leq n < 1200$ and 0.4 for $n \geq 1200$.
 With `"median"`, $\ell$ is the median of the non-zero distances between pairs of rows, divided by $\sqrt{2}$.
 
@@ -81,7 +82,7 @@ T &= \operatorname{tr}\left( \tilde K_{\ddot X \mid Z} \, \tilde K_{Y \mid Z} \r
 \end{aligned}
 $$
 
-$V_X$ has the columns $\sqrt{\lambda} \, u$ for the eigenpairs of $\tilde K_{\ddot X \mid Z}$ with $\lambda > 10^{-5} \lambda_{\max}$.
+$V_X$ has the columns $\sqrt{\lambda} \, u$ for the eigenpairs $(\lambda, u)$ of $\tilde K_{\ddot X \mid Z}$ with $\lambda > 10^{-5} \lambda_{\max}$.
 $V_Y$ is the same for $\tilde K_{Y \mid Z}$.
 
 $$

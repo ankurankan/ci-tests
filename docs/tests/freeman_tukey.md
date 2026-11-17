@@ -7,6 +7,7 @@ myst:
 # Freeman-Tukey test
 
 :Data types: X, Y and Z must be discrete.
+:API: All tests use the same API. See [one API for all tests](../index.md#one-api-for-all-tests).
 
 ## Usage
 
@@ -62,7 +63,7 @@ myst:
 
 Each combination $z$ of Z values gives one table.
 $O_{ij}$ is the number of rows with $X = i$ and $Y = j$.
-$R_i$ and $C_j$ are the row and column sums, and $n_z$ is the number of rows.
+$R_i$ and $C_j$ are the row and column sums, and $n_z$ is the sum of all counts in table $z$.
 
 $$
 \begin{aligned}
@@ -75,7 +76,6 @@ p &= P\left(\chi^2_{\mathrm{dof}} \geq \mathrm{FT}\right).
 $$
 
 $r_z$ and $c_z$ are the numbers of X and Y categories in table $z$.
-The two forms of FT are equal, because a table has the same sum of $O$ and of $E$.
 With `yates` on, a 2 × 2 table uses $O'_{ij} = O_{ij} - \operatorname{clip}\left(O_{ij} - E_{ij}, -0.5, 0.5\right)$.
-The effect size is Cramér's V, $\sqrt{\max\left(\mathrm{FT}, 0\right) / \left(n \left(k - 1\right)\right)}$.
-$n$ is the number of rows, and $k$ is the smaller number of X and Y categories.
+The effect size is Cramér's V, $\sqrt{\mathrm{FT} / \left(n \left(k - 1\right)\right)}$.
+$n$ is the number of rows in the data, and $k$ is the smaller of the numbers of X and Y categories in the data.

@@ -7,6 +7,7 @@ myst:
 # Pillai's trace test
 
 :Data types: X, Y and Z can each be discrete or continuous.
+:API: All tests use the same API. See [one API for all tests](../index.md#one-api-for-all-tests).
 
 ## Usage
 
@@ -62,7 +63,6 @@ myst:
 
 A continuous column gives one column of values.
 A discrete column with $K$ levels gives $K - 1$ indicator columns.
-FastCIT drops the first level for Z and the last level for X and Y.
 FastCIT regresses the $p$ columns of X and the $q$ columns of Y on $[1, Z]$ with ordinary least squares.
 $\rho_i$ are the canonical correlations of the residuals, $s = \min(p, q)$, and $n$ is the number of rows.
 

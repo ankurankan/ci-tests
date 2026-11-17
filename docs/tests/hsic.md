@@ -7,6 +7,7 @@ myst:
 # HSIC test
 
 :Data types: X and Y must be continuous. HSIC has no Z.
+:API: All tests use the same API. See [one API for all tests](../index.md#one-api-for-all-tests).
 
 ## Usage
 
@@ -38,7 +39,7 @@ myst:
 :::{tab-item} JavaScript
 :sync: javascript
 
-`new HSIC(data, { kernel: undefined, kernels: undefined, bandwidth: "heuristic", nullDist: "gamma", nPermutations: 100, seed: 0 })`
+`new HSIC(data, { bandwidth: "heuristic", nullDist: "gamma", nPermutations: 100, seed: 0 })`
 
 ```{literalinclude} ../../crates/ci-js/examples/hsic.js
 :language: javascript
@@ -79,13 +80,13 @@ $$
 T = \sum_{i,j} \tilde K_{ij} \, \tilde L_{ij} = \operatorname{tr}\left(\tilde K \tilde L\right).
 $$
 
-FastCIT does not divide $T$ by $n^2$.
 With `null_dist = "gamma"`, $\mu_K$ is the mean of $K_{ij}$ for $i \neq j$, and $\mu_L$ is the same for $L$.
 
 $$
 \begin{aligned}
 \mathbb{E} &= \frac{1}{n} \left( \frac{\operatorname{tr} K}{n} - \mu_K \right) \left( \frac{\operatorname{tr} L}{n} - \mu_L \right), \\
-\mathbb{V} &= \frac{72 \, (n - 4)(n - 5)}{n (n - 1)(n - 2)(n - 3)} \cdot \frac{1}{n (n - 1)} \sum_{i \neq j} \left( \frac{\tilde K_{ij} \, \tilde L_{ij}}{6} \right)^2.
+\mathbb{V} &= \frac{72 \, (n - 4)(n - 5)}{n (n - 1)(n - 2)(n - 3)} \, S, \\
+S &= \frac{1}{n (n - 1)} \sum_{i \neq j} \left( \frac{\tilde K_{ij} \, \tilde L_{ij}}{6} \right)^2.
 \end{aligned}
 $$
 
@@ -94,8 +95,10 @@ Its shape is $\mathbb{E}^2 / \mathbb{V}$ and its scale is $n \, \mathbb{V} / \ma
 With `null_dist = "permutation"`, $B$ random permutations $\pi_b$ of the rows give
 
 $$
-T_b = \sum_{i,j} \tilde K_{ij} \, \tilde L_{\pi_b(i) \pi_b(j)}, \qquad
-p = \frac{1 + \#\{b : T_b \geq T\}}{1 + B}.
+\begin{aligned}
+T_b &= \sum_{i,j} \tilde K_{ij} \, \tilde L_{\pi_b(i) \pi_b(j)}, \\
+p &= \frac{1 + \#\{b : T_b \geq T\}}{1 + B}.
+\end{aligned}
 $$
 
 $B$ is `n_permutations`.

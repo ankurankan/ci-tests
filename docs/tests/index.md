@@ -1,6 +1,7 @@
-# Tests
+# Conditional Independence Tests
 
 FastCIT has twelve conditional independence tests.
+All tests share one API (see [one API for all tests](../index.md#one-api-for-all-tests)).
 A test checks whether X and Y are independent given a set Z of other variables.
 HSIC has no Z: it checks only whether X and Y are independent.
 Select a test to see an example in each language and the method.

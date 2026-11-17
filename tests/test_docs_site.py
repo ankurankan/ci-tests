@@ -135,7 +135,7 @@ def test_install_command_matches_readme(language: str) -> None:
     assert fenced_code(items[language]) == readme_install(LANGUAGES[language])
 
 
-@pytest.mark.parametrize("heading", ["Install", "Quickstart"])
+@pytest.mark.parametrize("heading", ["Install", "Quickstart", "One API for all tests"])
 def test_home_page_tabs_use_the_language_keys(heading: str) -> None:
     items = tab_items(section(read(INDEX), heading))
     assert [(label, key) for label, key, _ in items] == [(label, key) for key, label in LANGUAGES.items()]
@@ -182,7 +182,9 @@ def test_test_page_structure(key: str) -> None:
     assert all(level == "##" for level, _ in headings[1:])
     # The data types come first, right after the title.
     body = re.sub(r"\A---\n.*?\n---\n", "", text, flags=re.S)
-    assert re.match(r"\s*# .+\n\n:Data types: .+\n\n## Usage\n", body), "the data types must lead the page"
+    assert re.match(r"\s*# .+\n\n:Data types: .+\n:API: .+\(\.\./index\.md#one-api-for-all-tests\)\.\n\n## Usage\n", body), (
+        "the data types and the link to the shared API must lead the page"
+    )
     for _, language, tab in tab_items(section(text, "Usage")):
         signature = SIGNATURES[language].format(*TESTS[key])
         assert tab.lstrip().startswith(signature), f"{key}, {language}: the tab must start with {signature}"
