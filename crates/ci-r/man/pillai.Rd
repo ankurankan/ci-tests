@@ -23,9 +23,9 @@ inputs raise errors instead of returning \code{NaN}. Conditioning sets whose
 columns are linearly dependent (duplicate or nested categorical variables, a
 constant column)
 raise a degenerate-data error, whereas pgmpy fits them by least squares.
-With few rows relative to the conditioning columns and categorical levels
-(\code{n - columns < p + q}), the test returns \code{p = 0} ("dependent"), as pgmpy
-does.
+When \code{Z} is not empty and \code{n - columns == max(p, q)}, the residuals force
+\code{V = s} and the test returns \code{p = 0} ("dependent"), as pgmpy does. When
+\code{n - columns < max(p, q)}, the test raises an error.
 }
 \examples{
 set.seed(1)

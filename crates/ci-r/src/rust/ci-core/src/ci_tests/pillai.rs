@@ -15,9 +15,10 @@
 //! minus the number of design columns (`[1, Z]`) equals `max(p, q)` and `Z` is
 //! not empty, the residuals force `V = s` and the test returns `p = 0`
 //! ("dependent"), exactly as pgmpy does. When it is smaller than `max(p, q)`,
-//! a residual block is singular and the test returns an error. Linearly dependent conditioning columns (duplicate or nested
-//! categoricals, a constant column) raise a degenerate-data error, whereas
-//! pgmpy fits them by least squares.
+//! a residual block is singular and the test returns an error. Linearly
+//! dependent conditioning columns (duplicate or nested categoricals, a constant
+//! column) raise a degenerate-data error, whereas pgmpy fits them by least
+//! squares.
 
 use faer::{Mat, MatRef};
 use statrs::distribution::{ContinuousCDF, FisherSnedecor};

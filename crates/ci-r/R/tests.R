@@ -162,9 +162,9 @@ gcm <- function(data) {
 #' columns are linearly dependent (duplicate or nested categorical variables, a
 #' constant column)
 #' raise a degenerate-data error, whereas pgmpy fits them by least squares.
-#' With few rows relative to the conditioning columns and categorical levels
-#' (`n - columns < p + q`), the test returns `p = 0` ("dependent"), as pgmpy
-#' does.
+#' When `Z` is not empty and `n - columns == max(p, q)`, the residuals force
+#' `V = s` and the test returns `p = 0` ("dependent"), as pgmpy does. When
+#' `n - columns < max(p, q)`, the test raises an error.
 #'
 #' @param data A [dataset()] result or a data.frame.
 #' @return A `fastcit_test` bound to `data`.
