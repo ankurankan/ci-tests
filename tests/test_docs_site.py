@@ -394,6 +394,21 @@ def test_built_home_page_shows_both_runtime_tables(site: Path) -> None:
     assert "pgmpy dev" in tables[0] and "FastCIT (R)" in tables[1]
 
 
+def test_deploy_checks_only_files_the_site_has(site: Path) -> None:
+    """The deploy job fails when a file of its "Check the site" step is missing.
+
+    Each file there must come from the Sphinx build or be one of the API sites that the job adds.
+    """
+    steps = yaml.safe_load(read(WORKFLOW))["jobs"]["deploy"]["steps"]
+    (check,) = [step["run"] for step in steps if step.get("name") == "Check the site"]
+    files = re.findall(r"^\s*for file in (.*?); do$", check, re.S | re.M)
+    assert len(files) == 1, "the check step must list its files in one for loop"
+    for name in files[0].replace("\\", " ").split():
+        if name in API_TARGETS:
+            continue  # added by the deploy job after the build
+        assert (site / name).is_file(), f"the deploy job checks site/{name}, but the build does not write it"
+
+
 def test_built_home_page_shows_the_readme_examples(site: Path) -> None:
     blocks = code_blocks(read(site / "index.html"))
     for name in LANGUAGES.values():

@@ -162,8 +162,7 @@ jobs:
       - name: Install the Sphinx stack
         run: pip install -r docs/requirements.txt -c docs/constraints.txt
 
-      # Warnings are errors. docs/conf.py also copies benchmarks/results/summary.json to
-      # site/benchmarks.json, which the runtime chart on the home page reads.
+      # Warnings are errors.
       - name: Build the documentation site
         run: |
           sphinx-build -W -b html -d "$RUNNER_TEMP/doctrees" docs site
@@ -196,7 +195,7 @@ jobs:
       # The home page and the API reference page link to these files.
       - name: Check the site
         run: |
-          for file in index.html benchmarks.json tests/chi_squared.html \
+          for file in index.html tests/chi_squared.html \
                       rust/fastcit_core/index.html r/index.html js/index.html python/fastcit.html; do
             test -f "site/$file" || { echo "site/$file is missing"; exit 1; }
           done
