@@ -265,6 +265,19 @@ def test_chart_colours_every_package() -> None:
     assert "prefers-color-scheme" not in css
 
 
+def test_chart_time_axis_is_linear() -> None:
+    """The time axis is linear and starts at 0, so the chart shows how the run time grows.
+
+    Only the sample-size axis is a log axis. Its points are 100, 300, 1 000 and so on.
+    """
+    script = re.sub(r"/\*.*?\*/|//[^\n]*", "", read(CHART_JS), flags=re.S)  # code only, not the comments
+    scale = re.search(r"var sy = function \(v\) \{(.*?)\};", script, re.S)
+    assert scale is not None, "the y scale is no longer the function sy"
+    assert "log" not in scale[1].lower(), "the y scale uses a logarithm"
+    assert "Math.pow(10, e)" not in script, "the gridlines are still the powers of ten of a log axis"
+    assert 'var fx = axis === "n" ? Math.log10 :' in script  # the n axis stays a log axis
+
+
 def test_chart_code_stays_small() -> None:
     assert len(read(CHART_JS).splitlines()) <= 520
     assert len(read(CHART_CSS).splitlines()) <= 250

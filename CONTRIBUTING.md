@@ -1,332 +1,161 @@
-# Contributing to CI Testing Library
+# Contributing to FastCIT
 
-This document provides guidelines and instructions for contributing to the CI Testing library.
+Read this guide before you open a pull request.
 
-## Table of Contents
+## Set up
 
-- [Development Setup](#development-setup)
-- [Repository Structure](#repository-structure)
-- [Coding Standards](#coding-standards)
-- [Adding a New CI Test](#adding-a-new-ci-test)
-- [Testing](#testing)
-- [Pull Request Process](#pull-request-process)
+Install these tools:
 
-## Development Setup
+- Rust, stable channel ([rustup](https://rustup.rs/)). The R package needs Rust 1.85 or newer.
+- Git.
+- Python 3.10 to 3.14, for the Python binding.
+- R 4.2 or newer, for the R binding.
+- Node.js (current LTS) and [wasm-pack](https://rustwasm.github.io/wasm-pack/), for the JavaScript binding.
 
-### Prerequisites
+The core crate needs only Rust.
+Each binding has its own toolchain.
+Run these commands to set up and to check your environment:
 
-- **Rust** (stable, latest version): [Install Rust](https://rustup.rs/)
-- **Git**: For version control
-- **Python 3.10** (for Python bindings development)
-- **R 4.2+** (for R bindings development)
-- **Node.js 16+** (for JavaScript bindings development)
-
-### Initial Setup
-
-1. **Clone the repository**:
 ```bash
-   git clone https://github.com/pgmpy/FastCIT
-   cd FastCIT
-```
-
-2. **Build the core crate** (each binding has its own toolchain; see [Testing](#testing)):
-```bash
-   cargo build -p fastcit-core
-```
-
-3. **Run tests to verify setup**:
-```bash
-   cargo test -p fastcit-core
-```
-
-4. **Install development tools**:
-```bash
-   # Rustfmt (code formatter)
-   rustup component add rustfmt
-
-   # Clippy (linter)
-   rustup component add clippy
-```
-
-### Verify Your Setup
-
-Run these commands to ensure everything works:
-```bash
-# Check formatting
+git clone https://github.com/pgmpy/FastCIT
+cd FastCIT
+rustup component add rustfmt clippy
 cargo fmt --all -- --check
-
-# Run linter on the core crate
 cargo clippy -p fastcit-core --all-targets -- -D warnings
-
-# Run the core crate's tests (includes the golden parity test)
 cargo test -p fastcit-core
 ```
 
-If all commands complete successfully, your environment is ready!
+## Repository structure
 
-## Repository Structure
 ```
 FastCIT/
-├── crates/                 # Rust workspace
-│   ├── ci-core/           # Core CI test implementations, Dataset, CITest trait, registry
-│   ├── ci-python/         # Python bindings (PyO3 + maturin)
-│   ├── ci-r/              # R bindings (extendr); R package name is `fastcit`
-│   └── ci-js/             # JavaScript/WASM bindings (wasm-pack)
-├── tests/fixtures/        # Shared golden.json + generate_golden.py (cross-language parity)
-├── docs/                  # Documentation site (Sphinx, MyST pages), published at pgmpy.org/FastCIT
-└── .github/               # CI/CD workflows (one per language)
+├── crates/
+│   ├── ci-core/     # Core tests, Dataset, CITest trait, registry (crate fastcit-core)
+│   ├── ci-python/   # Python binding (PyO3 and maturin, crate fastcit-python)
+│   ├── ci-r/        # R binding (extendr, R package fastcit)
+│   └── ci-js/       # JavaScript binding (wasm-pack, crate fastcit)
+├── tests/           # Documentation tests and the golden fixture (tests/fixtures/)
+├── docs/            # Documentation site (Sphinx and MyST), published at pgmpy.org/FastCIT
+├── benchmarks/      # Benchmark scripts and results
+├── devtools/        # Templates for a new test (extension_templates/)
+└── .github/         # Pull request template and one workflow for each language
 ```
 
-See individual `README.md` files in each directory for more details.
+The root Cargo workspace contains `ci-core`, `ci-python` and `ci-js`.
+`ci-r` is a separate package, so that R can build it outside this repository.
+Each crate has a `README.md`.
 
-Within the core, keep shared computation separate from a test's statistical interpretation:
+The core keeps shared computation apart from the statistics of a test:
 
 | File | Responsibility |
 | --- | --- |
-| `dataset.rs` | Column storage, encoding, query validation, and cache lifetime |
-| `correlation.rs` | Shared correlation, residual regression, and Fisher transform |
-| `gram.rs` | Lazy covariance cache and linear algebra used by correlation |
-| `strata.rs` | Conditioning-set grouping and its bounded cache |
+| `dataset.rs` | Column storage, encoding, query validation, cache lifetime |
+| `correlation.rs`, `gram.rs` | Shared correlation, residual regression, Fisher transform, lazy covariance cache |
+| `strata.rs` | Conditioning-set groups and their bounded cache |
 | `discrete.rs` | Contingency tables and power-divergence calculations |
-| `ci_tests/power_divergence.rs` | The five named discrete tests, configuration, and result assembly |
-| `ci_tests/{pearson_correlation,fisher_z,pearson_equivalence}.rs` | Test-specific statistics, p-values, and metadata |
-| `strategy.rs`, `registry.rs` | Shared test contract and default test catalogue |
+| `kernel.rs`, `residual.rs` | Kernel matrices and linear residuals |
+| `ci_tests/power_divergence.rs` | The five discrete tests |
+| `ci_tests/<name>.rs` | One file for each other test: statistics, p-values, metadata |
+| `strategy.rs`, `registry.rs` | The `CITest` trait and the default test catalogue |
 
-Keep implementation-specific tests alongside the behavior they exercise. Shared helpers
-belong with their consumers' common domain, not inside a sibling test implementation.
-`ColumnKind` describes column types throughout the core; `DataType` remains a compatibility
-alias for existing users.
+Put the tests of an implementation in the same file.
+Put a shared helper in the module of its users.
+`DataType` is an alias of `ColumnKind` for old code.
 
-In the bindings, pandas classification and encoding live together in Python's
-`_column_from_pandas`; JavaScript option defaults, allowed keys, and TypeScript option
-declarations live in `crates/ci-js/src/options.rs`. R's maintained code is split into
-`R/dataset.R` (conversion and dataset construction), `R/tests.R` (factories and queries),
-and `R/adapters.R` (`pcalg` and `htest` adapters). `R/fastcit.R` holds package documentation;
-`R/extendr-wrappers.R` is generated.
+Binding code:
 
-The core copy under `crates/ci-r/src/rust/ci-core` is a distribution asset, not a second
-implementation. After changing the canonical core, synchronize it with
-`python crates/ci-r/tools/sync_package_assets.py --sync`.
+- Python: `_column_from_pandas` in `crates/ci-python/fastcit/__init__.py` classifies and encodes pandas columns.
+- JavaScript: `crates/ci-js/src/options.rs` holds the option defaults, the allowed keys and the TypeScript option types.
+- R: `R/dataset.R` builds datasets, `R/tests.R` holds the factories and queries, and `R/adapters.R` holds the `pcalg` and `htest` adapters.
+- R: `R/fastcit.R` holds the package documentation. `rextendr::document()` generates `R/extendr-wrappers.R`. Do not edit it.
 
-## Coding Standards
+The copy of the core in `crates/ci-r/src/rust/ci-core` is a distribution asset, not a second implementation.
+After you change the core, run `python crates/ci-r/tools/sync_package_assets.py --sync`.
 
-### Rust Code Style
+## Code standards
 
-We follow the official Rust style guide, enforced by `rustfmt`:
+- Run `cargo fmt --all` before you commit. The line length is 100 characters.
+- Fix every Clippy lint. If you think a lint is wrong, explain it in your pull request.
+- Use `Result` and `?`. Do not use `unwrap()` in library code. The workspace forbids `unsafe` code.
+- Document public items with `///` comments.
+- Give each function one job and each variable a clear name.
+- Write tests for new behavior, and a regression test for each bug fix.
+- Name tests clearly, for example `test_chi_squared_with_independent_variables`. Test the success case and the error case.
 
-- **Always run `cargo fmt --all` before committing**
-- Use 4 spaces for indentation (automatic with rustfmt)
-- Maximum line length: 100 characters
-- Use trailing commas in multi-line constructs
+Python code uses `ruff`, R code uses `styler` and `lintr`, and JavaScript code uses `prettier` and `eslint` (see [Testing](#testing)).
 
-### Linting
+Write commit messages in the [Conventional Commits](https://www.conventionalcommits.org/) format.
+The type is `feat`, `fix`, `docs`, `test`, `refactor`, `perf` or `chore`.
 
-We use Clippy with strict settings:
-
-- **All Clippy warnings must be fixed** before merging
-- Run `cargo clippy -p fastcit-core --all-targets -- -D warnings` (and the relevant binding crate
-  for binding changes)
-- If you believe a warning is a false positive, discuss in your PR
-
-### Code Quality
-
-- **Write tests** for all new functionality
-- **Document public APIs** with doc comments (`///`)
-- **Keep functions focused**: One function should do one thing well
-- **Avoid `unwrap()` in library code**: Use proper error handling with `Result` and `?`
-- **Use meaningful variable names**: Prefer clarity over brevity
-
-### Git Commit Messages
-
-Follow the [Conventional Commits](https://www.conventionalcommits.org/) format:
 ```
 <type>(<scope>): <description>
 
-[optional body]
-
-[optional footer]
-```
-
-**Types**:
-- `feat`: New feature
-- `fix`: Bug fix
-- `docs`: Documentation changes
-- `test`: Adding or updating tests
-- `refactor`: Code restructuring without behavior change
-- `perf`: Performance improvements
-- `chore`: Maintenance tasks
-
-**Examples**:
-```
 feat(core): add Student's t-test implementation
-
 fix(python): resolve memory leak in data conversion
-
-docs(readme): update installation instructions
-
-test(core): add property tests for chi-squared test
 ```
 
-## Adding a New CI Test
+## Add a test
 
-The library is **data-bound**: a test holds only its own configuration and operates on a
-`Dataset` passed to it at query time. Adding a test means implementing the `CITest` trait in
-the core, registering it, and adding a thin wrapper in each binding. Unlike the old codegen
-path, the bindings are now hand-written (one small wrapper per language), so a new test is a
-handful of mechanical additions.
+A test holds only its configuration.
+It works on a `Dataset` that the caller passes at query time.
+A new test needs an implementation of `CITest` in the core, an entry in the registry, and one small wrapper in each binding.
 
-**Start from the template.** Copy [`devtools/extension_templates/_ci_test.rs`](devtools/extension_templates/_ci_test.rs)
-for the core test. The compiler checks it in `cargo test -p fastcit-core`, so it follows the current `CITest` trait.
-[`devtools/extension_templates/README.md`](devtools/extension_templates/README.md) lists every file a new test touches,
-and [`_docs_page.md`](devtools/extension_templates/_docs_page.md) is the docs page template. The sections below explain
-the same steps in more detail.
+Follow the steps in [`devtools/extension_templates/README.md`](devtools/extension_templates/README.md).
+It lists every file that a new test changes, with the rules for the examples and the documentation page.
+Start from [`_ci_test.rs`](devtools/extension_templates/_ci_test.rs).
+It is a complete test, and `cargo test -p fastcit-core` compiles it.
+For a new member of the power-divergence family, add a declaration to `crates/ci-core/src/ci_tests/power_divergence.rs` instead.
 
-### 1. Create the Core Implementation
+Obey these rules of the design:
 
-Create a new file in `crates/ci-core/src/ci_tests/`:
-```bash
-crates/ci-core/src/ci_tests/students_t.rs
-```
+- Implement `test_impl` and `meta` of `CITest` (`crates/ci-core/src/strategy.rs`).
+  The provided `test` method validates the query `(x, y, z)` and then calls `test_impl`.
+  Your code can assume that the query is valid.
+- `TestMeta` holds the decision rule.
+  Use `IndependenceRule::PValueGe`, or `PValueLt` for an equivalence (TOST) test such as `pearson_equivalence.rs`.
+  `is_independent` has a default implementation.
+- `default_tests()` in `crates/ci-core/src/registry.rs` is the single source of truth.
+  Callers use it to list the tests and to build one by its `meta().name`.
+- Return a `CIError`.
+  Never let a panic reach a binding.
+- Keep shared numerical code in `discrete.rs` or `correlation.rs`.
+- The R adapters read the decision rule from the test metadata, so they need no list of tests.
 
-For another member of the existing power-divergence family, add a declaration to
-`ci_tests/power_divergence.rs` instead of creating another wrapper file. Keep shared
-numerical work in `discrete.rs` or `correlation.rs` and test-specific interpretation in
-`ci_tests/`.
+Obey these rules for the tests of a new test:
 
-### 2. Implement the `CITest` Trait
+- Add Rust tests in a `#[cfg(test)] mod tests` block in the implementation file.
+- Add binding tests in `crates/ci-python/test/`, `crates/ci-r/tests/testthat/` and `crates/ci-js/tests/`.
+- Use known inputs and known outputs.
+- Cover edge cases: one category, zero variance, NaN and sparse strata.
+- If scipy or another reference gives the same test, add cases to the golden fixture (see [Testing](#testing)).
 
-Your test struct holds **only** its configuration and implements the `CITest` trait defined in
-`crates/ci-core/src/strategy.rs`. You implement the required `test_impl` method; the provided
-`test` method validates the `(x, y, z)` query and delegates to it, so implementations may
-assume a well-formed query. Per-test config is constructor fields, the decision rule lives in
-`TestMeta`, and `is_independent` has a default impl (no per-test branching at the call site):
+Obey these rules for the examples:
 
-```rust
-use crate::dataset::{ColumnKind, Dataset};
-use crate::error::CIError;
-use crate::strategy::{CITest, CIResult, IndependenceRule, TestMeta};
-
-pub struct StudentsT { /* config fields only */ }
-
-impl CITest for StudentsT {
-    fn test_impl(&self, data: &Dataset, x: usize, y: usize, z: &[usize]) -> Result<CIResult, CIError> {
-        // ... return CIResult { statistic, p_value, dof, effect_size }
-    }
-
-    fn meta(&self) -> TestMeta {
-        TestMeta {
-            name: "students_t",
-            data_types: &[ColumnKind::Continuous],
-            symmetric: true,
-            rule: IndependenceRule::PValueGe,   // or PValueLt for an equivalence/TOST test
-        }
-    }
-}
-```
-
-See existing tests (e.g., `power_divergence.rs`, or `pearson_equivalence.rs` for the inverted rule)
-as examples. Return `CIError` rather than panicking; never let a panic escape into a binding.
-
-### 3. Export and Register the Test
-
-- Add your test to `crates/ci-core/src/ci_tests/mod.rs` so it is publicly accessible:
-
-  ```rust
-  pub mod students_t;
-  pub use students_t::StudentsT;
-  ```
-
-- Register it in `crates/ci-core/src/registry.rs` (`default_tests()`), the single source of
-  truth that lets callers enumerate tests and construct one by its stable `meta().name`. Add
-  the name to the registry's test assertions too.
-
-### 4. Add the Binding Wrappers
-
-Each binding has one small wrapper per test; add yours next to the existing ones:
-
-- **Python** — add a `ci_test_class!(...)` invocation in `crates/ci-python/src/lib.rs` (mapping
-  the constructor kwargs onto your config) and register the generated class in the `#[pymodule]`
-  at the bottom of that file. Re-export it from `crates/ci-python/fastcit/__init__.py` and add
-  it to the `.pyi` stub.
-- **R** — add a factory function in `crates/ci-r/R/tests.R` (following `chi_squared()` /
-  `pearson_equivalence()`), and export the extendr handle in the Rust glue
-  (`crates/ci-r/src/rust/src/lib.rs`). Run `rextendr::document()` to regenerate wrappers
-  and documentation. Adapters derive the decision rule from the native test metadata;
-  they do not need a separate list of inverted-rule tests.
-- **JavaScript** — add a `ci_test_class!(...)` invocation in `crates/ci-js/src/lib.rs` (with a
-  config from `crates/ci-js/src/options.rs`). If new options are needed, define their
-  defaults, allowed keys, and TypeScript declaration together in that module.
-
-### 5. Add Tests
-
-Add test cases for each language:
-
-- **Rust**: In a `#[cfg(test)] mod tests { }` block in your implementation file
-- **Python**: In [`crates/ci-python/test`](crates/ci-python/test).
-- **R**: In `crates/ci-r/tests/testthat/`
-- **JavaScript**: In [`crates/ci-js/tests`](crates/ci-js/tests).
-
-Test with known inputs and expected outputs, and cover edge cases (single category,
-zero-variance, NaN, sparse strata). If your test maps to a scipy/standard reference, add rows
-for it to the shared golden fixture (see [Testing](#testing)) so every language checks it.
-
-### 6. Update Documentation
-
-- Add doc comments to your test struct and methods
-- Add the test to the "Available Tests" table in `README.md`
-- Add one example per language (`crates/ci-python/examples/<key>.pycon`, `crates/ci-r/inst/examples/tests/<key>.R`,
-  `crates/ci-js/examples/<key>.js`, `crates/ci-core/examples/<key>.rs`). Copy the examples of a test with the same
-  data types. Each example shows the four result fields (`statistic`, `p_value`, `dof`, `effect_size`) and their output:
-  - Python: a doctest transcript. For a field that is `None`, use `>>> print(result.dof)`, because doctest shows no
-    output for a bare `None`.
-  - R, JavaScript and Rust: put the output in comments directly under each print line (`#> ` in R, `// ` in
-    JavaScript and Rust). Do not put other comments directly under a print line.
-  - Run the example and copy its output. Write each number with 4 significant digits; keep integers exact.
-    The example tests compare each output number with the written number, to the written precision.
-    Thus `0.5778` matches `0.5778219788` (as with the NUMBER option of pytest doctests).
-    Keep at least one decimal place in a number of 1000 or more (write `2629.3`, not `2629`).
-    A number without a decimal point is compared as exact text.
-  - Each language makes its own random data. Start each example with the comment line that says so.
-- Add the page `docs/tests/<key>.md` (copy the layout of `docs/tests/chi_squared.md`), a row in
-  `docs/_includes/test-table.md` and an entry in the toctree of `docs/tests/index.md`
-- Add the key to the `TESTS` dict in `tests/test_docs_site.py`
-- If numpy or R changes its random stream, the shown outputs go out of date. Run each example, as in
-  `devtools/extension_templates/README.md`, and copy the new output into the file.
-  Use `pytest --doctest-continue-on-failure crates/ci-python/examples/<key>.pycon` (Python),
-  `Rscript crates/ci-r/inst/examples/tests/<key>.R` (R, with the package installed),
-  the `node` recipe of that file (JavaScript) and `cargo run -p fastcit-core --example <key>` (Rust).
-- Raise the example count (12) in `crates/ci-python/test/test_examples.py`,
-  `crates/ci-r/tests/testthat/test-examples.R` and `crates/ci-js/tests/examples.test.js`
-- Build the site with warnings as errors:
-  `pip install -r docs/requirements.txt -c docs/constraints.txt` (Python 3.13 or later), then
-  `sphinx-build -W -b html docs site`
+- Each language makes its own random data, so start each example with a comment line that says this.
+- In a Python example, use `>>> print(result.dof)` for a `None` field.
+  Doctest shows no output for a bare `None`.
+- If numpy or R changes its random stream, run the examples again and update the written output.
 
 ## Testing
 
-Because each crate uses a different toolchain, there is no single workspace-wide test command;
-run each language's suite with its own tooling, as below.
+The crates use different toolchains, so no single command runs all tests.
+Run the suite of each language that you changed.
+CI runs one workflow for each language.
 
-### Shared golden fixture (cross-language parity gate)
+### Golden fixture
 
-The file `tests/fixtures/golden.json` (at the repository root) holds reference values generated
-from scipy / standard references by `tests/fixtures/generate_golden.py` — for each case: the
-test name, its params (`yates` / `delta_threshold`), the columns (with kinds), `X` / `Y` / `Z`,
-and the expected `statistic` / `p_value` / `dof` / `effect_size`. **Every** language test suite
-asserts its binding reproduces these values (within `1e-7`), so it is the cross-language numeric
-parity gate. R reads a byte-identical package-local copy so a built source archive remains
-self-contained:
+`tests/fixtures/golden.json` holds reference values that `tests/fixtures/generate_golden.py` computes with scipy and other references.
+Each case has the test name, its parameters, the columns with their kinds, `X`, `Y`, `Z`, and the expected `statistic`, `p_value`, `dof` and `effect_size`.
+Every language suite checks that its binding gives these values, within `1e-7` or the `rel_tol` of the case.
+The fixture is the numeric parity gate between the languages.
+Each suite runs every case and checks that every supported test has a case:
 
 - Rust: `crates/ci-core/tests/golden.rs`
 - Python: `crates/ci-python/test/test_golden.py`
-- R: `crates/ci-r/tests/testthat/test-golden.R`
+- R: `crates/ci-r/tests/testthat/test-golden.R` (it reads a byte-identical copy in the R package)
 - JavaScript: `crates/ci-js/tests/golden.test.js`
 
-Consumers execute every supplied case and check that every supported test is represented.
-The expected catalogue size and per-test distribution are checked only by fixture tooling,
-so adding reference cases does not require updating a count in four languages.
-
-If you change a statistic or add a test, install the pinned independent-generator dependencies,
-regenerate the fixture, and verify that its committed bytes are current:
+When you change a statistic or add a test, regenerate the fixture and check it:
 
 ```bash
 python -m pip install -r tests/fixtures/requirements.txt
@@ -334,160 +163,94 @@ python tests/fixtures/generate_golden.py
 python tests/fixtures/generate_golden.py --check
 python crates/ci-r/tools/sync_package_assets.py --sync
 python crates/ci-r/tools/sync_package_assets.py --check
+pytest tests
+# Optional: compare with a local pgmpy checkout
 python tests/fixtures/check_pgmpy_parity.py --pgmpy-source /path/to/pgmpy
 ```
 
-The final command is an optional comparison against a local pgmpy checkout; it does not
-participate in fixture generation. Pearson correlation reports `dof = n - |Z| - 2`, while
-Fisher-Z and Pearson equivalence report no degrees of freedom.
+### Rust
 
-### Rust Tests
 ```bash
-# Run the core crate's tests (includes the golden parity test)
-cargo test -p fastcit-core
-
-# Run a specific test
-cargo test -p fastcit-core test_chi_squared
-
-# Run with output (see println! statements)
-cargo test -p fastcit-core -- --nocapture
-
-# Run an example and compare its output with its output comments, as CI does for every example
+cargo test -p fastcit-core                    # includes the golden test
+cargo test -p fastcit-core test_chi_squared   # one test
+cargo test -p fastcit-core -- --nocapture     # show println! output
+# Compare an example with its output comments (CI does this for every example)
 cargo run -q -p fastcit-core --example fisher_z | python3 crates/ci-core/examples/check_output.py crates/ci-core/examples/fisher_z.rs
 ```
 
-### Python Tests
+### Python
 
-Python tests use [pytest](https://pytest.org/) and require the bindings to be built first
-via [maturin](https://www.maturin.rs/):
+The tests use [pytest](https://pytest.org/).
+Build the binding with [maturin](https://www.maturin.rs/) first.
+On a Python newer than the installed PyO3 supports, set `PYO3_USE_ABI3_FORWARD_COMPATIBILITY=1`.
 
 ```bash
 cd crates/ci-python
-
-# Install build tool and build the bindings in-place
-pip install maturin
+pip install maturin numpy pandas pandas-stubs pytest mypy ruff
 maturin develop
-
-# Run tests (includes test_golden.py) and the documentation examples (examples/*.pycon, as doctests)
-pytest
-
-# Type-check the test suite
+pytest              # tests, golden test and the examples (*.pycon) as doctests
 mypy test/
-```
-
-The CI pipeline also checks formatting and linting:
-```bash
-ruff format .
+ruff format --check .
 ruff check .
 ```
 
-### R Tests
+### R
 
-R tests use [testthat](https://testthat.r-lib.org/) via the
-[rextendr](https://extendr.github.io/rextendr/) integration:
+The tests use [testthat](https://testthat.r-lib.org/) with [rextendr](https://extendr.github.io/rextendr/).
+Run these commands in an R session in `crates/ci-r/`:
 
 ```r
-# From an R session in crates/ci-r/
-rextendr::document()  # Recompile the Rust code and regenerate wrappers
-devtools::test()      # Run all tests (includes test-golden.R)
+rextendr::document()   # compile the Rust code and regenerate the wrappers
+devtools::test()       # all tests, including test-golden.R
+lintr::lint_package()  # CI fails on any lint
 ```
 
-> **Benchmarking warning:** `rextendr::document()` and `devtools::load_all()`
-> compile the Rust core **without optimizations** (debug profile) — fine for
-> tests, useless for benchmarks. To benchmark, install a release build:
-> `NOT_CRAN=true R CMD INSTALL crates/ci-r` (the `configure` script selects
-> `--release` whenever the `DEBUG` env var is unset) and `library(fastcit)`.
-> `src/Makevars` is generated by `tools/config.R` at install time and must not
-> be committed.
+CI also checks the style of the `R/` files (not `R/extendr-wrappers.R`) with `styler`, and builds and checks the source package.
 
-The CI pipeline also checks style and linting:
-```r
-styler::style_pkg()
-lintr::lint_package()
-```
+Caution: `rextendr::document()` and `devtools::load_all()` compile the Rust core without optimization.
+This is correct for tests but not for benchmarks.
+For benchmarks, install a release build with `NOT_CRAN=true R CMD INSTALL crates/ci-r`.
+The install uses the release profile when the `DEBUG` environment variable is not set.
+The install generates `src/Makevars`.
+Do not commit it.
 
-### JavaScript Tests
+### JavaScript
 
-JavaScript tests use [vitest](https://vitest.dev/) and require the WASM package to be built
-first with [wasm-pack](https://rustwasm.github.io/wasm-pack/):
+The tests use [vitest](https://vitest.dev/).
+Build the WASM package first.
 
 ```bash
-# Build the WASM package into crates/ci-js/pkg
-wasm-pack build crates/ci-js --target nodejs
-
-# From crates/ci-js/tests
+wasm-pack build crates/ci-js --target nodejs   # writes crates/ci-js/pkg
+cd crates/ci-js
 npm ci
-npm test    # vitest, includes golden.test.js
+npm test                # includes golden.test.js
+npx prettier --check .
+npx eslint .
 ```
 
-### Test Organisation
+### Documentation
 
-- **Unit tests**: Inline in each source file, inside `#[cfg(test)] mod tests { }`
-- **Golden parity tests**: one per language, with R reading its synchronized package copy
-- **Python integration tests**: [`crates/ci-python/test`](crates/ci-python/test)
-- **R tests**: `crates/ci-r/tests/testthat/`
-- **JavaScript tests**: [`crates/ci-js/tests`](crates/ci-js/tests)
+Build the documentation site with warnings as errors (Python 3.13 or newer):
 
-
-### Writing Tests
-
-- Use descriptive test names: `test_chi_squared_with_independent_variables`
-- Test both success and error cases
-- Add regression tests for bugs you fix
-
-## Pull Request Process
-
-### Before Opening a PR
-
-1. **Create a feature branch** from `main`:
 ```bash
-   git checkout -b feature/your-feature-name
+pip install -r docs/requirements.txt -c docs/constraints.txt
+sphinx-build -W -b html docs site
+pytest tests/test_docs_site.py
 ```
 
-2. **Make your changes** and commit with clear messages
+## Pull requests
 
-3. **Ensure all checks pass locally** (run the suites for the languages you touched — see
-   [Testing](#testing); for a core change):
-```bash
-   cargo fmt --all
-   cargo clippy -p fastcit-core --all-targets -- -D warnings
-   cargo test -p fastcit-core
-```
+1. Create a branch from `main`: `git checkout -b feature/your-feature-name`.
+2. Commit your changes.
+3. Run the checks for each language that you changed (see [Testing](#testing)).
+4. For a core change, also run `cargo fmt --all`, the Clippy command and `cargo test -p fastcit-core`.
+5. Push the branch and open a pull request to `main` on GitHub.
+6. Fill in the template: the change, the related issues, the incompatible changes and the checklist.
+7. Request a review from at least one maintainer.
 
-4. **Push your branch**:
-```bash
-   git push origin feature/your-feature-name
-```
-
-### Opening the PR
-
-1. Go to GitHub and create a Pull Request from your branch to `main`
-
-2. **Fill out the PR template** (auto-generated):
-   - Describe what the PR does
-   - Link related issues
-   - List breaking changes (if any)
-   - Checklist: tests added, docs updated
-
-3. **Request review** from at least one team member
-
-### After Opening
-
-- **CI must pass**: GitHub Actions will run all checks automatically (separate workflows for Rust, Python, R, and JS)
-- **Address review comments**: Make changes and push new commits
-- **Keep PR updated**: Rebase on `main` if needed to resolve conflicts
-
-### Merging
-
-- PRs require at least one approval from a team member
-- All CI checks must pass (green checkmarks)
-- We use **squash merging**: Multiple commits become one clean commit on `main`
-- Delete your feature branch after merging
-
-
-## Additional Resources
-
-- [Rust Book](https://doc.rust-lang.org/book/) - Learn Rust
-- [PyO3 Guide](https://pyo3.rs/) - Python bindings
-- [extendr Guide](https://extendr.github.io/) - R bindings
-- [wasm-pack](https://rustwasm.github.io/wasm-pack/) - JavaScript/WASM bindings
+All CI checks must pass.
+Answer review comments with new commits.
+Rebase on `main` to resolve conflicts.
+A pull request needs one approval.
+The maintainers squash merge: the commits become one commit on `main`.
+Delete your branch after the merge.

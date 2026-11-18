@@ -77,10 +77,11 @@
     return value.toFixed(value >= 10 ? 1 : value >= 1 ? 2 : 3);
   }
 
-  // Tick labels in one style on every axis: 0.01, 100, 1K, 10K.
+  // Tick labels in one style on every axis: 0.05, 100, 1K, 10K.
   function tick(value) {
+    value = +value.toPrecision(12); // a multiple of a step has float noise (3 * 0.1)
     if (value >= 1000) return grouped(value / 1000) + "K";
-    return value < 1 ? String(+value.toPrecision(1)) : grouped(value);
+    return value < 1 ? String(value) : grouped(value);
   }
 
   function colour(engine) {
@@ -256,11 +257,13 @@
     var sx = function (v) {
       return m.left + pad + ((fx(v) - x0) / (x1 - x0 || 1)) * (width - m.left - m.right - 2 * pad);
     };
-    var lo = Math.floor(Math.log10(Math.min.apply(null, all)));
-    var hi = Math.ceil(Math.log10(Math.max.apply(null, all)));
-    if (hi === lo) hi += 1;
+    // Linear y from 0 to a round value above the largest time: about five gridlines, 1, 2 or 5 units apart.
+    var most = Math.max.apply(null, all) || 1;
+    var unit = Math.pow(10, Math.floor(Math.log10(most / 5)));
+    var step = unit * [1, 2, 5, 10].filter(function (k) { return k * unit >= most / 5; })[0];
+    var top = Math.ceil(most / step - 1e-9) * step;
     var sy = function (v) {
-      return m.top + ((hi - Math.log10(v)) / (hi - lo)) * (height - m.top - m.bottom);
+      return m.top + (1 - v / top) * (height - m.top - m.bottom);
     };
     var bottom = height - m.bottom;
 
@@ -268,12 +271,11 @@
     chart.setAttribute("aria-label", "Line chart: " + Y_TITLE + " against " + AXES[axis].toLowerCase() + " " +
       SYMBOLS[axis] + ". The arrow keys move between the points. The Table button shows all values.");
 
-    // Axes: a gridline per power of ten, a tick per point.
-    for (var e = lo; e <= hi; e++) {
-      var y = sy(Math.pow(10, e));
+    // Axes: a gridline per step of the time axis, a tick per point.
+    for (var g = 0; g * step <= top * (1 + 1e-9); g++) {
+      var y = sy(g * step);
       svg(chart, "line", { x1: m.left, x2: width - m.right, y1: y, y2: y }, "sweep-grid");
-      svg(chart, "text", { x: m.left - 8, y: y + 4, "text-anchor": "end" }, "sweep-tick",
-        tick(Math.pow(10, e)));
+      svg(chart, "text", { x: m.left - 8, y: y + 4, "text-anchor": "end" }, "sweep-tick", tick(g * step));
     }
     svg(chart, "line", { x1: m.left, x2: width - m.right, y1: bottom, y2: bottom }, "sweep-axis");
     xs.forEach(function (x) {
@@ -438,9 +440,6 @@
       // HSIC has no |Z| sweep: show n, and keep the choice for the other tests.
       var axis = row.sweeps[state.axis] ? state.axis : Object.keys(row.sweeps)[0];
       var sweep = row.sweeps[axis];
-      sweep.series.forEach(function (series) { // the log axis has no place for 0: a value <= 0 is missing
-        series.values = series.values.map(function (v) { return v > 0 ? v : null; });
-      });
 
       langControl.set(state.lang);
       axisControl.set(axis, function (value) {
