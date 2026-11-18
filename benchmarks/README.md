@@ -383,11 +383,10 @@ It warns when the machine is not on AC power or the profile is not `performance`
 The script never changes the power profile.
 Stop other jobs before the run.
 
-The full run takes about 20 to 35 minutes for Python, about 2 minutes for dowhy and about 16 minutes for R.
-The two largest |Z| values (6 and 8) add about 5 minutes to the Python run and about 1 minute to the R run.
-HSIC and KCI at n = 3 000 and n = 10 000 add about 40 minutes to the Python run and about 6 minutes to the R run.
-Most of this time is one KCI pass at n = 10 000 for pgmpy and for causal-learn.
-These times are an estimate.
+On a desktop computer with 16 cores (AMD Ryzen 9 7950X), the full run takes about 1 hour.
+The Python run takes 54 minutes, the dowhy run a few seconds and the R run 4 minutes.
+About 45 minutes of the Python run is the KCI test at n = 10 000 for pgmpy and for causal-learn.
+A slower computer needs more time.
 The script stops at the first error and names the step.
 To run a failed step again, use its own command (the script runs the same commands in this order):
 

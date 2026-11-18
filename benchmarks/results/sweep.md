@@ -1,27 +1,27 @@
 # FastCIT sweep benchmark
 
-The tables give the median time of one test call, in milliseconds. Lower is better. Each test has one table for the sample size n and one for the conditioning-set size |Z|. Each column is one value of n or |Z|.
+The tables give the mean time of one test call, in milliseconds. Lower is better. Each test has one table for the sample size n and one for the conditioning-set size |Z|. Each column is one value of n or |Z|.
 
-Each cell is the median over the queries of a point. Each query keeps its fastest pass. An engine that passes the time budget skips the larger points. HSIC and KCI do not run above their memory limit. — means no result. Other marks are explained under each table.
+Each cell is the mean over the calls of a point, with the standard deviation after ±. Each package runs every query once. The first call is the warm-up call, and the mean does not include it. An engine that passes the time budget skips the larger points. HSIC and KCI do not run above their memory limit. — means no result. Other marks are explained under each table.
 
 ## Setup
 
-- Python: Python 3.14.2, AMD Ryzen 9 7950X 16-Core Processor (32 logical CPUs), Linux 7.0.0-42-generic, 2026-11-18 09:01:04; passes per point: 3; time budget: 60 s.
+- Python: Python 3.14.2, AMD Ryzen 9 7950X 16-Core Processor (32 logical CPUs), Linux 7.0.0-42-generic, 2026-11-18 12:29:17; passes per point: 1; time budget: 60 s.
   - versions: causal-learn 0.1.4.5, fastcit 0.1.0, gcastle 1.0.4, hyppo 0.5.2, pgmpy 1.1.2, pingouin 0.7.0, tigramite 5.2.10.1, numpy 2.4.1, pandas 3.0.0, scipy 1.17.0, scikit-learn 1.8.0
-  - dowhy run: Python 3.11.10, 2026-11-18 10:05:23, versions: dowhy 0.14, fastcit 0.1.0, numpy 2.4.6, pandas 3.1.1, scipy 1.15.3, scikit-learn 1.9.1
-  - same-interpreter FastCIT reference (gcm, n, not a table row): 0.0033, 0.0090, 0.028, 0.081, 0.268, 0.804, 2.69 ms
-  - same-interpreter FastCIT reference (gcm, z, not a table row): 0.017, 0.028, 0.039, 0.052, 0.066, 0.095, 0.133 ms
-- R: R version 4.5.3 (2026-03-11), AMD Ryzen 9 7950X 16-Core Processor (32 logical CPUs), Linux 7.0.0-42-generic, 2026-11-18 10:05:30; passes per point: 3; time budget: 60 s.
+  - dowhy run: Python 3.11.10, 2026-11-18 13:23:32, versions: dowhy 0.14, fastcit 0.1.0, numpy 2.4.6, pandas 3.1.1, scipy 1.15.3, scikit-learn 1.9.1
+  - same-interpreter FastCIT reference (gcm, n, not a table row): 0.0036, 0.0091, 0.028, 0.084, 0.274, 0.820, 2.74 ms
+  - same-interpreter FastCIT reference (gcm, z, not a table row): 0.017, 0.029, 0.039, 0.053, 0.068, 0.099, 0.133 ms
+- R: R version 4.5.3 (2026-03-11), AMD Ryzen 9 7950X 16-Core Processor (32 logical CPUs), Linux 7.0.0-42-generic, 2026-11-18 13:23:36; passes per point: 1; time budget: 60 s.
   - versions: fastcit 0.0.0.9000, pcalg 2.7.12, bnlearn 5.2.1, dHSIC 2.2, Rfast 2.1.5.2, ppcor 1.1, comets 0.2.3
 
 ### Python, χ², sample size (|Z| = 1)
 
 | Package | 100 | 300 | 1 000 | 3 000 | 10 000 | 30 000 | 100 000 |
 |---|---:|---:|---:|---:|---:|---:|---:|
-| FastCIT | 0.0020 | 0.0027 | 0.0053 | 0.013 | 0.040 | 0.111 | 0.376 |
-| pgmpy devᵃ | 0.048 | 0.050 | 0.050 | 0.054 | 0.069 | 0.103 | 0.237 |
-| causal-learn | 0.062 | 0.063 | 0.063 | 0.070 | 0.095 | 0.159 | 0.387 |
-| gcastleᵃ | 1.87 | 1.90 | 1.94 | 2.02 | 3.73 | 5.02 | 12.3 |
+| FastCIT | 0.0024 ± 0.00081 | 0.0027 ± 0.00064 | 0.0050 ± 0.0014 | 0.013 ± 0.0044 | 0.037 ± 0.013 | 0.112 ± 0.044 | 0.332 ± 0.115 |
+| pgmpy devᵃ | 0.056 ± 0.012 | 0.054 ± 0.0092 | 0.057 ± 0.013 | 0.062 ± 0.012 | 0.073 ± 0.011 | 0.111 ± 0.013 | 0.274 ± 0.033 |
+| causal-learn | 0.066 ± 0.0100 | 0.069 ± 0.0075 | 0.071 ± 0.0071 | 0.074 ± 0.0077 | 0.101 ± 0.011 | 0.177 ± 0.010 | 0.395 ± 0.012 |
+| gcastleᵃ | 1.91 ± 0.438 | 1.98 ± 0.463 | 2.07 ± 0.522 | 2.18 ± 0.494 | 3.91 ± 0.463 | 5.91 ± 0.603 | 11.3 ± 0.421 |
 
 - ᵃ pgmpy and gcastle apply the Yates correction on 2 × 2 tables and cannot turn it off. FastCIT runs without it.
 
@@ -29,10 +29,10 @@ Each cell is the median over the queries of a point. Each query keeps its fastes
 
 | Package | 0 | 1 | 2 | 3 | 4 | 6 | 8 |
 |---|---:|---:|---:|---:|---:|---:|---:|
-| FastCIT | 0.0015 | 0.0055 | 0.0068 | 0.0095 | 0.016 | 0.029 | 0.032 |
-| pgmpy devᵃ | 0.048 | 0.053 | 0.054 | 0.059 | 0.078 | 0.210 | 0.843 |
-| causal-learn | 0.051 | 0.066 | 0.069 | 0.075 | 0.088 | 0.164 | 0.288 |
-| gcastleᵃ | 0.598 | 1.92 | 5.41 | 13.0 | 34.4 | 151 | 283 |
+| FastCIT | 0.0019 ± 0.00034 | 0.0053 ± 0.0017 | 0.0070 ± 0.0011 | 0.010 ± 0.0022 | 0.016 ± 0.0048 | 0.028 ± 0.0058 | 0.035 ± 0.0080 |
+| pgmpy devᵃ | 0.052 ± 0.0088 | 0.057 ± 0.013 | 0.057 ± 0.0098 | 0.064 ± 0.014 | 0.078 ± 0.016 | 0.200 ± 0.057 | 1.32 ± 1.02 |
+| causal-learn | 0.072 ± 0.0079 | 0.068 ± 0.0086 | 0.071 ± 0.0096 | 0.085 ± 0.011 | 0.092 ± 0.017 | 0.165 ± 0.027 | 0.292 ± 0.049 |
+| gcastleᵃ | 0.615 ± 0.035 | 2.02 ± 0.474 | 5.80 ± 2.21 | 14.4 ± 7.16 | 36.4 ± 12.9 | 157 ± 41.1 | 283 ± 43.1 |
 
 - ᵃ pgmpy and gcastle apply the Yates correction on 2 × 2 tables and cannot turn it off. FastCIT runs without it.
 
@@ -40,11 +40,11 @@ Each cell is the median over the queries of a point. Each query keeps its fastes
 
 | Package | 100 | 300 | 1 000 | 3 000 | 10 000 | 30 000 | 100 000 |
 |---|---:|---:|---:|---:|---:|---:|---:|
-| FastCIT | 0.0019 | 0.0026 | 0.0055 | 0.013 | 0.039 | 0.114 | 0.370 |
-| pgmpy devᵃ | 0.046 | 0.047 | 0.049 | 0.053 | 0.066 | 0.102 | 0.239 |
-| causal-learn | 0.064 | 0.063 | 0.066 | 0.072 | 0.097 | 0.161 | 0.392 |
-| gcastleᵃ | 1.86 | 1.88 | 1.92 | 2.03 | 2.33 | 3.29 | 12.8 |
-| tigramite | 0.238 | 0.277 | 0.360 | 0.672 | 1.61 | 3.70 | 13.4 |
+| FastCIT | 0.0021 ± 0.00070 | 0.0026 ± 0.00057 | 0.0050 ± 0.0015 | 0.012 ± 0.0037 | 0.035 ± 0.012 | 0.100 ± 0.035 | 0.333 ± 0.116 |
+| pgmpy devᵃ | 0.049 ± 0.012 | 0.051 ± 0.0087 | 0.054 ± 0.010 | 0.056 ± 0.0089 | 0.074 ± 0.011 | 0.111 ± 0.014 | 0.250 ± 0.024 |
+| causal-learn | 0.068 ± 0.0087 | 0.070 ± 0.0072 | 0.069 ± 0.0086 | 0.078 ± 0.0083 | 0.100 ± 0.0071 | 0.167 ± 0.0076 | 0.416 ± 0.016 |
+| gcastleᵃ | 1.88 ± 0.418 | 1.96 ± 0.463 | 2.00 ± 0.456 | 2.12 ± 0.475 | 2.50 ± 0.490 | 3.50 ± 0.541 | 13.1 ± 0.450 |
+| tigramite | 0.250 ± 0.035 | 0.278 ± 0.026 | 0.425 ± 0.092 | 0.698 ± 0.128 | 1.65 ± 0.315 | 4.33 ± 0.915 | 16.2 ± 4.66 |
 
 - ᵃ pgmpy and gcastle apply the Yates correction on 2 × 2 tables and cannot turn it off. FastCIT runs without it.
 
@@ -52,23 +52,23 @@ Each cell is the median over the queries of a point. Each query keeps its fastes
 
 | Package | 0 | 1 | 2 | 3 | 4 | 6 | 8 |
 |---|---:|---:|---:|---:|---:|---:|---:|
-| FastCIT | 0.0013 | 0.0053 | 0.0061 | 0.0077 | 0.011 | 0.023 | 0.029 |
-| pgmpy devᵃ | 0.045 | 0.048 | 0.052* | 0.058* | —§ | —§ | —§ |
-| causal-learn | 0.050 | 0.066 | 0.071 | 0.074 | 0.090 | 0.176 | 0.300 |
-| gcastleᵃ | 0.594 | 1.91 | 5.25 | 12.9 | 34.4 | 150 | 280 |
-| tigramite | 0.280 | 0.358 | 0.567 | 0.885 | 1.84 | 10.6 | 45.9 |
+| FastCIT | 0.0015 ± 0.00020 | 0.0049 ± 0.0014 | 0.0065 ± 0.00071 | 0.0087 ± 0.0017 | 0.012 ± 0.0029 | 0.022 ± 0.0042 | 0.032 ± 0.0083 |
+| pgmpy devᵃ | 0.048 ± 0.010 | 0.055 ± 0.0091 | 0.054 ± 0.0082* | 0.059 ± 0.0069* | —§ | —§ | —§ |
+| causal-learn | 0.053 ± 0.0072 | 0.071 ± 0.011 | 0.077 ± 0.011 | 0.082 ± 0.0097 | 0.097 ± 0.017 | 0.172 ± 0.030 | 0.317 ± 0.052 |
+| gcastleᵃ | 0.613 ± 0.040 | 2.08 ± 0.488 | 5.92 ± 2.16 | 14.5 ± 7.12 | 37.0 ± 13.0 | 157 ± 40.7 | 281 ± 41.8 |
+| tigramite | 0.288 ± 0.024 | 0.370 ± 0.033 | 0.577 ± 0.106 | 0.948 ± 0.334 | 2.02 ± 0.615 | 11.1 ± 3.20 | 62.9 ± 46.3 |
 
 - ᵃ pgmpy and gcastle apply the Yates correction on 2 × 2 tables and cannot turn it off. FastCIT runs without it.
 - § No result. Every query raised an error or returned NaN, or fewer than half of them gave a value. pgmpy dev at 4: 17 of 20 queries gave NaN or an error.
-- \* Some queries raised an error or returned NaN. The median uses the other queries. pgmpy dev at 2: 2 of 20 queries left out; pgmpy dev at 3: 4 of 20 queries left out.
+- \* Some queries raised an error or returned NaN. The mean uses the other queries. pgmpy dev at 2: 2 of 20 queries left out; pgmpy dev at 3: 4 of 20 queries left out.
 
 ### Python, Cressie-Read, sample size (|Z| = 1)
 
 | Package | 100 | 300 | 1 000 | 3 000 | 10 000 | 30 000 | 100 000 |
 |---|---:|---:|---:|---:|---:|---:|---:|
-| FastCIT | 0.0021 | 0.0032 | 0.0057 | 0.013 | 0.042 | 0.120 | 0.383 |
-| pgmpy devᵃ | 0.049 | 0.052 | 0.052 | 0.058 | 0.072 | 0.109 | 0.245 |
-| gcastleᵃ | 1.90 | 1.97 | 2.04 | 2.18 | 2.44 | 3.45 | 11.9 |
+| FastCIT | 0.0023 ± 0.00068 | 0.0028 ± 0.00066 | 0.0052 ± 0.0014 | 0.012 ± 0.0037 | 0.036 ± 0.012 | 0.102 ± 0.036 | 0.328 ± 0.116 |
+| pgmpy devᵃ | 0.055 ± 0.011 | 0.056 ± 0.011 | 0.055 ± 0.0093 | 0.059 ± 0.010 | 0.077 ± 0.012 | 0.108 ± 0.012 | 0.245 ± 0.024 |
+| gcastleᵃ | 1.93 ± 0.437 | 2.02 ± 0.497 | 2.02 ± 0.477 | 2.15 ± 0.482 | 2.49 ± 0.490 | 3.43 ± 0.496 | 13.1 ± 0.396 |
 
 - ᵃ pgmpy and gcastle apply the Yates correction on 2 × 2 tables and cannot turn it off. FastCIT runs without it.
 
@@ -76,9 +76,9 @@ Each cell is the median over the queries of a point. Each query keeps its fastes
 
 | Package | 0 | 1 | 2 | 3 | 4 | 6 | 8 |
 |---|---:|---:|---:|---:|---:|---:|---:|
-| FastCIT | 0.0015 | 0.0055 | 0.0071 | 0.0095 | 0.017 | 0.029 | 0.032 |
-| pgmpy devᵃ | 0.048 | 0.052 | 0.057 | 0.062 | 0.085 | 0.255 | 1.19 |
-| gcastleᵃ | 0.620 | 2.00 | 5.42 | 13.6 | 35.5 | 153 | 280 |
+| FastCIT | 0.0017 ± 0.00034 | 0.0051 ± 0.0014 | 0.0072 ± 0.0011 | 0.010 ± 0.0029 | 0.016 ± 0.0046 | 0.029 ± 0.0062 | 0.036 ± 0.0079 |
+| pgmpy devᵃ | 0.055 ± 0.0097 | 0.055 ± 0.0090 | 0.058 ± 0.0086 | 0.067 ± 0.015 | 0.087 ± 0.022 | 0.252 ± 0.075 | 1.80 ± 1.40 |
+| gcastleᵃ | 0.617 ± 0.030 | 2.01 ± 0.464 | 5.64 ± 2.06 | 14.4 ± 7.15 | 36.5 ± 12.9 | 156 ± 40.5 | 276 ± 42.0 |
 
 - ᵃ pgmpy and gcastle apply the Yates correction on 2 × 2 tables and cannot turn it off. FastCIT runs without it.
 
@@ -86,33 +86,33 @@ Each cell is the median over the queries of a point. Each query keeps its fastes
 
 | Package | 100 | 300 | 1 000 | 3 000 | 10 000 | 30 000 | 100 000 |
 |---|---:|---:|---:|---:|---:|---:|---:|
-| FastCIT | 0.0022 | 0.0031 | 0.0057 | 0.014 | 0.040 | 0.112 | 0.368 |
-| pgmpy devᵃ | —§ | 0.052* | 0.052* | 0.055* | 0.073* | 0.104* | 0.239 |
-| gcastleᵃ | —§ | 1.94* | 1.99* | 2.01* | 2.33* | 3.24* | 11.4 |
+| FastCIT | 0.0023 ± 0.00062 | 0.0029 ± 0.00068 | 0.0052 ± 0.0013 | 0.012 ± 0.0037 | 0.035 ± 0.012 | 0.106 ± 0.037 | 0.328 ± 0.113 |
+| pgmpy devᵃ | —§ | 0.055 ± 0.0090* | 0.056 ± 0.011* | 0.061 ± 0.011* | 0.077 ± 0.014* | 0.107 ± 0.010* | 0.243 ± 0.021 |
+| gcastleᵃ | —§ | 1.78 ± 0.511* | 1.94 ± 0.484* | 2.08 ± 0.491* | 2.37 ± 0.473* | 3.35 ± 0.490* | 12.9 ± 0.442 |
 
 - ᵃ pgmpy and gcastle apply the Yates correction on 2 × 2 tables and cannot turn it off. FastCIT runs without it.
 - § No result. Every query raised an error or returned NaN, or fewer than half of them gave a value. pgmpy dev at 100: 12 of 20 queries gave NaN or an error; gcastle at 100: 12 of 20 queries gave NaN or an error.
-- \* Some queries raised an error or returned NaN. The median uses the other queries. pgmpy dev at 300: 9 of 20 queries left out; pgmpy dev at 1 000: 4 of 20 queries left out; pgmpy dev at 3 000: 3 of 20 queries left out; pgmpy dev at 10 000: 2 of 20 queries left out; pgmpy dev at 30 000: 1 of 20 queries left out; gcastle at 300: 9 of 20 queries left out; gcastle at 1 000: 4 of 20 queries left out; gcastle at 3 000: 3 of 20 queries left out; gcastle at 10 000: 2 of 20 queries left out; gcastle at 30 000: 1 of 20 queries left out.
+- \* Some queries raised an error or returned NaN. The mean uses the other queries. pgmpy dev at 300: 9 of 20 queries left out; pgmpy dev at 1 000: 4 of 20 queries left out; pgmpy dev at 3 000: 3 of 20 queries left out; pgmpy dev at 10 000: 2 of 20 queries left out; pgmpy dev at 30 000: 1 of 20 queries left out; gcastle at 300: 9 of 20 queries left out; gcastle at 1 000: 4 of 20 queries left out; gcastle at 3 000: 3 of 20 queries left out; gcastle at 10 000: 2 of 20 queries left out; gcastle at 30 000: 1 of 20 queries left out.
 
 ### Python, Freeman-Tukey, conditioning-set size (n = 1 000)
 
 | Package | 0 | 1 | 2 | 3 | 4 | 6 | 8 |
 |---|---:|---:|---:|---:|---:|---:|---:|
-| FastCIT | 0.0015 | 0.0056 | 0.0068 | 0.0089 | 0.016 | 0.028 | 0.032 |
-| pgmpy devᵃ | 0.047 | 0.051* | —§ | —§ | —§ | —§ | —§ |
-| gcastleᵃ | 0.594 | 1.91* | —§ | —§ | —§ | —§ | —§ |
+| FastCIT | 0.0016 ± 0.00032 | 0.0051 ± 0.0013 | 0.0070 ± 0.0010 | 0.010 ± 0.0022 | 0.016 ± 0.0049 | 0.031 ± 0.0067 | 0.036 ± 0.0083 |
+| pgmpy devᵃ | 0.052 ± 0.0091 | 0.056 ± 0.011* | —§ | —§ | —§ | —§ | —§ |
+| gcastleᵃ | 0.615 ± 0.042 | 1.93 ± 0.484* | —§ | —§ | —§ | —§ | —§ |
 
 - ᵃ pgmpy and gcastle apply the Yates correction on 2 × 2 tables and cannot turn it off. FastCIT runs without it.
 - § No result. Every query raised an error or returned NaN, or fewer than half of them gave a value. pgmpy dev at 2: 15 of 20 queries gave NaN or an error; pgmpy dev at 3: 18 of 20 queries gave NaN or an error; pgmpy dev at 4: 19 of 20 queries gave NaN or an error; pgmpy dev at 6: 19 of 20 queries gave NaN or an error; pgmpy dev at 8: 17 of 20 queries gave NaN or an error; gcastle at 2: 15 of 20 queries gave NaN or an error; gcastle at 3: 18 of 20 queries gave NaN or an error; gcastle at 4: 19 of 20 queries gave NaN or an error; gcastle at 6: 19 of 20 queries gave NaN or an error; gcastle at 8: 17 of 20 queries gave NaN or an error.
-- \* Some queries raised an error or returned NaN. The median uses the other queries. pgmpy dev at 1: 4 of 20 queries left out; gcastle at 1: 4 of 20 queries left out.
+- \* Some queries raised an error or returned NaN. The mean uses the other queries. pgmpy dev at 1: 4 of 20 queries left out; gcastle at 1: 4 of 20 queries left out.
 
 ### Python, Modified log-likelihood, sample size (|Z| = 1)
 
 | Package | 100 | 300 | 1 000 | 3 000 | 10 000 | 30 000 | 100 000 |
 |---|---:|---:|---:|---:|---:|---:|---:|
-| FastCIT | 0.0019 | 0.0026 | 0.0054 | 0.013 | 0.040 | 0.115 | 0.370 |
-| pgmpy devᵃ | 0.043 | 0.045 | 0.048 | 0.053 | 0.066 | 0.101 | 0.237 |
-| gcastleᵃ | 1.87 | 1.88 | 1.92 | 2.02 | 2.32 | 3.26 | 11.6 |
+| FastCIT | 0.0019 ± 0.00058 | 0.0026 ± 0.00056 | 0.0049 ± 0.0014 | 0.012 ± 0.0039 | 0.035 ± 0.012 | 0.101 ± 0.036 | 0.326 ± 0.115 |
+| pgmpy devᵃ | 0.048 ± 0.016 | 0.048 ± 0.011 | 0.053 ± 0.011 | 0.055 ± 0.0095 | 0.070 ± 0.011 | 0.106 ± 0.012 | 0.240 ± 0.021 |
+| gcastleᵃ | 1.89 ± 0.429 | 2.03 ± 0.458 | 2.03 ± 0.471 | 2.10 ± 0.468 | 2.43 ± 0.463 | 3.62 ± 0.482 | 13.1 ± 0.489 |
 
 - ᵃ pgmpy and gcastle apply the Yates correction on 2 × 2 tables and cannot turn it off. FastCIT runs without it.
 
@@ -120,87 +120,86 @@ Each cell is the median over the queries of a point. Each query keeps its fastes
 
 | Package | 0 | 1 | 2 | 3 | 4 | 6 | 8 |
 |---|---:|---:|---:|---:|---:|---:|---:|
-| FastCIT | 0.0014 | 0.0053 | 0.0061 | 0.0075 | 0.012 | 0.023 | 0.028 |
-| pgmpy devᵃ | 0.045 | 0.047 | 0.043* | 0.047* | —§ | —§ | —§ |
-| gcastleᵃ | 0.596 | 1.91 | 5.24 | 13.0 | 34.5 | 149 | 278 |
+| FastCIT | 0.0015 ± 0.00031 | 0.0049 ± 0.0013 | 0.0063 ± 0.00064 | 0.0080 ± 0.0015 | 0.012 ± 0.0031 | 0.022 ± 0.0040 | 0.034 ± 0.0099 |
+| pgmpy devᵃ | 0.050 ± 0.0078 | 0.052 ± 0.0095 | 0.049 ± 0.0094* | 0.052 ± 0.011* | —§ | —§ | —§ |
+| gcastleᵃ | 0.614 ± 0.032 | 2.01 ± 0.466 | 5.74 ± 2.14 | 14.4 ± 7.11 | 36.7 ± 13.0 | 157 ± 40.4 | 277 ± 42.2 |
 
 - ᵃ pgmpy and gcastle apply the Yates correction on 2 × 2 tables and cannot turn it off. FastCIT runs without it.
 - § No result. Every query raised an error or returned NaN, or fewer than half of them gave a value. pgmpy dev at 4: 17 of 20 queries gave NaN or an error.
-- \* Some queries raised an error or returned NaN. The median uses the other queries. pgmpy dev at 2: 2 of 20 queries left out; pgmpy dev at 3: 4 of 20 queries left out.
+- \* Some queries raised an error or returned NaN. The mean uses the other queries. pgmpy dev at 2: 2 of 20 queries left out; pgmpy dev at 3: 4 of 20 queries left out.
 
 ### Python, Fisher-z, sample size (|Z| = 1)
 
 | Package | 100 | 300 | 1 000 | 3 000 | 10 000 | 30 000 | 100 000 |
 |---|---:|---:|---:|---:|---:|---:|---:|
-| FastCITᵃ | 0.00050 | 0.00051 | 0.00053 | 0.00051 | 0.00054 | 0.00054 | 0.00065 |
-| pgmpy devᵃ | 0.380 | 0.383 | 0.403 | 0.458 | 0.636 | 1.11 | 2.72 |
-| causal-learnᵃ | 0.030 | 0.030 | 0.030 | 0.029 | 0.030 | 0.029 | 0.029 |
-| gcastleᵃ | 0.047 | 0.049 | 0.055 | 0.069 | 0.107 | 0.208 | 0.565 |
+| FastCITᵃ | 0.00056 ± 0.00022 | 0.00061 ± 0.00014 | 0.00064 ± 0.00023 | 0.00068 ± 0.00020 | 0.00076 ± 0.00034 | 0.00077 ± 0.00040 | 0.0011 ± 0.0013 |
+| pgmpy devᵃ | 0.408 ± 0.033 | 0.405 ± 0.026 | 0.424 ± 0.023 | 0.475 ± 0.027 | 0.649 ± 0.029 | 1.13 ± 0.035 | 2.73 ± 0.035 |
+| causal-learnᵃ | 0.036 ± 0.0076 | 0.034 ± 0.0050 | 0.033 ± 0.0056 | 0.033 ± 0.0049 | 0.034 ± 0.0053 | 0.034 ± 0.0081 | 0.033 ± 0.0063 |
+| gcastleᵃ | 0.055 ± 0.0092 | 0.055 ± 0.0084 | 0.060 ± 0.0086 | 0.074 ± 0.0095 | 0.114 ± 0.012 | 0.218 ± 0.019 | 0.580 ± 0.027 |
 
-- ᵃ The time does not include the one-time setup. FastCIT builds the correlation matrix in its first call, and the median leaves that call out, so its time stays flat as n grows. causal-learn builds it at setup and stays flat too. pgmpy and pingouin build it in every call, so their time grows with n.
+- ᵃ The time does not include the one-time setup or the first call. FastCIT builds the correlation matrix in its first call, so its time stays flat as n grows. causal-learn builds it at setup and stays flat too. pgmpy and pingouin build it in every call, so their time grows with n.
 
 ### Python, Fisher-z, conditioning-set size (n = 1 000)
 
 | Package | 0 | 1 | 2 | 3 | 4 | 6 | 8 |
 |---|---:|---:|---:|---:|---:|---:|---:|
-| FastCITᵃ | 0.00047 | 0.00049 | 0.00057 | 0.00062 | 0.00069 | 0.00098 | 0.0012 |
-| pgmpy devᵃ | 0.202 | 0.408 | 0.421 | 0.440 | 0.448 | 0.474 | 0.503 |
-| causal-learnᵃ | 0.029 | 0.030 | 0.029 | 0.031 | 0.032 | 0.031 | 0.034 |
-| gcastleᵃ | 0.044 | 0.054 | 0.052 | 0.058 | 0.059 | 0.061 | 0.066 |
+| FastCITᵃ | 0.00056 ± 0.00022 | 0.00061 ± 0.00016 | 0.0012 ± 0.00047 | 0.00072 ± 0.00021 | 0.00081 ± 0.00020 | 0.0012 ± 0.00053 | 0.0014 ± 0.00052 |
+| pgmpy devᵃ | 0.220 ± 0.028 | 0.424 ± 0.027 | 0.447 ± 0.042 | 0.454 ± 0.030 | 0.468 ± 0.026 | 0.490 ± 0.030 | 0.518 ± 0.025 |
+| causal-learnᵃ | 0.031 ± 0.0047 | 0.034 ± 0.0068 | 0.033 ± 0.0046 | 0.034 ± 0.0050 | 0.034 ± 0.0056 | 0.035 ± 0.0058 | 0.038 ± 0.0065 |
+| gcastleᵃ | 0.049 ± 0.0074 | 0.060 ± 0.0080 | 0.059 ± 0.0090 | 0.065 ± 0.0096 | 0.064 ± 0.0091 | 0.066 ± 0.011 | 0.076 ± 0.012 |
 
-- ᵃ The time does not include the one-time setup. FastCIT builds the correlation matrix in its first call, and the median leaves that call out, so its time stays flat as n grows. causal-learn builds it at setup and stays flat too. pgmpy and pingouin build it in every call, so their time grows with n.
+- ᵃ The time does not include the one-time setup or the first call. FastCIT builds the correlation matrix in its first call, so its time stays flat as n grows. causal-learn builds it at setup and stays flat too. pgmpy and pingouin build it in every call, so their time grows with n.
 
 ### Python, Pearson t, sample size (|Z| = 1)
 
 | Package | 100 | 300 | 1 000 | 3 000 | 10 000 | 30 000 | 100 000 |
 |---|---:|---:|---:|---:|---:|---:|---:|
-| FastCITᵃ | 0.00066 | 0.00064 | 0.00072 | 0.00061 | 0.00066 | 0.00070 | 0.00077 |
-| pgmpy devᵃ | 0.345 | 0.354 | 0.370 | 0.421 | 0.596 | 1.08 | 2.71 |
-| tigramiteᵃ | 0.294 | 0.315 | 0.375 | 0.544 | 1.13 | 3.08 | 9.74 |
-| pingouinᵃ | 1.37 | 1.39 | 1.43 | 1.61 | 1.97 | 2.95 | 7.92 |
+| FastCITᵃ | 0.00074 ± 0.00016 | 0.00074 ± 0.00017 | 0.00083 ± 0.00019 | 0.00082 ± 0.00024 | 0.00085 ± 0.00033 | 0.00089 ± 0.00032 | 0.0011 ± 0.00079 |
+| pgmpy devᵃ | 0.362 ± 0.028 | 0.371 ± 0.033 | 0.388 ± 0.036 | 0.450 ± 0.028 | 0.612 ± 0.030 | 1.11 ± 0.045 | 2.71 ± 0.071 |
+| tigramiteᵃ | 0.310 ± 0.024 | 0.332 ± 0.022 | 0.389 ± 0.022 | 0.563 ± 0.027 | 1.14 ± 0.020 | 3.11 ± 0.019 | 9.83 ± 0.016 |
+| pingouinᵃ | 1.41 ± 0.051 | 1.42 ± 0.035 | 1.46 ± 0.031 | 1.61 ± 0.025 | 2.00 ± 0.025 | 3.04 ± 0.229 | 8.25 ± 0.611 |
 
-- ᵃ The time does not include the one-time setup. FastCIT builds the correlation matrix in its first call, and the median leaves that call out, so its time stays flat as n grows. causal-learn builds it at setup and stays flat too. pgmpy and pingouin build it in every call, so their time grows with n.
+- ᵃ The time does not include the one-time setup or the first call. FastCIT builds the correlation matrix in its first call, so its time stays flat as n grows. causal-learn builds it at setup and stays flat too. pgmpy and pingouin build it in every call, so their time grows with n.
 
 ### Python, Pearson t, conditioning-set size (n = 1 000)
 
 | Package | 0 | 1 | 2 | 3 | 4 | 6 | 8 |
 |---|---:|---:|---:|---:|---:|---:|---:|
-| FastCITᵃ | 0.00055 | 0.00068 | 0.00072 | 0.00073 | 0.00078 | 0.0012 | 0.0015 |
-| pgmpy devᵃ | 0.164 | 0.392 | 0.381 | 0.406 | 0.421 | 0.437 | 0.459 |
-| tigramiteᵃ | 0.313 | 0.393 | 0.403 | 0.429 | 0.455 | 0.512 | 0.561 |
-| pingouinᵃ | 1.35 | 1.47 | 1.51 | 1.61 | 1.69 | 1.84 | 2.02 |
+| FastCITᵃ | 0.00063 ± 0.00020 | 0.00081 ± 0.00017 | 0.00087 ± 0.00026 | 0.00088 ± 0.00034 | 0.00091 ± 0.00019 | 0.0014 ± 0.00042 | 0.0015 ± 0.00039 |
+| pgmpy devᵃ | 0.178 ± 0.023 | 0.385 ± 0.026 | 0.394 ± 0.028 | 0.411 ± 0.027 | 0.432 ± 0.027 | 0.453 ± 0.031 | 0.480 ± 0.028 |
+| tigramiteᵃ | 0.324 ± 0.022 | 0.386 ± 0.025 | 0.419 ± 0.024 | 0.443 ± 0.019 | 0.478 ± 0.027 | 0.523 ± 0.019 | 0.573 ± 0.022 |
+| pingouinᵃ | 1.36 ± 0.021 | 1.45 ± 0.022 | 1.53 ± 0.025 | 1.62 ± 0.024 | 1.71 ± 0.027 | 1.87 ± 0.029 | 2.02 ± 0.020 |
 
-- ᵃ The time does not include the one-time setup. FastCIT builds the correlation matrix in its first call, and the median leaves that call out, so its time stays flat as n grows. causal-learn builds it at setup and stays flat too. pgmpy and pingouin build it in every call, so their time grows with n.
+- ᵃ The time does not include the one-time setup or the first call. FastCIT builds the correlation matrix in its first call, so its time stays flat as n grows. causal-learn builds it at setup and stays flat too. pgmpy and pingouin build it in every call, so their time grows with n.
 
 ### Python, Pearson equivalence, sample size (|Z| = 1)
 
 | Package | 100 | 300 | 1 000 | 3 000 | 10 000 | 30 000 | 100 000 |
 |---|---:|---:|---:|---:|---:|---:|---:|
-| FastCITᵃ | 0.00056 | 0.00054 | 0.00052 | 0.00057 | 0.00058 | 0.00058 | 0.00070 |
-| pgmpy devᵃ | 0.406 | 0.413 | 0.435 | 0.491 | 0.666 | 1.15 | 2.73 |
+| FastCITᵃ | 0.00065 ± 0.00019 | 0.00059 ± 0.00014 | 0.00064 ± 0.00017 | 0.00070 ± 0.00023 | 0.00072 ± 0.00022 | 0.00069 ± 0.00024 | 0.00100 ± 0.00043 |
+| pgmpy devᵃ | 0.431 ± 0.028 | 0.436 ± 0.031 | 0.456 ± 0.029 | 0.513 ± 0.035 | 0.696 ± 0.041 | 1.18 ± 0.037 | 2.80 ± 0.054 |
 
-- ᵃ The time does not include the one-time setup. FastCIT builds the correlation matrix in its first call, and the median leaves that call out, so its time stays flat as n grows. causal-learn builds it at setup and stays flat too. pgmpy and pingouin build it in every call, so their time grows with n.
+- ᵃ The time does not include the one-time setup or the first call. FastCIT builds the correlation matrix in its first call, so its time stays flat as n grows. causal-learn builds it at setup and stays flat too. pgmpy and pingouin build it in every call, so their time grows with n.
 
 ### Python, Pearson equivalence, conditioning-set size (n = 1 000)
 
 | Package | 0 | 1 | 2 | 3 | 4 | 6 | 8 |
 |---|---:|---:|---:|---:|---:|---:|---:|
-| FastCITᵃ | 0.00047 | 0.00054 | 0.00056 | 0.00067 | 0.00071 | 0.00097 | 0.0010 |
-| pgmpy devᵃ | 0.231 | 0.439 | 0.451 | 0.464 | 0.478 | 0.501 | 0.531 |
+| FastCITᵃ | 0.00053 ± 0.00016 | 0.00064 ± 0.00014 | 0.00073 ± 0.00017 | 0.00073 ± 0.00020 | 0.00084 ± 0.00026 | 0.0013 ± 0.00051 | 0.0015 ± 0.00059 |
+| pgmpy devᵃ | 0.244 ± 0.034 | 0.473 ± 0.037 | 0.497 ± 0.044 | 0.488 ± 0.039 | 0.491 ± 0.033 | 0.523 ± 0.031 | 0.557 ± 0.033 |
 
-- ᵃ The time does not include the one-time setup. FastCIT builds the correlation matrix in its first call, and the median leaves that call out, so its time stays flat as n grows. causal-learn builds it at setup and stays flat too. pgmpy and pingouin build it in every call, so their time grows with n.
+- ᵃ The time does not include the one-time setup or the first call. FastCIT builds the correlation matrix in its first call, so its time stays flat as n grows. causal-learn builds it at setup and stays flat too. pgmpy and pingouin build it in every call, so their time grows with n.
 
 ### Python, HSIC, sample size (Z empty)
 
 | Package | 100 | 300 | 1 000 | 3 000 | 10 000 | 30 000 | 100 000 |
 |---|---:|---:|---:|---:|---:|---:|---:|
-| FastCIT | 0.125 | 1.09 | 12.2 | 183 | 2 097 | —¶ | —¶ |
-| pgmpy dev | 0.365 | 0.830 | 7.07 | 106 | 953 | —¶ | —¶ |
-| causal-learnᵃ | 0.322 | 0.802 | 7.37 | 138 | 1 355 | —¶ | —¶ |
-| hyppoᵃ | 0.606 | 2.56 | 41.0 | 540 | 6 184† | —‡ | —‡ |
+| FastCIT | 0.126 ± 0.0011 | 1.11 ± 0.022 | 12.2 ± 0.056 | 167 ± 1.31 | 2 152 ± 15.1 | —¶ | —¶ |
+| pgmpy dev | 0.371 ± 0.018 | 0.840 ± 0.012 | 7.14 ± 0.067 | 102 ± 2.78 | 984 ± 17.9 | —¶ | —¶ |
+| causal-learnᵃ | 0.345 ± 0.032 | 0.824 ± 0.031 | 7.58 ± 0.228 | 136 ± 1.96 | 1 355 ± 8.59 | —¶ | —¶ |
+| hyppoᵃ | 0.622 ± 0.079 | 2.59 ± 0.118 | 41.7 ± 1.20 | 551 ± 8.06 | 6 298 ± 40.2 | —‡ | —‡ |
 
 - ᵃ Different null approximation or kernel width rule from FastCIT.
-- † The first pass took more than 60 s. The cell comes from one pass. Larger points, if any, are missing.
 - ‡ No result. The engine skipped this point after it passed the time budget.
 - ¶ No result. The sweep does not run this test at this sample size. The packages need too much memory there.
 
@@ -208,21 +207,21 @@ Each cell is the median over the queries of a point. Each query keeps its fastes
 
 | Package | 100 | 300 | 1 000 | 3 000 | 10 000 | 30 000 | 100 000 |
 |---|---:|---:|---:|---:|---:|---:|---:|
-| FastCIT | 1.14 | 11.8 | 319 | 8 652† | —‡ | —‡ | —‡ |
-| pgmpy dev | 1.67 | 7.67 | 106 | 1 498 | 76 801† | —‡ | —‡ |
-| causal-learnᵃ | 2.09 | 12.5 | 173 | 3 141 | 190 326† | —‡ | —‡ |
+| FastCIT | 1.20 ± 0.016 | 12.2 ± 0.245 | 323 ± 1.63 | 8 728 ± 187 | —‡ | —‡ | —‡ |
+| pgmpy dev | 1.73 ± 0.037 | 8.06 ± 0.048 | 108 ± 0.802 | 1 506 ± 43.1 | 76 812 ± 1 214 | —‡ | —‡ |
+| causal-learnᵃ | 2.13 ± 0.039 | 13.1 ± 0.122 | 176 ± 0.978 | 3 328 ± 77.1 | 192 827 ± 2 323* | —‡ | —‡ |
 
 - ᵃ Different null approximation or kernel width rule from FastCIT.
-- † The first pass took more than 60 s. The cell comes from one pass. Larger points, if any, are missing.
 - ‡ No result. The engine skipped this point after it passed the time budget.
+- \* Some queries raised an error or returned NaN. The mean uses the other queries. causal-learn at 10 000: 1 of 10 queries left out.
 
 ### Python, KCI, conditioning-set size (n = 1 000)
 
 | Package | 0 | 1 | 2 | 3 | 4 | 6 | 8 |
 |---|---:|---:|---:|---:|---:|---:|---:|
-| FastCIT | 9.27 | 316 | 336 | 347 | 349 | 357 | 364 |
-| pgmpy dev | 6.95 | 108 | 110 | 115 | 119 | 120 | 121 |
-| causal-learnᵃ | 7.28 | 177 | 183 | 198 | 215 | 218 | 219 |
+| FastCIT | 9.56 ± 0.255 | 324 ± 3.20 | 346 ± 4.21 | 351 ± 2.47 | 356 ± 0.774 | 363 ± 1.56 | 370 ± 1.02 |
+| pgmpy dev | 11.3 ± 7.32 | 109 ± 0.454 | 111 ± 0.504 | 116 ± 0.801 | 120 ± 0.417 | 120 ± 0.363 | 122 ± 0.395 |
+| causal-learnᵃ | 7.69 ± 0.216 | 178 ± 0.929 | 185 ± 3.24 | 203 ± 3.34 | 220 ± 2.14 | 219 ± 0.808 | 222 ± 1.32 |
 
 - ᵃ Different null approximation or kernel width rule from FastCIT.
 
@@ -230,35 +229,34 @@ Each cell is the median over the queries of a point. Each query keeps its fastes
 
 | Package | 100 | 300 | 1 000 | 3 000 | 10 000 | 30 000 | 100 000 |
 |---|---:|---:|---:|---:|---:|---:|---:|
-| FastCIT | 0.0033 | 0.0091 | 0.028 | 0.080 | 0.266 | 0.803 | 2.70 |
-| pgmpy dev | 2.14 | 2.16 | 2.18 | 2.25 | 2.45 | 3.21 | 5.29 |
-| dowhy | 0.582 | 0.594 | 0.620 | 0.698 | 0.946 | 1.65 | 4.06 |
+| FastCIT | 0.0035 ± 0.00028 | 0.0092 ± 0.00035 | 0.028 ± 0.0011 | 0.084 ± 0.0015 | 0.277 ± 0.0066 | 0.840 ± 0.015 | 2.80 ± 0.042 |
+| pgmpy dev | 2.25 ± 0.066 | 2.28 ± 0.016 | 2.24 ± 0.044 | 2.32 ± 0.053 | 2.56 ± 0.069 | 3.23 ± 0.034 | 5.30 ± 0.025 |
+| dowhy | 0.622 ± 0.041 | 0.613 ± 0.019 | 0.636 ± 0.022 | 0.721 ± 0.029 | 0.975 ± 0.027 | 1.70 ± 0.035 | 4.19 ± 0.090 |
 
 ### Python, GCM, conditioning-set size (n = 1 000)
 
 | Package | 0 | 1 | 2 | 3 | 4 | 6 | 8 |
 |---|---:|---:|---:|---:|---:|---:|---:|
-| FastCIT | 0.018 | 0.028 | 0.039 | 0.052 | 0.065 | 0.095 | 0.131 |
-| pgmpy dev | 2.14 | 2.18 | 2.20 | 2.23 | 2.26 | 2.30 | 2.35 |
-| dowhy | 0.056 | 0.622 | 0.694 | 0.739 | 0.783 | 0.864 | 0.954 |
+| FastCIT | 0.018 ± 0.00048 | 0.028 ± 0.0013 | 0.039 ± 0.0017 | 0.053 ± 0.0013 | 0.067 ± 0.0047 | 0.099 ± 0.0025 | 0.134 ± 0.0057 |
+| pgmpy dev | 2.21 ± 0.037 | 2.28 ± 0.049 | 2.31 ± 0.042 | 2.31 ± 0.058 | 2.32 ± 0.050 | 2.39 ± 0.058 | 2.47 ± 0.033 |
+| dowhy | 0.060 ± 0.0068 | 0.651 ± 0.021 | 0.717 ± 0.028 | 0.765 ± 0.025 | 0.796 ± 0.019 | 0.890 ± 0.021 | 0.983 ± 0.031 |
 
 ### Python, Pillai, sample size (|Z| = 1)
 
 | Package | 100 | 300 | 1 000 | 3 000 | 10 000 | 30 000 | 100 000 |
 |---|---:|---:|---:|---:|---:|---:|---:|
-| FastCIT | 0.0066 | 0.017 | 0.051 | 0.154 | 0.488 | 1.44 | 4.86 |
-| pgmpy devᵃ | 77.1 | 88.8 | 158 | 417 | 1 648 | 6 171† | —‡ |
+| FastCIT | 0.0067 ± 0.0015 | 0.016 ± 0.0038 | 0.049 ± 0.012 | 0.147 ± 0.037 | 0.480 ± 0.122 | 1.44 ± 0.363 | 4.80 ± 1.18 |
+| pgmpy devᵃ | 82.0 ± 10.3 | 93.4 ± 15.5 | 137 ± 50.8 | 306 ± 200 | 1 109 ± 927 | 4 191 ± 3 834 | —‡ |
 
 - ᵃ random forest (pgmpy default); a different test from FastCIT (linear)
-- † The first pass took more than 60 s. The cell comes from one pass. Larger points, if any, are missing.
 - ‡ No result. The engine skipped this point after it passed the time budget.
 
 ### Python, Pillai, conditioning-set size (n = 1 000)
 
 | Package | 0 | 1 | 2 | 3 | 4 | 6 | 8 |
 |---|---:|---:|---:|---:|---:|---:|---:|
-| FastCIT | 0.031 | 0.051 | 0.067 | 0.091 | 0.105 | 0.182 | 0.253 |
-| pgmpy devᵃ | 80.4 | 156 | 179 | 206 | 230 | 251 | 303 |
+| FastCIT | 0.032 ± 0.0095 | 0.049 ± 0.012 | 0.071 ± 0.018 | 0.100 ± 0.025 | 0.114 ± 0.024 | 0.196 ± 0.024 | 0.260 ± 0.025 |
+| pgmpy devᵃ | 85.8 ± 10.4 | 138 ± 51.5 | 173 ± 48.5 | 217 ± 30.0 | 243 ± 44.1 | 259 ± 64.8 | 305 ± 66.6 |
 
 - ᵃ random forest (pgmpy default); a different test from FastCIT (linear)
 
@@ -266,35 +264,35 @@ Each cell is the median over the queries of a point. Each query keeps its fastes
 
 | Package | 100 | 300 | 1 000 | 3 000 | 10 000 | 30 000 | 100 000 |
 |---|---:|---:|---:|---:|---:|---:|---:|
-| FastCIT | 0.013 | 0.013 | 0.016 | 0.024 | 0.049 | 0.118 | 0.371 |
-| bnlearnᵃᵇ | 0.082 | 0.086 | 0.092 | 0.114 | 0.187 | 0.392 | 1.10 |
-| Rfastᵃ | 0.0091* | 0.0095* | 0.012* | 0.018* | 0.039* | 0.101* | 0.312 |
+| FastCIT | 0.013 ± 0.0018 | 0.014 ± 0.0016 | 0.017 ± 0.0026 | 0.023 ± 0.0044 | 0.045 ± 0.013 | 0.105 ± 0.035 | 0.355 ± 0.141 |
+| bnlearnᵃᵇ | 0.088 ± 0.013 | 0.088 ± 0.0050 | 0.097 ± 0.0069 | 0.117 ± 0.0078 | 0.188 ± 0.0076 | 0.397 ± 0.014 | 1.11 ± 0.039 |
+| Rfastᵃ | 0.0098 ± 0.0011* | 0.010 ± 0.0012* | 0.013 ± 0.0022* | 0.019 ± 0.0016* | 0.040 ± 0.0021* | 0.103 ± 0.0040* | 0.330 ± 0.0066 |
 
 - ᵃ Uses the nominal degrees of freedom. FastCIT uses the adjusted degrees of freedom.
 - ᵇ bnlearn ci.test() checks the whole data frame in each call. The benchmark gives it only the columns of the query.
-- \* Some queries raised an error or returned NaN. The median uses the other queries. Rfast at 100: 4 of 20 queries left out; Rfast at 300: 3 of 20 queries left out; Rfast at 1 000: 1 of 20 queries left out; Rfast at 3 000: 1 of 20 queries left out; Rfast at 10 000: 1 of 20 queries left out; Rfast at 30 000: 1 of 20 queries left out.
+- \* Some queries raised an error or returned NaN. The mean uses the other queries. Rfast at 100: 4 of 20 queries left out; Rfast at 300: 3 of 20 queries left out; Rfast at 1 000: 1 of 20 queries left out; Rfast at 3 000: 1 of 20 queries left out; Rfast at 10 000: 1 of 20 queries left out; Rfast at 30 000: 1 of 20 queries left out.
 
 ### R, χ², conditioning-set size (n = 1 000)
 
 | Package | 0 | 1 | 2 | 3 | 4 | 6 | 8 |
 |---|---:|---:|---:|---:|---:|---:|---:|
-| FastCIT | 0.012 | 0.017 | 0.018 | 0.021 | 0.027 | 0.042 | 0.050 |
-| bnlearnᵃᵇ | 0.073 | 0.093 | 0.107 | 0.124 | 0.149 | 0.304 | 0.965 |
-| Rfastᵃ | 0.0095 | 0.012* | 0.013* | —§ | —§ | —§ | —§ |
+| FastCIT | 0.012 ± 0.0015 | 0.017 ± 0.0024 | 0.019 ± 0.0027 | 0.022 ± 0.0041 | 0.028 ± 0.0064 | 0.042 ± 0.0070 | 0.053 ± 0.010 |
+| bnlearnᵃᵇ | 0.077 ± 0.0061 | 0.096 ± 0.0075 | 0.114 ± 0.011 | 0.132 ± 0.017 | 0.153 ± 0.023 | 0.305 ± 0.062 | 1.27 ± 0.794 |
+| Rfastᵃ | 0.010 ± 0.0013 | 0.013 ± 0.0020* | 0.014 ± 0.00071* | —§ | —§ | —§ | —§ |
 
 - ᵃ Uses the nominal degrees of freedom. FastCIT uses the adjusted degrees of freedom.
 - ᵇ bnlearn ci.test() checks the whole data frame in each call. The benchmark gives it only the columns of the query.
 - § No result. Every query raised an error or returned NaN, or fewer than half of them gave a value. Rfast at 3: 14 of 20 queries gave NaN or an error; Rfast at 4: 19 of 20 queries gave NaN or an error.
-- \* Some queries raised an error or returned NaN. The median uses the other queries. Rfast at 1: 1 of 20 queries left out; Rfast at 2: 8 of 20 queries left out.
+- \* Some queries raised an error or returned NaN. The mean uses the other queries. Rfast at 1: 1 of 20 queries left out; Rfast at 2: 8 of 20 queries left out.
 
 ### R, G², sample size (|Z| = 1)
 
 | Package | 100 | 300 | 1 000 | 3 000 | 10 000 | 30 000 | 100 000 |
 |---|---:|---:|---:|---:|---:|---:|---:|
-| FastCIT | 0.013 | 0.014 | 0.017 | 0.024 | 0.048 | 0.118 | 0.369 |
-| pcalgᵃᵇ | 0.056 | 0.149 | 0.299 | 0.724 | 2.94 | 6.91 | 23.5 |
-| bnlearnᵇᶜ | 0.082 | 0.085 | 0.092 | 0.112 | 0.185 | 0.385 | 1.10 |
-| Rfastᵇ | 0.0093 | 0.0098 | 0.012 | 0.018 | 0.040 | 0.101 | 0.313 |
+| FastCIT | 0.013 ± 0.0013 | 0.015 ± 0.0026 | 0.017 ± 0.0025 | 0.024 ± 0.0048 | 0.044 ± 0.013 | 0.105 ± 0.035 | 0.323 ± 0.114 |
+| pcalgᵃᵇ | 0.074 ± 0.036 | 0.149 ± 0.027 | 0.300 ± 0.058 | 0.719 ± 0.158 | 3.47 ± 1.33 | 7.78 ± 2.60 | 28.5 ± 8.43 |
+| bnlearnᵇᶜ | 0.086 ± 0.0088 | 0.091 ± 0.0087 | 0.097 ± 0.0095 | 0.118 ± 0.0082 | 0.188 ± 0.010 | 0.400 ± 0.016 | 1.11 ± 0.061 |
+| Rfastᵇ | 0.010 ± 0.0015 | 0.010 ± 0.0013 | 0.013 ± 0.0020 | 0.019 ± 0.0014 | 0.040 ± 0.0019 | 0.103 ± 0.0030 | 0.319 ± 0.0087 |
 
 - ᵃ pcalg returns p = 1 without running the test when n < 10 x the degrees of freedom. This happens at small n and at large |Z|, so these times are not comparable.
 - ᵇ Uses the nominal degrees of freedom. FastCIT uses the adjusted degrees of freedom.
@@ -304,10 +302,10 @@ Each cell is the median over the queries of a point. Each query keeps its fastes
 
 | Package | 0 | 1 | 2 | 3 | 4 | 6 | 8 |
 |---|---:|---:|---:|---:|---:|---:|---:|
-| FastCIT | 0.012 | 0.017 | 0.017 | 0.019 | 0.022 | 0.035 | 0.043 |
-| pcalgᵃᵇ | 0.164 | 0.298 | 0.525 | 0.892 | 0.138 | 0.122 | 0.121 |
-| bnlearnᵇᶜ | 0.074 | 0.092 | 0.108 | 0.124 | 0.149 | 0.309 | 0.993 |
-| Rfastᵇ | 0.0098 | 0.012 | 0.014 | 0.015 | 0.021 | 0.059 | 0.280 |
+| FastCIT | 0.012 ± 0.0013 | 0.016 ± 0.0022 | 0.019 ± 0.0017 | 0.022 ± 0.0033 | 0.023 ± 0.0046 | 0.036 ± 0.0050 | 0.046 ± 0.0090 |
+| pcalgᵃᵇ | 0.165 ± 0.015 | 0.298 ± 0.057 | 0.541 ± 0.209 | 0.746 ± 0.456 | 0.529 ± 0.688 | 0.123 ± 0.0049 | 0.127 ± 0.0047 |
+| bnlearnᵇᶜ | 0.078 ± 0.010 | 0.097 ± 0.0081 | 0.110 ± 0.0072 | 0.131 ± 0.024 | 0.155 ± 0.022 | 0.306 ± 0.065 | 1.32 ± 0.871 |
+| Rfastᵇ | 0.010 ± 0.0013 | 0.012 ± 0.0012 | 0.014 ± 0.0017 | 0.018 ± 0.0047 | 0.024 ± 0.0084 | 0.060 ± 0.020 | 0.369 ± 0.292 |
 
 - ᵃ pcalg returns p = 1 without running the test when n < 10 x the degrees of freedom. This happens at small n and at large |Z|, so these times are not comparable.
 - ᵇ Uses the nominal degrees of freedom. FastCIT uses the adjusted degrees of freedom.
@@ -317,69 +315,69 @@ Each cell is the median over the queries of a point. Each query keeps its fastes
 
 | Package | 100 | 300 | 1 000 | 3 000 | 10 000 | 30 000 | 100 000 |
 |---|---:|---:|---:|---:|---:|---:|---:|
-| FastCIT | 0.013 | 0.014 | 0.017 | 0.024 | 0.049 | 0.118 | 0.366 |
+| FastCIT | 0.014 ± 0.0018 | 0.014 ± 0.0015 | 0.017 ± 0.0025 | 0.024 ± 0.0043 | 0.047 ± 0.013 | 0.104 ± 0.035 | 0.324 ± 0.114 |
 
 ### R, Cressie-Read, conditioning-set size (n = 1 000)
 
 | Package | 0 | 1 | 2 | 3 | 4 | 6 | 8 |
 |---|---:|---:|---:|---:|---:|---:|---:|
-| FastCIT | 0.012 | 0.017 | 0.018 | 0.021 | 0.027 | 0.041 | 0.048 |
+| FastCIT | 0.012 ± 0.0017 | 0.017 ± 0.0026 | 0.018 ± 0.0021 | 0.021 ± 0.0036 | 0.027 ± 0.0053 | 0.041 ± 0.0068 | 0.050 ± 0.0089 |
 
 ### R, Freeman-Tukey, sample size (|Z| = 1)
 
 | Package | 100 | 300 | 1 000 | 3 000 | 10 000 | 30 000 | 100 000 |
 |---|---:|---:|---:|---:|---:|---:|---:|
-| FastCIT | 0.013 | 0.014 | 0.017 | 0.024 | 0.050 | 0.118 | 0.368 |
+| FastCIT | 0.013 ± 0.0018 | 0.014 ± 0.0020 | 0.016 ± 0.0023 | 0.024 ± 0.0044 | 0.048 ± 0.013 | 0.104 ± 0.034 | 0.325 ± 0.113 |
 
 ### R, Freeman-Tukey, conditioning-set size (n = 1 000)
 
 | Package | 0 | 1 | 2 | 3 | 4 | 6 | 8 |
 |---|---:|---:|---:|---:|---:|---:|---:|
-| FastCIT | 0.011 | 0.017 | 0.018 | 0.020 | 0.027 | 0.042 | 0.047 |
+| FastCIT | 0.012 ± 0.0015 | 0.017 ± 0.0031 | 0.018 ± 0.0018 | 0.021 ± 0.0030 | 0.027 ± 0.0052 | 0.041 ± 0.0067 | 0.050 ± 0.0098 |
 
 ### R, Modified log-likelihood, sample size (|Z| = 1)
 
 | Package | 100 | 300 | 1 000 | 3 000 | 10 000 | 30 000 | 100 000 |
 |---|---:|---:|---:|---:|---:|---:|---:|
-| FastCIT | 0.012 | 0.013 | 0.016 | 0.023 | 0.049 | 0.117 | 0.368 |
+| FastCIT | 0.013 ± 0.0019 | 0.014 ± 0.0021 | 0.017 ± 0.0025 | 0.023 ± 0.0046 | 0.044 ± 0.012 | 0.105 ± 0.036 | 0.325 ± 0.115 |
 
 ### R, Modified log-likelihood, conditioning-set size (n = 1 000)
 
 | Package | 0 | 1 | 2 | 3 | 4 | 6 | 8 |
 |---|---:|---:|---:|---:|---:|---:|---:|
-| FastCIT | 0.012 | 0.016 | 0.016 | 0.018 | 0.022 | 0.035 | 0.042 |
+| FastCIT | 0.012 ± 0.0011 | 0.016 ± 0.0023 | 0.017 ± 0.0019 | 0.019 ± 0.0021 | 0.023 ± 0.0032 | 0.034 ± 0.0045 | 0.047 ± 0.0093 |
 
 ### R, Fisher-z, sample size (|Z| = 1)
 
 | Package | 100 | 300 | 1 000 | 3 000 | 10 000 | 30 000 | 100 000 |
 |---|---:|---:|---:|---:|---:|---:|---:|
-| FastCITᵃ | 0.010 | 0.011 | 0.011 | 0.011 | 0.010 | 0.011 | 0.011 |
-| pcalgᵃ | 0.010 | 0.010 | 0.010 | 0.010 | 0.0098 | 0.0098 | 0.010 |
-| bnlearnᵃᵇ | 0.053 | 0.057 | 0.071 | 0.111 | 0.246 | 0.632 | 1.97 |
+| FastCITᵃ | 0.011 ± 0.0015 | 0.011 ± 0.0018 | 0.011 ± 0.0012 | 0.012 ± 0.0025 | 0.012 ± 0.0031 | 0.011 ± 0.0026 | 0.013 ± 0.0063 |
+| pcalgᵃ | 0.010 ± 0.0015 | 0.010 ± 0.0022 | 0.0100 ± 0.0013 | 0.0099 ± 0.00087 | 0.0099 ± 0.0010 | 0.011 ± 0.0015 | 0.011 ± 0.0026 |
+| bnlearnᵃᵇ | 0.056 ± 0.0073 | 0.062 ± 0.0079 | 0.074 ± 0.0070 | 0.118 ± 0.0083 | 0.254 ± 0.010 | 0.643 ± 0.018 | 2.01 ± 0.052 |
 
-- ᵃ The time does not include the one-time setup. FastCIT builds the correlation matrix in its first call, and the median leaves that call out, so its time stays flat as n grows. pcalg builds it at setup and stays flat too. bnlearn and ppcor build it in every call, so their time grows with n.
+- ᵃ The time does not include the one-time setup or the first call. FastCIT builds the correlation matrix in its first call, so its time stays flat as n grows. pcalg builds it at setup and stays flat too. bnlearn and ppcor build it in every call, so their time grows with n.
 - ᵇ bnlearn ci.test() checks the whole data frame in each call. The benchmark gives it only the columns of the query.
 
 ### R, Fisher-z, conditioning-set size (n = 1 000)
 
 | Package | 0 | 1 | 2 | 3 | 4 | 6 | 8 |
 |---|---:|---:|---:|---:|---:|---:|---:|
-| FastCITᵃ | 0.010 | 0.011 | 0.011 | 0.011 | 0.011 | 0.012 | 0.012 |
-| pcalgᵃ | 0.0088 | 0.010 | 0.027 | 0.029 | 0.031 | 0.034 | 0.037 |
-| bnlearnᵃᵇ | 0.056 | 0.071 | 0.081 | 0.091 | 0.103 | 0.130 | 0.161 |
+| FastCITᵃ | 0.011 ± 0.0014 | 0.012 ± 0.0015 | 0.011 ± 0.0014 | 0.012 ± 0.0021 | 0.012 ± 0.0024 | 0.013 ± 0.0019 | 0.013 ± 0.0026 |
+| pcalgᵃ | 0.0094 ± 0.0013 | 0.010 ± 0.0017 | 0.028 ± 0.0046 | 0.030 ± 0.0029 | 0.032 ± 0.0037 | 0.035 ± 0.0049 | 0.040 ± 0.0042 |
+| bnlearnᵃᵇ | 0.064 ± 0.0087 | 0.074 ± 0.0063 | 0.087 ± 0.0063 | 0.095 ± 0.0074 | 0.110 ± 0.0088 | 0.133 ± 0.0090 | 0.173 ± 0.013 |
 
-- ᵃ The time does not include the one-time setup. FastCIT builds the correlation matrix in its first call, and the median leaves that call out, so its time stays flat as n grows. pcalg builds it at setup and stays flat too. bnlearn and ppcor build it in every call, so their time grows with n.
+- ᵃ The time does not include the one-time setup or the first call. FastCIT builds the correlation matrix in its first call, so its time stays flat as n grows. pcalg builds it at setup and stays flat too. bnlearn and ppcor build it in every call, so their time grows with n.
 - ᵇ bnlearn ci.test() checks the whole data frame in each call. The benchmark gives it only the columns of the query.
 
 ### R, Pearson t, sample size (|Z| = 1)
 
 | Package | 100 | 300 | 1 000 | 3 000 | 10 000 | 30 000 | 100 000 |
 |---|---:|---:|---:|---:|---:|---:|---:|
-| FastCITᵃ | 0.011 | 0.011 | 0.011 | 0.011 | 0.011 | 0.011 | 0.011 |
-| bnlearnᵃᵇ | 0.054 | 0.058 | 0.071 | 0.111 | 0.246 | 0.635 | 1.97 |
-| ppcorᵃᶜ | 0.273 | 0.276 | 0.296 | 0.343 | 0.500 | 0.955 | 2.49 |
+| FastCITᵃ | 0.011 ± 0.0014 | 0.012 ± 0.0013 | 0.012 ± 0.0018 | 0.012 ± 0.0022 | 0.012 ± 0.0028 | 0.012 ± 0.0021 | 0.014 ± 0.0087 |
+| bnlearnᵃᵇ | 0.058 ± 0.010 | 0.061 ± 0.0068 | 0.075 ± 0.0077 | 0.115 ± 0.0074 | 0.250 ± 0.0074 | 0.643 ± 0.015 | 2.01 ± 0.046 |
+| ppcorᵃᶜ | 0.293 ± 0.020 | 0.291 ± 0.014 | 0.308 ± 0.013 | 0.351 ± 0.013 | 0.509 ± 0.018 | 0.970 ± 0.023 | 2.59 ± 0.081 |
 
-- ᵃ The time does not include the one-time setup. FastCIT builds the correlation matrix in its first call, and the median leaves that call out, so its time stays flat as n grows. pcalg builds it at setup and stays flat too. bnlearn and ppcor build it in every call, so their time grows with n.
+- ᵃ The time does not include the one-time setup or the first call. FastCIT builds the correlation matrix in its first call, so its time stays flat as n grows. pcalg builds it at setup and stays flat too. bnlearn and ppcor build it in every call, so their time grows with n.
 - ᵇ bnlearn ci.test() checks the whole data frame in each call. The benchmark gives it only the columns of the query.
 - ᶜ ppcor needs at least one conditioning variable. For a query with an empty set, the benchmark calls stats::cor.test, which runs the same t-test.
 
@@ -387,11 +385,11 @@ Each cell is the median over the queries of a point. Each query keeps its fastes
 
 | Package | 0 | 1 | 2 | 3 | 4 | 6 | 8 |
 |---|---:|---:|---:|---:|---:|---:|---:|
-| FastCITᵃ | 0.011 | 0.011 | 0.011 | 0.011 | 0.011 | 0.012 | 0.012 |
-| bnlearnᵃᵇ | 0.057 | 0.071 | 0.081 | 0.091 | 0.103 | 0.132 | 0.162 |
-| ppcorᵃᶜ | 0.072 | 0.291 | 0.310 | 0.329 | 0.345 | 0.387 | 0.432 |
+| FastCITᵃ | 0.013 ± 0.0032 | 0.012 ± 0.0015 | 0.012 ± 0.0016 | 0.012 ± 0.0019 | 0.012 ± 0.0018 | 0.013 ± 0.0020 | 0.013 ± 0.0018 |
+| bnlearnᵃᵇ | 0.062 ± 0.0090 | 0.075 ± 0.0057 | 0.084 ± 0.0079 | 0.095 ± 0.0090 | 0.106 ± 0.0075 | 0.134 ± 0.0079 | 0.168 ± 0.014 |
+| ppcorᵃᶜ | 0.074 ± 0.0061 | 0.302 ± 0.012 | 0.318 ± 0.018 | 0.338 ± 0.016 | 0.354 ± 0.012 | 0.393 ± 0.015 | 0.439 ± 0.020 |
 
-- ᵃ The time does not include the one-time setup. FastCIT builds the correlation matrix in its first call, and the median leaves that call out, so its time stays flat as n grows. pcalg builds it at setup and stays flat too. bnlearn and ppcor build it in every call, so their time grows with n.
+- ᵃ The time does not include the one-time setup or the first call. FastCIT builds the correlation matrix in its first call, so its time stays flat as n grows. pcalg builds it at setup and stays flat too. bnlearn and ppcor build it in every call, so their time grows with n.
 - ᵇ bnlearn ci.test() checks the whole data frame in each call. The benchmark gives it only the columns of the query.
 - ᶜ ppcor needs at least one conditioning variable. For a query with an empty set, the benchmark calls stats::cor.test, which runs the same t-test.
 
@@ -399,24 +397,24 @@ Each cell is the median over the queries of a point. Each query keeps its fastes
 
 | Package | 100 | 300 | 1 000 | 3 000 | 10 000 | 30 000 | 100 000 |
 |---|---:|---:|---:|---:|---:|---:|---:|
-| FastCITᵃ | 0.011 | 0.011 | 0.011 | 0.011 | 0.011 | 0.011 | 0.011 |
+| FastCITᵃ | 0.011 ± 0.0011 | 0.011 ± 0.0010 | 0.012 ± 0.0016 | 0.012 ± 0.0022 | 0.012 ± 0.0032 | 0.012 ± 0.0020 | 0.013 ± 0.0057 |
 
-- ᵃ The time does not include the one-time setup. FastCIT builds the correlation matrix in its first call, and the median leaves that call out, so its time stays flat as n grows. pcalg builds it at setup and stays flat too. bnlearn and ppcor build it in every call, so their time grows with n.
+- ᵃ The time does not include the one-time setup or the first call. FastCIT builds the correlation matrix in its first call, so its time stays flat as n grows. pcalg builds it at setup and stays flat too. bnlearn and ppcor build it in every call, so their time grows with n.
 
 ### R, Pearson equivalence, conditioning-set size (n = 1 000)
 
 | Package | 0 | 1 | 2 | 3 | 4 | 6 | 8 |
 |---|---:|---:|---:|---:|---:|---:|---:|
-| FastCITᵃ | 0.010 | 0.011 | 0.011 | 0.011 | 0.011 | 0.012 | 0.012 |
+| FastCITᵃ | 0.011 ± 0.0015 | 0.012 ± 0.0015 | 0.012 ± 0.0020 | 0.012 ± 0.0025 | 0.013 ± 0.0018 | 0.013 ± 0.0014 | 0.013 ± 0.0020 |
 
-- ᵃ The time does not include the one-time setup. FastCIT builds the correlation matrix in its first call, and the median leaves that call out, so its time stays flat as n grows. pcalg builds it at setup and stays flat too. bnlearn and ppcor build it in every call, so their time grows with n.
+- ᵃ The time does not include the one-time setup or the first call. FastCIT builds the correlation matrix in its first call, so its time stays flat as n grows. pcalg builds it at setup and stays flat too. bnlearn and ppcor build it in every call, so their time grows with n.
 
 ### R, HSIC, sample size (Z empty)
 
 | Package | 100 | 300 | 1 000 | 3 000 | 10 000 | 30 000 | 100 000 |
 |---|---:|---:|---:|---:|---:|---:|---:|
-| FastCIT | 0.143 | 1.21 | 13.3 | 173 | 2 184 | —¶ | —¶ |
-| dHSICᵃ | 0.607 | 4.75 | 54.7 | 636 | 5 440 | —¶ | —¶ |
+| FastCIT | 0.145 ± 0.0025 | 1.22 ± 0.0073 | 13.5 ± 0.073 | 195 ± 0.423 | 2 205 ± 8.83 | —¶ | —¶ |
+| dHSICᵃ | 0.623 ± 0.018 | 4.82 ± 0.052 | 56.5 ± 4.27 | 627 ± 2.44 | 5 531 ± 91.8 | —¶ | —¶ |
 
 - ᵃ Different null approximation or kernel width rule from FastCIT.
 - ¶ No result. The sweep does not run this test at this sample size. The packages need too much memory there.
@@ -425,39 +423,38 @@ Each cell is the median over the queries of a point. Each query keeps its fastes
 
 | Package | 100 | 300 | 1 000 | 3 000 | 10 000 | 30 000 | 100 000 |
 |---|---:|---:|---:|---:|---:|---:|---:|
-| FastCIT | 1.23 | 12.3 | 287 | 8 930† | —‡ | —‡ | —‡ |
+| FastCIT | 1.22 ± 0.011 | 12.5 ± 0.182 | 290 ± 0.774 | 8 640 ± 43.5 | —‡ | —‡ | —‡ |
 
-- † The first pass took more than 60 s. The cell comes from one pass. Larger points, if any, are missing.
 - ‡ No result. The engine skipped this point after it passed the time budget.
 
 ### R, KCI, conditioning-set size (n = 1 000)
 
 | Package | 0 | 1 | 2 | 3 | 4 | 6 | 8 |
 |---|---:|---:|---:|---:|---:|---:|---:|
-| FastCIT | 22.0 | 291 | 307 | 316 | 320 | 327 | 336 |
+| FastCIT | 21.0 ± 0.115 | 290 ± 0.647 | 307 ± 3.48 | 317 ± 1.39 | 322 ± 0.662 | 329 ± 1.60 | 335 ± 0.805 |
 
 ### R, GCM, sample size (|Z| = 1)
 
 | Package | 100 | 300 | 1 000 | 3 000 | 10 000 | 30 000 | 100 000 |
 |---|---:|---:|---:|---:|---:|---:|---:|
-| FastCIT | 0.014 | 0.021 | 0.042 | 0.107 | 0.324 | 0.934 | 3.11 |
-| comets | 0.690 | 1.000 | 2.01 | 4.88 | 14.9 | 45.7 | 165 |
+| FastCIT | 0.015 ± 0.0017 | 0.022 ± 0.0013 | 0.043 ± 0.0016 | 0.110 ± 0.0049 | 0.324 ± 0.0061 | 0.953 ± 0.022 | 3.15 ± 0.039 |
+| comets | 0.703 ± 0.021 | 1.01 ± 0.017 | 2.04 ± 0.048 | 4.91 ± 0.044 | 14.9 ± 0.122 | 49.0 ± 7.68 | 197 ± 56.1 |
 
 ### R, GCM, conditioning-set size (n = 1 000)
 
 | Package | 0 | 1 | 2 | 3 | 4 | 6 | 8 |
 |---|---:|---:|---:|---:|---:|---:|---:|
-| FastCIT | 0.031 | 0.042 | 0.055 | 0.068 | 0.084 | 0.118 | 0.158 |
-| comets | 2.01 | 2.00 | 2.03 | 2.05 | 2.07 | 2.12 | 2.16 |
+| FastCIT | 0.032 ± 0.0025 | 0.045 ± 0.0037 | 0.056 ± 0.0022 | 0.070 ± 0.0025 | 0.085 ± 0.0023 | 0.121 ± 0.0054 | 0.158 ± 0.0039 |
+| comets | 2.03 ± 0.047 | 2.03 ± 0.033 | 2.07 ± 0.046 | 2.11 ± 0.072 | 2.10 ± 0.046 | 2.15 ± 0.048 | 2.19 ± 0.044 |
 
 ### R, Pillai, sample size (|Z| = 1)
 
 | Package | 100 | 300 | 1 000 | 3 000 | 10 000 | 30 000 | 100 000 |
 |---|---:|---:|---:|---:|---:|---:|---:|
-| FastCIT | 0.017 | 0.029 | 0.068 | 0.180 | 0.542 | 1.59 | 5.29 |
+| FastCIT | 0.018 ± 0.0027 | 0.029 ± 0.0048 | 0.065 ± 0.013 | 0.170 ± 0.036 | 0.533 ± 0.121 | 1.56 ± 0.373 | 5.13 ± 1.21 |
 
 ### R, Pillai, conditioning-set size (n = 1 000)
 
 | Package | 0 | 1 | 2 | 3 | 4 | 6 | 8 |
 |---|---:|---:|---:|---:|---:|---:|---:|
-| FastCIT | 0.044 | 0.068 | 0.085 | 0.110 | 0.122 | 0.207 | 0.281 |
+| FastCIT | 0.045 ± 0.011 | 0.065 ± 0.013 | 0.089 ± 0.019 | 0.113 ± 0.021 | 0.146 ± 0.028 | 0.213 ± 0.024 | 0.294 ± 0.023 |
