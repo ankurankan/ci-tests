@@ -331,8 +331,13 @@ Do not commit them.
 
 The sweep benchmark times each test at growing sample sizes n and growing conditioning-set sizes |Z|.
 The documentation page [Benchmark](../docs/benchmark.md) shows the result as a chart.
-The sample size n goes from 100 to 100 000 (HSIC and KCI: 100 to 2 000).
+Every test uses the same sample sizes n: 100, 300, 1 000, 3 000, 10 000, 30 000 and 100 000.
+HSIC and KCI do not run above n = 10 000.
+These tests build n × n matrices, and one HSIC call at n = 30 000 needs 14 GB to 34 GB of memory.
+Their points at 30 000 and 100 000 stay in the tables and the chart with the reason "memory limit".
 The conditioning-set size |Z| takes the values 0, 1, 2, 3, 4, 6 and 8.
+The |Z| sweep uses n = 1 000 for every test.
+HSIC has no |Z| sweep.
 A query with |Z| = 8 needs 10 distinct columns, so the mixed data have 12 columns and the nonlinear data have 12 columns.
 
 Install the packages as in the [Install](#install) section.
@@ -370,6 +375,8 @@ Stop other jobs before the run.
 
 The full run takes about 20 to 35 minutes for Python, about 2 minutes for dowhy and about 16 minutes for R.
 The two largest |Z| values (6 and 8) add about 5 minutes to the Python run and about 1 minute to the R run.
+HSIC and KCI at n = 3 000 and n = 10 000 add about 40 minutes to the Python run and about 6 minutes to the R run.
+Most of this time is one KCI pass at n = 10 000 for pgmpy and for causal-learn.
 These times are an estimate.
 The script stops at the first error and names the step.
 To run a failed step again, use its own command (the script runs the same commands in this order):

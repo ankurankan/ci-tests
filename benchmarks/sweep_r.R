@@ -12,7 +12,7 @@
 # freeman_tukey, modified_ll, pearson_equivalence, kci and pillai.
 # Sweeps (the grids are the "plan" of sweep-queries.json, written by sweep_data.py):
 #   n: n rows (the first n rows of the data file) at |Z| = 1 (HSIC: Z empty).
-#   z: |Z| = 0..4 at a fixed n (10 000; pillai 2 000; kci 500). HSIC has no |Z| sweep.
+#   z: |Z| = 0, 1, 2, 3, 4, 6, 8 at n = 1 000 (every row). HSIC has no |Z| sweep.
 # Every query of a point has exactly |Z| conditioning variables. 20 queries per point (kernel rows: 10).
 #
 # Timing: 3 passes per point. The passes are the outer loop. Each pass runs the engines of the point in a new random
@@ -22,6 +22,9 @@
 # Time budget: when the first pass of an engine at a point takes more than 60 s, the engine skips the remaining
 # passes of that point (the value comes from one pass) and all larger points of that sweep. Those points get
 # "median_ms": null and "skipped": "time budget".
+# Memory limit: a row with "n_max" in the plan (HSIC and KCI: 10 000) builds n x n matrices and does not run at a
+# larger n. Those points get "median_ms": null and "skipped": "memory limit". An engine that is already over the
+# time budget keeps "time budget".
 
 suppressPackageStartupMessages({
   library(fastcit); library(pcalg); library(bnlearn); library(dHSIC); library(jsonlite)
@@ -55,11 +58,12 @@ source(file.path(script_dir, "r_engines.R"))  # engines, timing core, metadata h
 spec <- fromJSON(file.path(outdir, "sweep-queries.json"), simplifyVector = FALSE)
 
 if (is.null(spec$plan)) stop("sweep-queries.json has no plan; run sweep_data.py again")
-# The plan (grids, and per row the generator, n grid, n_z and z_n) comes from sweep-queries.json, written by
-# sweep_data.py. z_n is null for a row without |Z| sweep (HSIC).
+# The plan (grids, and per row the generator, n grid, n_z, z_n and n_max) comes from sweep-queries.json, written by
+# sweep_data.py. z_n is null for a row without |Z| sweep (HSIC). n_max is null for a row without memory limit.
 grids <- lapply(spec$plan$grids, unlist)
 Z_GRID <- grids$z
-PLAN <- lapply(spec$plan$rows, function(r) list(gen = r$gen, n_grid = unlist(r$n_grid), n_z = r$n_z, z_n = r$z_n))
+PLAN <- lapply(spec$plan$rows, function(r) list(gen = r$gen, n_grid = unlist(r$n_grid), n_z = r$n_z, z_n = r$z_n,
+                                                n_max = r$n_max))
 
 # The engines of each row on the first n rows of the data of its generator. `data` is that frame.
 UNTIMED <- c("bnlearn (adf)", "pcalg (adaptDF)")  # agreement-check variants of bench_r.R
@@ -104,7 +108,7 @@ point_result <- function(median_ms = NA_real_, ms = NA, errors = 0L, nan = 0L, n
        n_queries = n_queries, n_timed = n_timed, passes = passes, skipped = skipped, error = error,
        setup_ms = setup_ms, total_ms = total_ms)
 }
-skipped_point <- function(n_queries) point_result(n_queries = n_queries, skipped = "time budget")
+skipped_point <- function(n_queries, why = "time budget") point_result(n_queries = n_queries, skipped = why)
 
 # A seed from a text key, so that the engine orders do not depend on the run order of the rows.
 key_seed <- function(key) as.integer(sum(utf8ToInt(key) * seq_len(nchar(key))) %% 2147483647)
@@ -191,12 +195,13 @@ for (row in rows_wanted) {
       qs <- take(gspec$queries[[as.character(ks[i])]])
       if (!all(vapply(qs, function(q) length(q$z) == ks[i], logical(1))))
         stop(sprintf("%s %s x=%s: a query does not have %d conditioning variables", row, which, xs[i], ks[i]))
-      live <- engines[!names(engines) %in% dead]
+      too_big <- !is.null(pl$n_max) && ns[i] > pl$n_max  # the row needs too much memory at this n
+      live <- if (too_big) list() else engines[!names(engines) %in% dead]
       res <- if (length(live)) time_point(live, qs, paste(seed, row, which, xs[i], sep = ":")) else list(points = list(), over = character(0))
       dead <- c(dead, res$over)
       for (e in names(engines)) {
         p <- res$points[[e]]
-        if (is.null(p)) p <- skipped_point(length(qs))
+        if (is.null(p)) p <- skipped_point(length(qs), if (too_big && !(e %in% dead)) "memory limit" else "time budget")
         if (row == "g_sq" && e == "pcalg") p$note <- "pcalg returns p = 1 without running the test when n < 10 x the degrees of freedom. This happens at small n and at large |Z|, so these times are not comparable."
         series[[e]][[i]] <- p
         cat(sprintf("%-19s %s x=%-7d %-16s %s (%d q, %d errors, %d NaN)%s\n", row, which, xs[i], e,

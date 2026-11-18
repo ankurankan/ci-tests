@@ -21,29 +21,29 @@ def small(tmp_path_factory):
 
 
 def test_grids_match_the_plan():
-    big = [100, 300, 1000, 3000, 10000, 30000, 100000]
-    kernel = [100, 200, 500, 1000, 2000]
-    assert sweep_data.N_GRID == big
-    assert sweep_data.N_GRID_KERNEL == kernel
+    grid = [100, 300, 1000, 3000, 10000, 30000, 100000]
+    assert sweep_data.N_GRID == grid
+    assert not hasattr(sweep_data, "N_GRID_KERNEL")  # one n grid for every row, the kernel rows too
     assert sweep_data.Z_GRID == [0, 1, 2, 3, 4, 6, 8]
     for row, plan in sweep_data.PLAN.items():
-        assert plan["n_grid"] == (kernel if row in ("hsic", "kci") else big), row
-        assert plan["z_n"] == {"pillai": 2000, "kci": 500, "hsic": None}.get(row, 10000), row
+        assert plan["n_grid"] == grid, row
+        assert plan["z_n"] == (None if row == "hsic" else 1000), row  # the |Z| sweep runs at n = 1 000 in every row
+        assert plan["n_max"] == (10000 if row in ("hsic", "kci") else None), row  # n x n matrices: memory limit
     assert "hsic" not in sweep_data.Z_ROWS
     assert sweep_data.PLAN["hsic"]["n_z"] == 0 and sweep_data.PLAN["kci"]["n_z"] == 1
 
 
 def test_written_plan_matches_the_constraints(small):
     plan = json.loads((small / "sweep-queries.json").read_text())["plan"]
-    big = [100, 300, 1000, 3000, 10000, 30000, 100000]
-    kernel = [100, 200, 500, 1000, 2000]
-    assert plan["grids"] == {"n": big, "n_kernel": kernel, "z": [0, 1, 2, 3, 4, 6, 8]}
+    grid = [100, 300, 1000, 3000, 10000, 30000, 100000]
+    assert plan["grids"] == {"n": grid, "z": [0, 1, 2, 3, 4, 6, 8]}
     assert set(plan["rows"]) == {"chi_square", "g_sq", "cressie_read", "freeman_tukey", "modified_ll", "fisher_z",
                                  "pearson_t", "pearson_equivalence", "gcm", "pillai", "hsic", "kci"}
     for row, p in plan["rows"].items():
-        assert set(p) == {"gen", "n_grid", "n_z", "z_n"}
-        assert p["n_grid"] == (kernel if row in ("hsic", "kci") else big), row
-        assert p["z_n"] == {"pillai": 2000, "kci": 500, "hsic": None}.get(row, 10000), row
+        assert set(p) == {"gen", "n_grid", "n_z", "z_n", "n_max"}
+        assert p["n_grid"] == grid, row
+        assert p["z_n"] == (None if row == "hsic" else 1000), row
+        assert p["n_max"] == (10000 if row in ("hsic", "kci") else None), row
         assert p["n_z"] == (0 if row == "hsic" else 1), row
         assert p["gen"] == {"pillai": "mixed", "hsic": "nonlinear", "kci": "nonlinear"}.get(
             row, "discrete" if row in ("chi_square", "g_sq", "cressie_read", "freeman_tukey", "modified_ll")
@@ -176,6 +176,47 @@ def test_run_file_shape_and_budget_skip(small, monkeypatch):
     assert good[0]["skipped"] is None and good[0]["passes"] == 1
     assert good[1]["skipped"] == "time budget" and good[1]["median_ms"] is None
     assert set(good[0]) >= {"median_ms", "ms", "errors", "nan", "n_queries", "skipped"}
+
+
+def _run_with_n_max(small, tmp_path, monkeypatch, budget=None):
+    """Run the n sweep of one row whose plan stops at n = 100 (the data have the points 100 and 300)."""
+    import sweep_python
+    from sweep_python import bp
+    seen = []
+
+    def counting(data):
+        seen.append(len(data["df"]))  # the rows of each engine pass
+        return lambda q: (1.0, 0.5)
+
+    out = tmp_path / "sweep"
+    shutil.copytree(small, out)
+    spec = json.loads((out / "sweep-queries.json").read_text())
+    spec["plan"]["rows"]["fisher_z"]["n_max"] = 100
+    (out / "sweep-queries.json").write_text(json.dumps(spec))
+    monkeypatch.setattr(bp, "importable", lambda e: True)
+    monkeypatch.setitem(bp.ENGINE_MODULES, "good", "x")
+    monkeypatch.setattr(sweep_python, "ROWS", {"fisher_z": ("Fisher-z", {"good": counting})})
+    if budget is not None:
+        monkeypatch.setattr(sweep_python, "BUDGET_S", budget)
+    sweep_python.main(out, False, ["good"], None, ["n"], 1, "run.json")
+    sweep = json.loads((out / "run.json").read_text())["results"]["fisher_z"]["sweeps"]["n"]
+    return sweep, seen
+
+
+def test_points_above_n_max_are_skipped_for_memory(small, tmp_path, monkeypatch):
+    sweep, seen = _run_with_n_max(small, tmp_path, monkeypatch)
+    assert sweep["x"] == [100, 300]  # the point stays on the axis
+    first, second = sweep["engines"]["good"]
+    assert first["skipped"] is None and first["median_ms"] is not None and first["passes"] == 3
+    assert second["skipped"] == "memory limit" and second["median_ms"] is None and second["passes"] == 0
+    assert second["n_queries"] == 20
+    assert seen == [100, 100, 100]  # no engine pass with 300 rows
+
+
+def test_an_engine_over_the_time_budget_keeps_that_reason_above_n_max(small, tmp_path, monkeypatch):
+    sweep, seen = _run_with_n_max(small, tmp_path, monkeypatch, budget=-1)  # the first pass is over budget
+    assert [p["skipped"] for p in sweep["engines"]["good"]] == [None, "time budget"]
+    assert seen == [100]
 
 
 def test_only_mixed_data_gets_categorical_columns(small):
@@ -381,3 +422,24 @@ def test_small_values_keep_two_significant_digits(edge):
     _, md = edge
     assert "| FastCIT | 0.00043 | 0.00044 | 0.0014 |" in md
     assert summarize_sweep.sfmt(0.5) == "0.500" and summarize_sweep.sfmt(12.34) == "12.3"
+
+
+def test_memory_limit_points_have_their_own_mark(tmp_path):
+    skipped = {"median_ms": None, "ms": None, "errors": 0, "nan": 0, "n_queries": 10, "n_timed": 0, "passes": 0,
+               "skipped": "memory limit", "error": None}
+    budget = {**skipped, "skipped": "time budget"}
+    pts = {"fastcit": [_pt(70.0, n=10), skipped], "hyppo": [_pt(200.0, n=10), budget]}
+    run = {"meta": {"kind": "sweep", "python": "3.14.2", "passes": 3, "time_budget_s": 60.0, "quick": False,
+                    "engines": ["fastcit", "hyppo"]},
+           "results": {"hsic": {"label": "HSIC", "sweeps": {"n": {"fixed": {"z": 0}, "x": [10000, 30000],
+                                                                  "engines": pts}}}}}
+    (tmp_path / "sweep-python.json").write_text(json.dumps(run))
+    summarize_sweep.main(tmp_path)
+    data, md = json.loads((tmp_path / "sweep.json").read_text()), (tmp_path / "sweep.md").read_text()
+    _, s = series(data, "python", "hsic", "n")
+    assert s["fastcit"]["values"] == [70.0, None] and s["fastcit"]["skipped"] == [None, "memory limit"]
+    assert "| FastCIT | 70.0 | —¶ |" in md
+    assert "| 200 | —‡ |" in md  # hyppo: the time budget keeps its own mark
+    notes = [line for line in md.splitlines() if line.startswith("- ¶")]
+    assert len(notes) == 1 and "memory" in notes[0]
+    assert "—§" not in md  # not counted as a failed point

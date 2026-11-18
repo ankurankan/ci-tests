@@ -32,8 +32,8 @@ sweep.json (unit: ms; "meta", "languages" and the keys below are stable, the cha
         "series": [ {"engine": key, "label": str,
                      "values": [ms | null, ...],  # median over the queries, aligned to x; null: no result
                      "skipped": [str | null, ...],  # aligned to x; the reason when the value is null:
-                                                    #   "time budget" | "error: TEXT" | "all queries NaN"
-                                                    #   | "all queries raised errors"
+                                                    #   "time budget" | "memory limit" | "error: TEXT"
+                                                    #   | "all queries NaN" | "all queries raised errors"
                      "notes": [str, ...],         # engine-level caveats, same for every point
                      # Added fields:
                      "passes": [int, ...],        # passes behind each value. 1 after the time budget (the value
@@ -79,7 +79,8 @@ SETUP_NOTES = {  # the row note of summarize.py (sm.FOOT_E), in the words of a s
           "and stays flat too. bnlearn and ppcor build it in every call, so their time grows with n."),
 }
 MARKS = ["ᵃ", "ᵇ", "ᶜ", "ᵈ", "ᵉ", "ᶠ", "ᵍ", "ʰ", "ⁱ", "ʲ"]  # marks of the engine notes, per table
-ONE_PASS, BUDGET, FAILED, EXCLUDED = "†", "‡", "§", "*"
+ONE_PASS, BUDGET, MEMORY, FAILED, EXCLUDED = "†", "‡", "¶", "§", "*"
+SKIP_MARKS = {"time budget": BUDGET, "memory limit": MEMORY}  # the reasons with their own mark
 META_KEYS = ("date", "cpu", "logical_cpus", "os", "versions", "commits", "quick", "seed", "power", "power_end",
              "threads", "affinity", "helpers", "fastcit_trees", "harness_floor_ms")
 # Notes of the existing summary that apply to the engine of a row (summarize.py marks). Pillai has its own note
@@ -271,7 +272,7 @@ def table(sweep, meta):
         for v, why, passes, excl, nq, x in zip(s["values"], s["skipped"], s["passes"], s["excluded"],
                                                s["queries"], xs):
             if v is None:
-                mark = BUDGET if why == "time budget" else FAILED
+                mark = SKIP_MARKS.get(why, FAILED)
                 used.add(mark)
                 if mark == FAILED and "queries gave" in (why or ""):
                     left.append((s["label"], why, None, x))
@@ -291,6 +292,8 @@ def table(sweep, meta):
     texts = {ONE_PASS: f"The first pass took more than {num(int(meta.get('budget_s') or 60))} s. "
                        "The cell comes from one pass. Larger points, if any, are missing.",
              BUDGET: "No result. The engine skipped this point after it passed the time budget.",
+             MEMORY: "No result. The sweep does not run this test at this sample size. "
+                     "The packages need too much memory there.",
              FAILED: "No result. Every query raised an error or returned NaN, or fewer than half of them gave a value.",
              EXCLUDED: "Some queries raised an error or returned NaN. The median uses the other queries."}
     shown = {EXCLUDED: "\\*"}
@@ -299,7 +302,7 @@ def table(sweep, meta):
             texts[mark] += " " + "; ".join(
                 f"{lab} at {num(x)}: " + (f"{k} of {nq} queries left out" if nq is not None else k)
                 for lab, k, nq, x in items) + "."
-    lines += [f"- {shown.get(m, m)} {texts[m]}" for m in (ONE_PASS, BUDGET, FAILED, EXCLUDED) if m in used]
+    lines += [f"- {shown.get(m, m)} {texts[m]}" for m in (ONE_PASS, BUDGET, MEMORY, FAILED, EXCLUDED) if m in used]
     return out + ("\n" + "\n".join(lines) + "\n" if lines else "")
 
 
@@ -310,6 +313,7 @@ def markdown(data):
             "Each column is one value of n or |Z|.\n\n")
     out += ("Each cell is the median over the queries of a point. Each query keeps its fastest pass. "
             "An engine that passes the time budget skips the larger points. "
+            "HSIC and KCI do not run above their memory limit. "
             "— means no result. Other marks are explained under each table.\n\n")
     if data["quick"]:
         out += "This is a quick run with few queries and one pass. Do not use its numbers.\n\n"

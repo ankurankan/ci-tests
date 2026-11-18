@@ -10,7 +10,7 @@ dowhy needs another interpreter: run `--engines dowhy,fastcit --rows gcm --out s
 
 Sweeps (the grids are the "plan" of sweep-queries.json, written by sweep_data.py):
   n: n rows (the first n rows of the data file) at |Z| = 1 (HSIC: Z empty).
-  z: |Z| = 0..4 at a fixed n (10 000; pillai 2 000; kci 500). HSIC has no |Z| sweep.
+  z: |Z| = 0, 1, 2, 3, 4, 6, 8 at n = 1 000 (every row). HSIC has no |Z| sweep.
 Every query of a point has exactly |Z| conditioning variables. 20 queries per point (kernel rows: 10).
 
 Timing: 3 passes per point. The passes are the outer loop. Each pass runs the engines of the point in a new
@@ -20,6 +20,9 @@ over the queries, in milliseconds. A query that raises an error or returns NaN i
 Time budget: when the first pass of an engine at a point takes more than 60 s, the engine skips the remaining
 passes of that point (the value comes from one pass) and all larger points of that sweep. Those points get
 "median_ms": null and "skipped": "time budget".
+Memory limit: a row with "n_max" in the plan (HSIC and KCI: 10 000) builds n x n matrices and does not run at a
+larger n. Those points get "median_ms": null and "skipped": "memory limit". An engine that is already over the
+time budget keeps "time budget".
 
 Run file (JSON), shared with sweep_r.R:
 {
@@ -39,7 +42,7 @@ POINT = {"median_ms": float | null,    # median over the queries that gave a val
          "errors": int, "nan": int,     # queries that raised an error, queries with a NaN p-value
          "n_queries": int, "n_timed": int, "passes": int,
          "setup_ms": float, "total_ms": float,   # best pass: the factory call (setup) and setup + all queries
-         "skipped": null | "time budget",
+         "skipped": null | "time budget" | "memory limit",
          "error": null | str,           # set when the engine could not run at all at this point
          "note": str}                   # only for engines with a known caveat (as in bench_python.py)
 Engine keys are the ones of bench_python.py ("fastcit", "pgmpy", "causal-learn", ...).
@@ -118,8 +121,8 @@ def time_point(engines, data, queries, rng, passes, budget=None):
     return out, over
 
 
-def skipped_point(n_queries):
-    return point_result(skipped="time budget", n_queries=n_queries)
+def skipped_point(n_queries, why="time budget"):
+    return point_result(skipped=why, n_queries=n_queries)
 
 
 def load_frames(outdir, spec):
@@ -245,12 +248,14 @@ def main(outdir, quick, engines, rows, sweeps, seed, out_name):
             for x, n, k in zip(xs, ns, ks):
                 qs = gspec["queries"][str(k)][:nq]
                 assert all(len(q["z"]) == k for q in qs), f"{row} {which} x={x}: a query does not have {k} conditioning variables"
-                live = {e: f for e, f in todo.items() if e not in dead}
+                too_big = bool(plan.get("n_max")) and n > plan["n_max"]  # the row needs too much memory at this n
+                live = {} if too_big else {e: f for e, f in todo.items() if e not in dead}
                 res, over = time_point(live, head(cache["frames"], n), qs,
                                        random.Random(f"{seed}:{row}:{which}:{x}"), passes) if live else ({}, set())
                 dead |= over
                 for e in todo:
-                    p = res.get(e) or skipped_point(len(qs))
+                    p = res.get(e) or skipped_point(len(qs), "memory limit" if too_big and e not in dead
+                                                    else "time budget")
                     if (row, e) in bp.NOTES:
                         p["note"] = bp.NOTES[(row, e)]
                     series[e].append(p)

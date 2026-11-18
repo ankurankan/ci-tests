@@ -3,8 +3,8 @@
 Usage: python benchmarks/sweep_data.py OUTDIR [--max-n N]
 
 One CSV per generator at the largest n of its sweep. A sweep point with n rows uses the first n rows of the file.
-sweep-queries.json also holds "plan": the grids and, per row, the generator, the n grid, n_z and z_n. This plan is the
-single source of the grids: sweep_python.py and sweep_r.R read it from the file and keep no copies.
+sweep-queries.json also holds "plan": the grids and, per row, the generator, the n grid, n_z, z_n and n_max. This plan
+is the single source of the grids: sweep_python.py and sweep_r.R read it from the file and keep no copies.
 sweep-queries.json holds, per generator, the data file and the queries for each conditioning-set size k in Z_GRID (0 to 8):
 every query has exactly k conditioning variables, and all queries of one k are distinct.
 --max-n caps the rows of every file (for tests). All data are synthetic and seeded. Running the script twice
@@ -20,20 +20,25 @@ import pandas as pd
 
 import data as base
 
-N_GRID = [100, 300, 1_000, 3_000, 10_000, 30_000, 100_000]
-N_GRID_KERNEL = [100, 200, 500, 1_000, 2_000]
+N_GRID = [100, 300, 1_000, 3_000, 10_000, 30_000, 100_000]  # the n sweep of every row, the kernel rows too
 Z_GRID = [0, 1, 2, 3, 4, 6, 8]
+Z_N = 1_000  # n of the |Z| sweep of every row
+# HSIC and KCI build n x n matrices. One HSIC call at n = 30 000 needs 14 GB (FastCIT) to 34 GB (pgmpy,
+# causal-learn) of memory. The sweep scripts do not run these rows above this n.
+N_MAX_KERNEL = 10_000
 
-# row -> generator, n grid of the n sweep, |Z| of the n sweep (n_z), n of the |Z| sweep (z_n).
+# row -> generator, n grid of the n sweep, |Z| of the n sweep (n_z), n of the |Z| sweep (z_n), largest n (n_max).
 # The n sweep uses |Z| = 1 (HSIC: Z empty). The |Z| sweep has no HSIC row.
+# n_max is None for a row without limit. The points above n_max stay in the grid and get no result
+# ("skipped": "memory limit").
 PLAN = {
-    **{row: {"gen": "discrete", "n_grid": N_GRID, "n_z": 1, "z_n": 10_000}
+    **{row: {"gen": "discrete", "n_grid": N_GRID, "n_z": 1, "z_n": Z_N, "n_max": None}
        for row in ("chi_square", "g_sq", "cressie_read", "freeman_tukey", "modified_ll")},
-    **{row: {"gen": "gaussian", "n_grid": N_GRID, "n_z": 1, "z_n": 10_000}
+    **{row: {"gen": "gaussian", "n_grid": N_GRID, "n_z": 1, "z_n": Z_N, "n_max": None}
        for row in ("fisher_z", "pearson_t", "pearson_equivalence", "gcm")},
-    "pillai": {"gen": "mixed", "n_grid": N_GRID, "n_z": 1, "z_n": 2_000},
-    "hsic": {"gen": "nonlinear", "n_grid": N_GRID_KERNEL, "n_z": 0, "z_n": None},
-    "kci": {"gen": "nonlinear", "n_grid": N_GRID_KERNEL, "n_z": 1, "z_n": 500},
+    "pillai": {"gen": "mixed", "n_grid": N_GRID, "n_z": 1, "z_n": Z_N, "n_max": None},
+    "hsic": {"gen": "nonlinear", "n_grid": N_GRID, "n_z": 0, "z_n": None, "n_max": N_MAX_KERNEL},
+    "kci": {"gen": "nonlinear", "n_grid": N_GRID, "n_z": 1, "z_n": Z_N, "n_max": N_MAX_KERNEL},
 }
 Z_ROWS = [row for row, plan in PLAN.items() if plan["z_n"]]
 QUERIES = {"discrete": 20, "gaussian": 20, "mixed": 20, "nonlinear": 10}  # queries per point
@@ -115,7 +120,7 @@ def main(outdir, max_n=None):
         "nonlinear": sweep_nonlinear(rows["nonlinear"]),
         "mixed": sweep_mixed(rows["mixed"]),
     }
-    spec = {"plan": {"grids": {"n": N_GRID, "n_kernel": N_GRID_KERNEL, "z": Z_GRID}, "rows": PLAN}}
+    spec = {"plan": {"grids": {"n": N_GRID, "z": Z_GRID}, "rows": PLAN}}
     for gen, df in frames.items():
         name = f"sweep-{gen}.csv"
         df.to_csv(out / name, index=False)
