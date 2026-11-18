@@ -5,7 +5,7 @@
 # OUTDIR must hold the files written by benchmarks/sweep_data.py. The script writes OUTDIR/FILE (default
 # sweep-r.json). The run file has the shape documented in benchmarks/sweep_python.py: the same row and sweep keys,
 # the same grids (read from sweep-queries.json), and the same POINT fields. The engine of FastCIT is "fastcit". The engines come from r_engines.R.
-# --quick runs the two smallest points of each sweep with 2 queries and 1 pass.
+# --quick runs the two smallest points of each sweep with 2 queries.
 #
 # Rows: the rows of bench_r.R (the "bnlearn (adf)" and "pcalg (adaptDF)" variants exist there for the agreement
 # check only and are not timed here), and FastCIT-only rows for the tests with no R package: cressie_read,
@@ -15,15 +15,16 @@
 #   z: |Z| = 0, 1, 2, 3, 4, 6, 8 at n = 1 000 (every row). HSIC has no |Z| sweep.
 # Every query of a point has exactly |Z| conditioning variables. 20 queries per point (kernel rows: 10).
 #
-# Timing: 3 passes per point. The passes are the outer loop. Each pass runs the engines of the point in a new random
-# order (seeded). gc(full = TRUE) runs before each engine pass, outside the timer. Each engine pass builds new test
-# objects and times every query once. The time of a query is its best pass. The value of a point is the median over
-# the queries, in milliseconds. A query that raises an error or returns NaN is counted and left out.
-# Time budget: when the first pass of an engine at a point takes more than 60 s, the engine skips the remaining
-# passes of that point (the value comes from one pass) and all larger points of that sweep. Those points get
-# "median_ms": null and "skipped": "time budget".
+# Timing: one pass per point. The pass runs the engines of the point in a new random order (seeded). gc(full = TRUE)
+# runs before each engine, outside the timer. An engine builds new test objects (the setup) and then times every
+# query once. The first call is the warm-up call. It also does the one-time work of an engine (FastCIT builds the
+# correlation matrix there), so it is not part of the value. Its time is "first_ms". The value of a point is the
+# mean over the other calls, in milliseconds, with their standard deviation and the standard error of the mean.
+# A query that raises an error or returns NaN is counted and left out.
+# Time budget: when an engine takes more than 60 s for a point, the engine skips all larger points of that sweep.
+# Those points get "mean_ms": null and "skipped": "time budget".
 # Memory limit: a row with "n_max" in the plan (HSIC and KCI: 10 000) builds n x n matrices and does not run at a
-# larger n. Those points get "median_ms": null and "skipped": "memory limit". An engine that is already over the
+# larger n. Those points get "mean_ms": null and "skipped": "memory limit". An engine that is already over the
 # time budget keeps "time budget".
 
 suppressPackageStartupMessages({
@@ -51,7 +52,7 @@ usage <- "Usage: Rscript benchmarks/sweep_r.R OUTDIR [--quick] [--rows a,b,...] 
 if (length(args) != 1) stop(usage)
 if (!only_sweep %in% c("", "n", "z")) stop("--sweep must be n or z")
 outdir <- args[1]
-PASSES <- if (quick) 1L else 3L
+PASSES <- 1L
 BUDGET_S <- as.numeric(Sys.getenv("FASTCIT_SWEEP_BUDGET_S", "60"))  # the variable lets a test trip the budget
 script_dir <- dirname(sub("^--file=", "", grep("^--file=", commandArgs(), value = TRUE)[1]))
 source(file.path(script_dir, "r_engines.R"))  # engines, timing core, metadata helpers
@@ -102,18 +103,29 @@ head_frame <- function(df, gen, n) {
   part
 }
 
-point_result <- function(median_ms = NA_real_, ms = NA, errors = 0L, nan = 0L, n_queries = 0L, n_timed = 0L,
-                         passes = 0L, skipped = NA_character_, error = NA_character_, setup_ms = NA_real_, total_ms = NA_real_) {
-  list(median_ms = median_ms, ms = if (identical(ms, NA)) NA else I(ms), errors = errors, nan = nan,
-       n_queries = n_queries, n_timed = n_timed, passes = passes, skipped = skipped, error = error,
-       setup_ms = setup_ms, total_ms = total_ms)
+point_result <- function(mean_ms = NA_real_, sd_ms = NA_real_, se_ms = NA_real_, first_ms = NA_real_, ms = NA,
+                         errors = 0L, nan = 0L, n_queries = 0L, n_timed = 0L, passes = 0L, skipped = NA_character_,
+                         error = NA_character_, setup_ms = NA_real_, total_ms = NA_real_) {
+  list(mean_ms = mean_ms, sd_ms = sd_ms, se_ms = se_ms, first_ms = first_ms, ms = if (identical(ms, NA)) NA else I(ms),
+       errors = errors, nan = nan, n_queries = n_queries, n_timed = n_timed, passes = passes, skipped = skipped,
+       error = error, setup_ms = setup_ms, total_ms = total_ms)
+}
+# The numbers of a POINT from the state of one engine (r_engines.R). The first call is the warm-up call: it is not
+# part of the mean, and its time is first_ms. A query that raised an error or returned NaN is not part of the mean.
+point_stats <- function(st) {
+  ms <- 1e3 * st$best; ok <- !st$err & !st$nan
+  rest <- ms[ok & seq_along(ms) > 1]; n <- length(rest)
+  s <- if (n > 1) sd(rest) else NA_real_
+  point_result(mean_ms = if (n) mean(rest) else NA_real_, sd_ms = s, se_ms = s / sqrt(n), first_ms = ms[1],
+               ms = ifelse(ok, ms, NA_real_), errors = sum(st$err), nan = sum(st$nan), n_queries = length(ms),
+               n_timed = n, passes = length(st$totals), setup_ms = 1e3 * min(st$setups), total_ms = 1e3 * min(st$totals))
 }
 skipped_point <- function(n_queries, why = "time budget") point_result(n_queries = n_queries, skipped = why)
 
 # A seed from a text key, so that the engine orders do not depend on the run order of the rows.
 key_seed <- function(key) as.integer(sum(utf8ToInt(key) * seq_len(nchar(key))) %% 2147483647)
 
-# Run the passes over the engines at one point. Returns the point of each engine and the engines over the budget.
+# Run the engines at one point (one pass). Returns the point of each engine and the engines over the budget.
 time_point <- function(engines, qs, key) {
   states <- lapply(engines, function(e) new_state(length(qs)))
   failed <- list(); over <- character(0)
@@ -132,10 +144,7 @@ time_point <- function(engines, qs, key) {
   }
   out <- lapply(names(engines), function(name) {
     if (!is.null(failed[[name]])) return(point_result(error = failed[[name]], errors = length(qs), n_queries = length(qs)))
-    st <- states[[name]]; res <- result(st); ok <- !st$err & !st$nan
-    point_result(median_ms = res$median_ms, ms = ifelse(ok, res$ms, NA_real_), errors = res$errors, nan = res$nan,
-                 n_queries = res$n_queries, n_timed = res$n_timed, passes = length(st$totals),
-                 setup_ms = res$setup_ms, total_ms = res$total_ms)
+    point_stats(states[[name]])
   })
   list(points = setNames(out, names(engines)), over = over)
 }
@@ -163,8 +172,8 @@ sweeps <- if (nzchar(only_sweep)) only_sweep else c("n", "z")
 
 # The harness floor: a no-op engine on the discrete queries of |Z| = 1, through the same timing code.
 floor_pt <- time_point(list(noop = noop), take(spec$discrete$queries[["1"]]), paste(seed, "floor", sep = ":"))$points$noop
-meta$harness_floor_ms <- floor_pt$median_ms
-cat(sprintf("harness floor: median %.6f ms\n", floor_pt$median_ms))
+meta$harness_floor_ms <- floor_pt$mean_ms
+cat(sprintf("harness floor: mean %.6f ms\n", floor_pt$mean_ms))
 results <- list()
 path <- file.path(outdir, out_name)
 save <- function(done = FALSE) {
@@ -205,7 +214,7 @@ for (row in rows_wanted) {
         if (row == "g_sq" && e == "pcalg") p$note <- "pcalg returns p = 1 without running the test when n < 10 x the degrees of freedom. This happens at small n and at large |Z|, so these times are not comparable."
         series[[e]][[i]] <- p
         cat(sprintf("%-19s %s x=%-7d %-16s %s (%d q, %d errors, %d NaN)%s\n", row, which, xs[i], e,
-                    if (!is.na(p$skipped)) paste0("skipped (", p$skipped, ")") else sprintf("median %s ms", format(p$median_ms)),
+                    if (!is.na(p$skipped)) paste0("skipped (", p$skipped, ")") else sprintf("mean %s ms", format(p$mean_ms)),
                     p$n_queries, p$errors, p$nan, if (!is.na(p$error)) paste0(" [", p$error, "]") else ""))
       }
     }

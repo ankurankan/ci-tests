@@ -41,7 +41,7 @@
      "engines": {
       "bnlearn": [
        {
-        "median_ms": 0.9,
+        "mean_ms": 0.9,
         "ms": [
          0.9
         ],
@@ -54,7 +54,7 @@
         "error": null
        },
        {
-        "median_ms": 1.9,
+        "mean_ms": 1.9,
         "ms": [
          1.9
         ],
@@ -69,7 +69,7 @@
       ],
       "pcalg": [
        {
-        "median_ms": 0.1,
+        "mean_ms": 0.1,
         "ms": [
          0.1
         ],
@@ -83,7 +83,7 @@
         "note": "pcalg returns p = 1 without running the test when n < 10 x the degrees of freedom"
        },
        {
-        "median_ms": 0.2,
+        "mean_ms": 0.2,
         "ms": [
          0.2
         ],
@@ -99,7 +99,7 @@
       ],
       "fastcit": [
        {
-        "median_ms": 0.01,
+        "mean_ms": 0.01,
         "ms": [
          0.01
         ],
@@ -112,7 +112,7 @@
         "error": null
        },
        {
-        "median_ms": 0.02,
+        "mean_ms": 0.02,
         "ms": [
          0.02
         ],

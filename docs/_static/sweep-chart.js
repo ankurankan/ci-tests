@@ -1,5 +1,5 @@
 /*
- * The chart of docs/benchmark.md: the median time of one test call against the sample size n or the
+ * The chart of docs/benchmark.md: the mean time of one test call against the sample size n or the
  * conditioning-set size |Z|, one line per package. The data is sweep.json from benchmarks/summarize_sweep.py
  * (its docstring gives the schema); docs/conf.py copies it next to the page.
  *
@@ -37,7 +37,7 @@
   SHAPES.cross = SHAPES.plus.map(function (p) { return [(p[0] - p[1]) * 0.7071, (p[0] + p[1]) * 0.7071]; });
   var AXES = { n: "Sample size", z: "Conditioning-set size" };
   var SYMBOLS = { n: "n", z: "|Z|" };
-  var Y_TITLE = "Median time of one call (ms)";
+  var Y_TITLE = "Mean time of one call (ms) ± standard error";
   var SVG_NS = "http://www.w3.org/2000/svg";
 
   // ---------------------------------------------------------------- helpers
@@ -152,6 +152,11 @@
 
   // ------------------------------------------------------------ the parts
 
+  // The mean of point i with its standard error (for the table and the tooltip).
+  function valueOf(series, i) {
+    return ms(series.values[i]) + (series.se[i] ? " ± " + ms(series.se[i]) : "");
+  }
+
   // Why point i of a series has no value or a mark (for the tooltip and the notes).
   function reasons(series, i, passes) {
     if (series.values[i] === null) return ["no result (" + (series.skipped[i] || "no value") + ")"];
@@ -205,7 +210,7 @@
       sweep.series.forEach(function (series) {
         var value = series.values[i];
         var cell = tr.insertCell();
-        cell.textContent = value === null ? "—" : ms(value);
+        cell.textContent = value === null ? "—" : valueOf(series, i);
         if (value === null) cell.title = series.skipped[i] || "no value";
       });
     });
@@ -222,7 +227,7 @@
       var why = reasons(series, i, passes);
       var line = el("div", "sweep-tip-row");
       line.appendChild(key(series.engine));
-      line.appendChild(el("strong", null, value === null ? "—" : ms(value) + " ms"));
+      line.appendChild(el("strong", null, value === null ? "—" : valueOf(series, i) + " ms"));
       line.appendChild(el("span", null, series.label + (why.length ? ": " + why.join(", ") : "")));
       tip.appendChild(line);
     });
@@ -230,13 +235,15 @@
 
   // ------------------------------------------------------------- the plot
 
-  function drawPlot(figure, sweep, axis, passes) {
+  function drawPlot(figure, sweep, axis, passes, scale) {
     figure.textContent = "";
     var xs = sweep.x;
+    var log = scale === "log";
+    var shown = function (v) { return v !== null && (!log || v > 0); }; // a log axis has no place for 0
     var all = [];
     sweep.series.forEach(function (series) {
-      series.values.forEach(function (value) {
-        if (value !== null) all.push(value);
+      series.values.forEach(function (value, i) {
+        if (shown(value)) all.push(value, value + (series.se[i] || 0)); // room for the error bar
       });
     });
     if (!all.length) {
@@ -257,13 +264,20 @@
     var sx = function (v) {
       return m.left + pad + ((fx(v) - x0) / (x1 - x0 || 1)) * (width - m.left - m.right - 2 * pad);
     };
-    // Linear y from 0 to a round value above the largest time: about five gridlines, 1, 2 or 5 units apart.
+    // The gridlines of the time axis, up to the first one above the largest time. Linear: from 0, about
+    // five gridlines that are 1, 2 or 5 units apart. Log: one gridline for each power of ten.
+    var fy = scale === "log" ? Math.log10 : function (v) { return v; };
     var most = Math.max.apply(null, all) || 1;
-    var unit = Math.pow(10, Math.floor(Math.log10(most / 5)));
-    var step = unit * [1, 2, 5, 10].filter(function (k) { return k * unit >= most / 5; })[0];
-    var top = Math.ceil(most / step - 1e-9) * step;
+    var unit = Math.pow(10, Math.floor(Math.log10(log ? Math.min.apply(null, all) : most / 5)));
+    var step = unit * [1, 2, 5, 10].filter(function (k) { return log || k * unit >= most / 5; })[0];
+    var grid = [log ? unit : 0];
+    while (grid.length < 2 || grid[grid.length - 1] < most * (1 - 1e-9)) {
+      grid.push(log ? grid[grid.length - 1] * 10 : grid.length * step);
+    }
+    var y0 = fy(grid[0]);
+    var y1 = fy(grid[grid.length - 1]);
     var sy = function (v) {
-      return m.top + (1 - v / top) * (height - m.top - m.bottom);
+      return m.top + ((y1 - fy(v)) / (y1 - y0)) * (height - m.top - m.bottom);
     };
     var bottom = height - m.bottom;
 
@@ -271,12 +285,12 @@
     chart.setAttribute("aria-label", "Line chart: " + Y_TITLE + " against " + AXES[axis].toLowerCase() + " " +
       SYMBOLS[axis] + ". The arrow keys move between the points. The Table button shows all values.");
 
-    // Axes: a gridline per step of the time axis, a tick per point.
-    for (var g = 0; g * step <= top * (1 + 1e-9); g++) {
-      var y = sy(g * step);
+    // Axes: the gridlines of the time axis, a tick per point.
+    grid.forEach(function (value) {
+      var y = sy(value);
       svg(chart, "line", { x1: m.left, x2: width - m.right, y1: y, y2: y }, "sweep-grid");
-      svg(chart, "text", { x: m.left - 8, y: y + 4, "text-anchor": "end" }, "sweep-tick", tick(g * step));
-    }
+      svg(chart, "text", { x: m.left - 8, y: y + 4, "text-anchor": "end" }, "sweep-tick", tick(value));
+    });
     svg(chart, "line", { x1: m.left, x2: width - m.right, y1: bottom, y2: bottom }, "sweep-axis");
     xs.forEach(function (x) {
       svg(chart, "text", { x: sx(x), y: bottom + 18, "text-anchor": "middle" }, "sweep-tick",
@@ -295,7 +309,7 @@
       var pen = "M";
       var last = -1;
       series.values.forEach(function (value, i) {
-        if (value === null) {
+        if (!shown(value)) {
           pen = "M";
           return;
         }
@@ -305,7 +319,10 @@
       });
       svg(group, "path", { d: path }, "sweep-line");
       series.values.forEach(function (value, i) {
-        if (value === null) return;
+        if (!shown(value)) return;
+        var se = series.se[i] || 0; // the error bar: mean ± standard error, cut at the lowest gridline
+        var bar = { x1: sx(xs[i]), x2: sx(xs[i]), y1: sy(Math.max(value - se, grid[0])), y2: sy(value + se) };
+        if (se) svg(group, "line", bar, "sweep-bar");
         var one = passes && series.passes[i] < passes;
         marker(group, series.engine, sx(xs[i]), sy(value), one ? 5 : 4, "sweep-dot" + (one ? " sweep-one" : ""));
       });
@@ -398,7 +415,7 @@
       host.textContent = "The chart data has no results.";
       return;
     }
-    var state = { lang: storedLanguage(langs), row: null, axis: "n", table: false };
+    var state = { lang: storedLanguage(langs), row: null, axis: "n", scale: "linear", table: false };
     var controls = el("div", "sweep-controls");
     var langControl = segmented("Language", langs.map(function (lang) {
       return [lang.key, lang.label];
@@ -416,13 +433,17 @@
       state.axis = value;
       update();
     });
+    var scaleControl = segmented("Time scale", [["linear", "Linear"], ["log", "Log"]], function (value) {
+      state.scale = value;
+      update();
+    });
     var tableButton = el("button", "sweep-toggle", "Table");
     tableButton.type = "button";
     tableButton.addEventListener("click", function () {
       state.table = !state.table;
       update();
     });
-    controls.append(langControl.node, select, axisControl.node, tableButton);
+    controls.append(langControl.node, select, axisControl.node, scaleControl.node, tableButton);
     var legend = el("ul", "sweep-legend");
     var figure = el("div", "sweep-figure");
     var notes = el("ul", "sweep-notes");
@@ -440,11 +461,13 @@
       // HSIC has no |Z| sweep: show n, and keep the choice for the other tests.
       var axis = row.sweeps[state.axis] ? state.axis : Object.keys(row.sweeps)[0];
       var sweep = row.sweeps[axis];
+      sweep.series.forEach(function (series) { series.se = series.se || []; }); // a data file without errors
 
       langControl.set(state.lang);
       axisControl.set(axis, function (value) {
         return Boolean(row.sweeps[value]);
       });
+      scaleControl.set(state.scale, function () { return !state.table; }); // the table has no axis
       tableButton.setAttribute("aria-pressed", String(state.table));
       select.textContent = "";
       lang.rows.forEach(function (row) {
@@ -465,7 +488,7 @@
       else {
         redraw = function () {
           drawnWidth = figure.clientWidth;
-          drawPlot(figure, sweep, axis, passes);
+          drawPlot(figure, sweep, axis, passes, state.scale);
         };
         redraw();
       }

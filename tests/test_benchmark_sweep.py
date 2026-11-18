@@ -134,23 +134,62 @@ def _engines():
 QS = [{"x": "a", "y": "b", "z": []}, {"x": "bad", "y": "b", "z": []}, {"x": "nan", "y": "b", "z": []}]
 
 
+def test_sweep_runs_one_pass():
+    import sweep_python
+    assert sweep_python.PASSES == 1
+
+
+def _state(times_s, err=(), nan=()):
+    """The state of bench_python.time_pass after one pass with these call times (in seconds)."""
+    n = len(times_s)
+    return {"times": [[t] for t in times_s], "err": [i in err for i in range(n)], "nan": [i in nan for i in range(n)],
+            "totals": [0.5 + sum(times_s)], "setups": [0.5]}
+
+
+def test_point_stats_leave_out_the_first_call():
+    import sweep_python
+    st = sweep_python.point_stats(_state([0.010, 0.002, 0.004, 0.006]))  # the first call does the one-time work
+    assert st["first_ms"] == pytest.approx(10.0)
+    assert st["mean_ms"] == pytest.approx(4.0) and st["n_timed"] == 3
+    assert st["sd_ms"] == pytest.approx(2.0) and st["se_ms"] == pytest.approx(2.0 / 3 ** 0.5)
+    assert st["ms"] == pytest.approx([10.0, 2.0, 4.0, 6.0])  # every call stays in the run file
+    assert st["setup_ms"] == pytest.approx(500.0) and st["total_ms"] == pytest.approx(522.0)
+
+
+def test_point_stats_leave_out_errors_and_nan():
+    import sweep_python
+    st = sweep_python.point_stats(_state([0.010, 0.002, 0.050, 0.004, 0.006], err={2}, nan={4}))
+    assert st["mean_ms"] == pytest.approx(3.0) and st["n_timed"] == 2
+    assert (st["errors"], st["nan"], st["n_queries"]) == (1, 1, 5)
+    assert st["ms"][2] is None and st["ms"][4] is None
+
+
+def test_point_stats_with_too_few_calls():
+    import sweep_python
+    one = sweep_python.point_stats(_state([0.010, 0.002]))  # a quick run: one call after the warm-up call
+    assert one["mean_ms"] == pytest.approx(2.0) and one["sd_ms"] is None and one["se_ms"] is None
+    none = sweep_python.point_stats(_state([0.010, 0.002], nan={1}))
+    assert none["mean_ms"] is None and none["n_timed"] == 0 and none["first_ms"] == pytest.approx(10.0)
+
+
 def test_time_point_counts_errors_and_nan_as_missing():
     import random
     import sweep_python
-    res, over = sweep_python.time_point(_engines(), None, QS, random.Random(1), 2)
+    res, over = sweep_python.time_point(_engines(), None, QS, random.Random(1), 1)
     assert over == set()
-    assert res["good"]["errors"] == 0 and res["good"]["n_timed"] == 3 and res["good"]["passes"] == 2
-    f = res["flaky"]
-    assert (f["errors"], f["nan"], f["n_timed"]) == (1, 1, 1)
+    assert res["good"]["errors"] == 0 and res["good"]["n_timed"] == 2 and res["good"]["passes"] == 1
+    assert res["good"]["mean_ms"] is not None and res["good"]["first_ms"] is not None
+    f = res["flaky"]  # the calls after the warm-up call: one error and one NaN
+    assert (f["errors"], f["nan"], f["n_timed"]) == (1, 1, 0) and f["mean_ms"] is None
     assert f["ms"][0] is not None and f["ms"][1] is None and f["ms"][2] is None
-    assert res["broken"]["median_ms"] is None and "cannot build" in res["broken"]["error"]
+    assert res["broken"]["mean_ms"] is None and "cannot build" in res["broken"]["error"]
 
 
 def test_time_point_budget_stops_remaining_passes():
     import random
     import sweep_python
     res, over = sweep_python.time_point({"good": _engines()["good"]}, None, QS, random.Random(1), 3, budget=-1)
-    assert over == {"good"} and res["good"]["passes"] == 1 and res["good"]["median_ms"] is not None
+    assert over == {"good"} and res["good"]["passes"] == 1 and res["good"]["mean_ms"] is not None
 
 
 def test_run_file_shape_and_budget_skip(small, monkeypatch):
@@ -174,8 +213,10 @@ def test_run_file_shape_and_budget_skip(small, monkeypatch):
     assert len(sw["z"]["engines"]["good"][0]["ms"]) == 20
     good = sw["n"]["engines"]["good"]
     assert good[0]["skipped"] is None and good[0]["passes"] == 1
-    assert good[1]["skipped"] == "time budget" and good[1]["median_ms"] is None
-    assert set(good[0]) >= {"median_ms", "ms", "errors", "nan", "n_queries", "skipped"}
+    assert good[1]["skipped"] == "time budget" and good[1]["mean_ms"] is None
+    assert set(good[0]) >= {"mean_ms", "sd_ms", "se_ms", "first_ms", "setup_ms", "total_ms", "ms", "errors", "nan",
+                            "n_queries", "n_timed", "skipped"}
+    assert "median_ms" not in good[0]
 
 
 def _run_with_n_max(small, tmp_path, monkeypatch, budget=None):
@@ -207,10 +248,11 @@ def test_points_above_n_max_are_skipped_for_memory(small, tmp_path, monkeypatch)
     sweep, seen = _run_with_n_max(small, tmp_path, monkeypatch)
     assert sweep["x"] == [100, 300]  # the point stays on the axis
     first, second = sweep["engines"]["good"]
-    assert first["skipped"] is None and first["median_ms"] is not None and first["passes"] == 3
-    assert second["skipped"] == "memory limit" and second["median_ms"] is None and second["passes"] == 0
+    assert first["skipped"] is None and first["mean_ms"] is not None and first["passes"] == 1
+    assert first["n_timed"] == 19  # 20 queries without the warm-up call
+    assert second["skipped"] == "memory limit" and second["mean_ms"] is None and second["passes"] == 0
     assert second["n_queries"] == 20
-    assert seen == [100, 100, 100]  # no engine pass with 300 rows
+    assert seen == [100]  # one pass, and no engine pass with 300 rows
 
 
 def test_an_engine_over_the_time_budget_keeps_that_reason_above_n_max(small, tmp_path, monkeypatch):
@@ -354,6 +396,26 @@ def test_markdown_has_one_table_per_language_test_axis(summary):
     assert "fastcit (yates)" not in md
 
 
+def test_values_are_means_with_their_spread(summary):
+    _, data, md = summary
+    _, s = series(data, "python", "gcm", "n")
+    assert s["fastcit"]["values"] == [1.0, 1.1, 1.2]
+    assert s["fastcit"]["sd"] == [0.2, 0.22, 0.24]  # the standard deviation over the calls
+    assert s["fastcit"]["se"] == pytest.approx([0.05, 0.055, 0.06])  # the standard error of the mean
+    assert s["fastcit"]["first_ms"] == [9.0, 9.0, 9.0]  # the warm-up call, not part of the mean
+    assert s["pgmpy"]["sd"] == [None] * 3 and s["pgmpy"]["se"] == [None] * 3  # the run file has no spread
+    assert "first_ms" not in s["pgmpy"]
+    assert "| FastCIT | 1.00 ± 0.200 | 1.10 ± 0.220 | 1.20 ± 0.240 |" in md  # mean ± standard deviation
+    assert "| pgmpy dev | 5.00 | 6.00 | 7.00 |" in md
+
+
+def test_markdown_header_names_the_method(summary):
+    _, _, md = summary
+    head = md.split("\n## ", 1)[0]
+    assert "mean time of one test call" in head and "median" not in head
+    assert "standard deviation" in head and "first call" in head
+
+
 def test_markdown_header_sentences_are_short(summary):
     _, _, md = summary
     head = md.split("\n## ", 1)[0]
@@ -372,8 +434,8 @@ def test_missing_run_file_for_a_language_is_skipped(tmp_path):
 # ---- review fixes: setup note, mostly-NaN points, small values, setup_ms ----------------------------------------------
 
 
-def _pt(median, nan=0, n=20, **kw):
-    return {"median_ms": median, "ms": None, "errors": 0, "nan": nan, "n_queries": n, "n_timed": n - nan,
+def _pt(mean, nan=0, n=20, **kw):
+    return {"mean_ms": mean, "ms": None, "errors": 0, "nan": nan, "n_queries": n, "n_timed": n - nan,
             "passes": 3, "skipped": None, "error": None, **kw}
 
 
@@ -425,7 +487,7 @@ def test_small_values_keep_two_significant_digits(edge):
 
 
 def test_memory_limit_points_have_their_own_mark(tmp_path):
-    skipped = {"median_ms": None, "ms": None, "errors": 0, "nan": 0, "n_queries": 10, "n_timed": 0, "passes": 0,
+    skipped = {"mean_ms": None, "ms": None, "errors": 0, "nan": 0, "n_queries": 10, "n_timed": 0, "passes": 0,
                "skipped": "memory limit", "error": None}
     budget = {**skipped, "skipped": "time budget"}
     pts = {"fastcit": [_pt(70.0, n=10), skipped], "hyppo": [_pt(200.0, n=10), budget]}

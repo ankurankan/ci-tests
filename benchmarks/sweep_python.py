@@ -5,7 +5,7 @@ Usage: python benchmarks/sweep_python.py OUTDIR [--quick] [--rows a,b,...] [--en
 
 OUTDIR must hold the files written by benchmarks/sweep_data.py. The script writes OUTDIR/FILE (default
 sweep-python.json). It reuses the engines, the timing code and the metadata helpers of bench_python.py.
---quick runs the two smallest points of each sweep with 2 queries and 1 pass.
+--quick runs the two smallest points of each sweep with 2 queries.
 dowhy needs another interpreter: run `--engines dowhy,fastcit --rows gcm --out sweep-python-dowhy.json` there.
 
 Sweeps (the grids are the "plan" of sweep-queries.json, written by sweep_data.py):
@@ -13,15 +13,16 @@ Sweeps (the grids are the "plan" of sweep-queries.json, written by sweep_data.py
   z: |Z| = 0, 1, 2, 3, 4, 6, 8 at n = 1 000 (every row). HSIC has no |Z| sweep.
 Every query of a point has exactly |Z| conditioning variables. 20 queries per point (kernel rows: 10).
 
-Timing: 3 passes per point. The passes are the outer loop. Each pass runs the engines of the point in a new
-random order (seeded). gc.collect() runs before each engine pass, outside the timer. Each engine pass builds new
-test objects and times every query once. The time of a query is its best pass. The value of a point is the median
-over the queries, in milliseconds. A query that raises an error or returns NaN is counted and left out.
-Time budget: when the first pass of an engine at a point takes more than 60 s, the engine skips the remaining
-passes of that point (the value comes from one pass) and all larger points of that sweep. Those points get
-"median_ms": null and "skipped": "time budget".
+Timing: one pass per point. The pass runs the engines of the point in a new random order (seeded). gc.collect()
+runs before each engine, outside the timer. An engine builds new test objects (the setup) and then times every
+query once. The first call is the warm-up call. It also does the one-time work of an engine (FastCIT builds the
+correlation matrix there), so it is not part of the value. Its time is "first_ms". The value of a point is the
+mean over the other calls, in milliseconds, with their standard deviation and the standard error of the mean.
+A query that raises an error or returns NaN is counted and left out.
+Time budget: when an engine takes more than 60 s for a point, the engine skips all larger points of that sweep.
+Those points get "mean_ms": null and "skipped": "time budget".
 Memory limit: a row with "n_max" in the plan (HSIC and KCI: 10 000) builds n x n matrices and does not run at a
-larger n. Those points get "median_ms": null and "skipped": "memory limit". An engine that is already over the
+larger n. Those points get "mean_ms": null and "skipped": "memory limit". An engine that is already over the
 time budget keeps "time budget".
 
 Run file (JSON), shared with sweep_r.R:
@@ -37,11 +38,16 @@ Run file (JSON), shared with sweep_r.R:
                       "engines": {ENGINE: [POINT, ...]}}}}   # one POINT per x, same order
  }
 }
-POINT = {"median_ms": float | null,    # median over the queries that gave a value (per call)
-         "ms": [float | null, ...],     # best time of each query in ms; null for an error or NaN
+POINT = {"mean_ms": float | null,      # mean over the calls after the first that gave a value (per call)
+         "sd_ms": float | null,        # their standard deviation (n - 1); null for fewer than 2 calls
+         "se_ms": float | null,        # the standard error of the mean: sd_ms / sqrt(n_timed)
+         "first_ms": float,            # the time of the first call (the warm-up call)
+         "ms": [float | null, ...],     # the time of each query in ms, the first call too; null for an error or NaN
          "errors": int, "nan": int,     # queries that raised an error, queries with a NaN p-value
-         "n_queries": int, "n_timed": int, "passes": int,
-         "setup_ms": float, "total_ms": float,   # best pass: the factory call (setup) and setup + all queries
+         "n_queries": int,              # all queries of the point
+         "n_timed": int,                # the calls in the mean (at most n_queries - 1)
+         "passes": int,
+         "setup_ms": float, "total_ms": float,   # the factory call (setup) and setup + all queries
          "skipped": null | "time budget" | "memory limit",
          "error": null | str,           # set when the engine could not run at all at this point
          "note": str}                   # only for engines with a known caveat (as in bench_python.py)
@@ -52,6 +58,7 @@ import json
 import os
 import random
 import re
+import statistics
 import sys
 import time
 from pathlib import Path
@@ -61,7 +68,7 @@ import pandas as pd
 
 import bench_python as bp
 
-PASSES = 3
+PASSES = 1
 BUDGET_S = 60.0
 
 # row -> (label, {engine: factory}). The existing rows, with one KCI row, and the new Pearson-equivalence row.
@@ -78,17 +85,34 @@ ROWS["pearson_equivalence"] = ("Pearson equivalence", {
 
 
 def point_result(**kw):
-    out = {"median_ms": None, "ms": None, "errors": 0, "nan": 0, "n_queries": 0, "n_timed": 0, "passes": 0,
-           "skipped": None, "error": None}
+    out = {"mean_ms": None, "sd_ms": None, "se_ms": None, "first_ms": None, "ms": None, "errors": 0, "nan": 0,
+           "n_queries": 0, "n_timed": 0, "passes": 0, "skipped": None, "error": None}
     out.update(kw)
     return out
 
 
-def time_point(engines, data, queries, rng, passes, budget=None):
-    """Run the passes over the engines at one point and return {engine: POINT}.
+def point_stats(st):
+    """Return the numbers of a POINT from the state that bench_python.time_pass filled for one engine.
 
-    The passes are the outer loop, with a new engine order in each pass. An engine whose first pass takes
-    more than `budget` seconds skips the remaining passes and is marked "over" (the caller skips larger points).
+    The first call is the warm-up call: it is not part of the mean, and its time is "first_ms".
+    A query that raised an error or returned NaN is not part of the mean.
+    """
+    times = [1e3 * min(t) for t in st["times"]]  # one pass: the time of each call
+    ok = [not e and not n for e, n in zip(st["err"], st["nan"])]
+    rest = [t for t, good in zip(times[1:], ok[1:]) if good]
+    sd = statistics.stdev(rest) if len(rest) > 1 else None
+    return {"mean_ms": statistics.fmean(rest) if rest else None, "sd_ms": sd,
+            "se_ms": None if sd is None else sd / len(rest) ** 0.5, "first_ms": times[0] if times else None,
+            "ms": [t if good else None for t, good in zip(times, ok)],
+            "errors": sum(st["err"]), "nan": sum(st["nan"]), "n_queries": len(times), "n_timed": len(rest),
+            "passes": len(st["totals"]), "setup_ms": 1e3 * min(st["setups"]), "total_ms": 1e3 * min(st["totals"])}
+
+
+def time_point(engines, data, queries, rng, passes, budget=None):
+    """Run the engines at one point and return {engine: POINT}.
+
+    The engines run in a new random order. An engine that takes more than `budget` seconds is marked "over"
+    (the caller skips its larger points). The sweep uses one pass. With more passes, each call keeps its best time.
     """
     budget = BUDGET_S if budget is None else budget
     states = {name: bp.new_state(len(queries)) for name in engines}
@@ -112,12 +136,7 @@ def time_point(engines, data, queries, rng, passes, budget=None):
         if name in failed:
             out[name] = point_result(error=failed[name], errors=len(queries), n_queries=len(queries))
             continue
-        res = bp.result(st)
-        ok = [not st["err"][i] and not st["nan"][i] for i in range(len(queries))]
-        out[name] = point_result(median_ms=res["median_ms"], ms=[t if g else None for t, g in zip(res["ms"], ok)],
-                                 errors=res["errors"], nan=res["nan"], n_queries=res["n_queries"],
-                                 n_timed=res["n_timed"], passes=len(st["totals"]),
-                                 setup_ms=res["setup_ms"], total_ms=res["total_ms"])
+        out[name] = point_result(**point_stats(st))
     return out, over
 
 
@@ -214,8 +233,8 @@ def main(outdir, quick, engines, rows, sweeps, seed, out_name):
     meta = build_meta(engines, quick, rows, seed, spec["plan"]["grids"])
     floor_qs = spec["discrete"]["queries"]["1"][:nq]
     floor, _ = time_point({"noop": bp.noop_engine}, None, floor_qs, random.Random(f"{seed}:floor"), passes)
-    meta["harness_floor_ms"] = floor["noop"]["median_ms"]
-    print(f"harness floor: median {floor['noop']['median_ms']:.6f} ms", flush=True)
+    meta["harness_floor_ms"] = floor["noop"]["mean_ms"]
+    print(f"harness floor: mean {floor['noop']['mean_ms']:.6f} ms", flush=True)
     results = {}
     cache = {}  # one data file at a time
     path = outdir / out_name
@@ -259,7 +278,7 @@ def main(outdir, quick, engines, rows, sweeps, seed, out_name):
                     if (row, e) in bp.NOTES:
                         p["note"] = bp.NOTES[(row, e)]
                     series[e].append(p)
-                    msg = f"skipped ({p['skipped']})" if p["skipped"] else f"median {p['median_ms']} ms"
+                    msg = f"skipped ({p['skipped']})" if p["skipped"] else f"mean {p['mean_ms']} ms"
                     print(f"{row:19s} {which} x={x:<7} {e:16s} {msg} ({p['n_queries']} q, {p['errors']} errors, "
                           f"{p['nan']} NaN)" + (f" [{p['error']}]" if p["error"] else ""), flush=True)
             results[row]["sweeps"][which] = {"fixed": fixed, "x": xs, "engines": series}

@@ -43,7 +43,7 @@
      "engines": {
       "fastcit": [
        {
-        "median_ms": 0.5,
+        "mean_ms": 0.5,
         "ms": [
          0.5
         ],
@@ -56,7 +56,7 @@
         "error": null
        },
        {
-        "median_ms": 0.6,
+        "mean_ms": 0.6,
         "ms": [
          0.6
         ],
@@ -69,7 +69,7 @@
         "error": null
        },
        {
-        "median_ms": 0.9,
+        "mean_ms": 0.9,
         "ms": [
          0.9
         ],
@@ -84,7 +84,7 @@
       ],
       "pgmpy": [
        {
-        "median_ms": 80.0,
+        "mean_ms": 80.0,
         "ms": [
          80.0
         ],
@@ -98,7 +98,7 @@
         "note": "random forest (pgmpy default); a different test from FastCIT (linear)"
        },
        {
-        "median_ms": 200.0,
+        "mean_ms": 200.0,
         "ms": [
          200.0
         ],
@@ -112,7 +112,7 @@
         "note": "random forest (pgmpy default); a different test from FastCIT (linear)"
        },
        {
-        "median_ms": 61000.0,
+        "mean_ms": 61000.0,
         "ms": [
          61000.0
         ],
@@ -145,7 +145,7 @@
      "engines": {
       "fastcit": [
        {
-        "median_ms": 0.01,
+        "mean_ms": 0.01,
         "ms": [
          0.01
         ],
@@ -158,7 +158,7 @@
         "error": null
        },
        {
-        "median_ms": 0.02,
+        "mean_ms": 0.02,
         "ms": [
          0.02
         ],
@@ -171,7 +171,7 @@
         "error": null
        },
        {
-        "median_ms": 0.05,
+        "mean_ms": 0.05,
         "ms": [
          0.05
         ],
@@ -186,7 +186,7 @@
       ],
       "fastcit (yates)": [
        {
-        "median_ms": 0.011,
+        "mean_ms": 0.011,
         "ms": [
          0.011
         ],
@@ -199,7 +199,7 @@
         "error": null
        },
        {
-        "median_ms": 0.021,
+        "mean_ms": 0.021,
         "ms": [
          0.021
         ],
@@ -212,7 +212,7 @@
         "error": null
        },
        {
-        "median_ms": 0.051,
+        "mean_ms": 0.051,
         "ms": [
          0.051
         ],
@@ -227,7 +227,7 @@
       ],
       "pgmpy": [
        {
-        "median_ms": 1.5,
+        "mean_ms": 1.5,
         "ms": [
          1.5
         ],
@@ -240,7 +240,7 @@
         "error": null
        },
        {
-        "median_ms": 2.5,
+        "mean_ms": 2.5,
         "ms": [
          2.5
         ],
@@ -253,7 +253,7 @@
         "error": null
        },
        {
-        "median_ms": null,
+        "mean_ms": null,
         "ms": [
          null
         ],
@@ -268,7 +268,7 @@
       ],
       "pingouin": [
        {
-        "median_ms": null,
+        "mean_ms": null,
         "ms": [
          null
         ],
@@ -281,7 +281,7 @@
         "error": "boom"
        },
        {
-        "median_ms": null,
+        "mean_ms": null,
         "ms": [
          null
         ],
@@ -294,7 +294,7 @@
         "error": null
        },
        {
-        "median_ms": 3.0,
+        "mean_ms": 3.0,
         "ms": [
          3.0
         ],
@@ -320,7 +320,7 @@
      "engines": {
       "fastcit": [
        {
-        "median_ms": 0.3,
+        "mean_ms": 0.3,
         "ms": [
          0.3
         ],
@@ -333,7 +333,7 @@
         "error": null
        },
        {
-        "median_ms": 0.4,
+        "mean_ms": 0.4,
         "ms": [
          0.4
         ],
@@ -348,7 +348,7 @@
       ],
       "fastcit (yates)": [
        {
-        "median_ms": 0.3,
+        "mean_ms": 0.3,
         "ms": [
          0.3
         ],
@@ -361,7 +361,7 @@
         "error": null
        },
        {
-        "median_ms": 0.4,
+        "mean_ms": 0.4,
         "ms": [
          0.4
         ],
@@ -376,7 +376,7 @@
       ],
       "pgmpy": [
        {
-        "median_ms": 12.3,
+        "mean_ms": 12.3,
         "ms": [
          12.3
         ],
@@ -389,7 +389,7 @@
         "error": null
        },
        {
-        "median_ms": 123.4,
+        "mean_ms": 123.4,
         "ms": [
          123.4
         ],
@@ -421,7 +421,7 @@
      "engines": {
       "fastcit": [
        {
-        "median_ms": 1.0,
+        "mean_ms": 1.0,
         "ms": [
          1.0
         ],
@@ -431,10 +431,13 @@
         "n_timed": 1,
         "passes": 3,
         "skipped": null,
-        "error": null
+        "error": null,
+        "sd_ms": 0.2,
+        "se_ms": 0.05,
+        "first_ms": 9.0
        },
        {
-        "median_ms": 1.1,
+        "mean_ms": 1.1,
         "ms": [
          1.1
         ],
@@ -444,10 +447,13 @@
         "n_timed": 1,
         "passes": 3,
         "skipped": null,
-        "error": null
+        "error": null,
+        "sd_ms": 0.22,
+        "se_ms": 0.055,
+        "first_ms": 9.0
        },
        {
-        "median_ms": 1.2,
+        "mean_ms": 1.2,
         "ms": [
          1.2
         ],
@@ -457,12 +463,15 @@
         "n_timed": 1,
         "passes": 3,
         "skipped": null,
-        "error": null
+        "error": null,
+        "sd_ms": 0.24,
+        "se_ms": 0.06,
+        "first_ms": 9.0
        }
       ],
       "pgmpy": [
        {
-        "median_ms": 5.0,
+        "mean_ms": 5.0,
         "ms": [
          5.0
         ],
@@ -475,7 +484,7 @@
         "error": null
        },
        {
-        "median_ms": 6.0,
+        "mean_ms": 6.0,
         "ms": [
          6.0
         ],
@@ -488,7 +497,7 @@
         "error": null
        },
        {
-        "median_ms": 7.0,
+        "mean_ms": 7.0,
         "ms": [
          7.0
         ],

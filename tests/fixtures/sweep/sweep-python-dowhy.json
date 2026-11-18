@@ -41,7 +41,7 @@
      "engines": {
       "fastcit": [
        {
-        "median_ms": 1.05,
+        "mean_ms": 1.05,
         "ms": [
          1.05
         ],
@@ -54,7 +54,7 @@
         "error": null
        },
        {
-        "median_ms": 1.15,
+        "mean_ms": 1.15,
         "ms": [
          1.15
         ],
@@ -67,7 +67,7 @@
         "error": null
        },
        {
-        "median_ms": 1.25,
+        "mean_ms": 1.25,
         "ms": [
          1.25
         ],
@@ -82,7 +82,7 @@
       ],
       "dowhy": [
        {
-        "median_ms": 40.0,
+        "mean_ms": 40.0,
         "ms": [
          40.0
         ],
@@ -95,7 +95,7 @@
         "error": null
        },
        {
-        "median_ms": 41.0,
+        "mean_ms": 41.0,
         "ms": [
          41.0
         ],
@@ -108,7 +108,7 @@
         "error": null
        },
        {
-        "median_ms": 45.0,
+        "mean_ms": 45.0,
         "ms": [
          45.0
         ],

@@ -30,7 +30,9 @@ sweep.json (unit: ms; "meta", "languages" and the keys below are stable, the cha
         "fixed": {"z": 1} | {"n": N},             # the value of the other axis
         "x": [n or |Z| of each point],
         "series": [ {"engine": key, "label": str,
-                     "values": [ms | null, ...],  # median over the queries, aligned to x; null: no result
+                     "values": [ms | null, ...],  # mean over the calls after the first, aligned to x; null: no result
+                     "se": [ms | null, ...],      # standard error of each mean; null when the run file has none
+                     "sd": [ms | null, ...],      # standard deviation over the same calls (the chart does not read it)
                      "skipped": [str | null, ...],  # aligned to x; the reason when the value is null:
                                                     #   "time budget" | "memory limit" | "error: TEXT"
                                                     #   | "all queries NaN" | "all queries raised errors"
@@ -38,14 +40,15 @@ sweep.json (unit: ms; "meta", "languages" and the keys below are stable, the cha
                      # Added fields:
                      "passes": [int, ...],        # passes behind each value. 1 after the time budget (the value
                                                   # is kept); the chart marks values whose passes < meta passes
-                     "excluded": [int, ...],      # queries left out of the median (errors + NaN) at each point
+                     "excluded": [int, ...],      # queries left out of the mean (errors + NaN) at each point
                      "queries": [int, ...],       # queries of each point (the chart does not read it)
-                     # Optional, only when the run file has them (the chart does not read them), in ms, best pass:
+                     # Optional, only when the run file has them (the chart does not read them), in ms:
+                     "first_ms": [ms | null, ...],  # the first call (the warm-up call, not part of the mean)
                      "setup_ms": [ms | null, ...],  # the factory call of the engine (the one-time setup)
                      "total_ms": [ms | null, ...]}]}}}  # setup plus all queries
 A point where fewer than half of the queries gave a value is null, with the reason "k of N queries gave NaN or
 an error". The notes of the rows fisher_z, pearson_t and pearson_equivalence say what the time leaves out
-(the one-time setup, see SETUP_NOTES).
+(the one-time setup and the first call, see SETUP_NOTES).
  ]} ]
 }
 Series order: "fastcit" first, then the engines in the column order of the tables of summarize.py (Python:
@@ -71,11 +74,11 @@ HIDDEN = ("fastcit (yates)",)  # engines of the run files that the sweep does no
 AXES = ("n", "z")
 SETUP_ROWS = ("fisher_z", "pearson_t", "pearson_equivalence")
 SETUP_NOTES = {  # the row note of summarize.py (sm.FOOT_E), in the words of a sweep
-    "python": ("The time does not include the one-time setup. FastCIT builds the correlation matrix in its first "
-               "call, and the median leaves that call out, so its time stays flat as n grows. causal-learn builds "
+    "python": ("The time does not include the one-time setup or the first call. FastCIT builds the correlation "
+               "matrix in its first call, so its time stays flat as n grows. causal-learn builds "
                "it at setup and stays flat too. pgmpy and pingouin build it in every call, so their time grows with n."),
-    "r": ("The time does not include the one-time setup. FastCIT builds the correlation matrix in its first "
-          "call, and the median leaves that call out, so its time stays flat as n grows. pcalg builds it at setup "
+    "r": ("The time does not include the one-time setup or the first call. FastCIT builds the correlation "
+          "matrix in its first call, so its time stays flat as n grows. pcalg builds it at setup "
           "and stays flat too. bnlearn and ppcor build it in every call, so their time grows with n."),
 }
 MARKS = ["ᵃ", "ᵇ", "ᶜ", "ᵈ", "ᵉ", "ᶠ", "ᵍ", "ʰ", "ⁱ", "ʲ"]  # marks of the engine notes, per table
@@ -103,7 +106,7 @@ def load(d, name):
 
 def reason(p):
     """Return why a point has no value (None if it has one)."""
-    if good(p.get("median_ms")):
+    if good(p.get("mean_ms")):
         return None
     if p.get("skipped"):
         return str(p["skipped"])
@@ -153,7 +156,7 @@ def queries_of(p):
 def thin(p):
     """The reason when fewer than half of the queries of the point gave a value, else None."""
     n, bad = queries_of(p), (p.get("errors") or 0) + (p.get("nan") or 0)
-    if good(p.get("median_ms")) and bad and 2 * (n - bad) < n:
+    if good(p.get("mean_ms")) and bad and 2 * (n - bad) < n:
         return f"{bad} of {n} queries gave NaN or an error"
     return None
 
@@ -163,17 +166,20 @@ def make_series(lang, cols, row, sweep, names):
     out = []
     for name in engine_order(cols, [n for n in names if n not in HIDDEN]):
         pts = sweep["engines"][name]
+        shown = [good(p.get("mean_ms")) and not thin(p) for p in pts]
         item = {
             "engine": name,
             "label": "FastCIT" if name == "fastcit" else labels.get(name, name),
-            "values": [p["median_ms"] if good(p.get("median_ms")) and not thin(p) else None for p in pts],
+            "values": [p["mean_ms"] if ok else None for p, ok in zip(pts, shown)],
+            "se": [p["se_ms"] if ok and good(p.get("se_ms")) else None for p, ok in zip(pts, shown)],
+            "sd": [p["sd_ms"] if ok and good(p.get("sd_ms")) else None for p, ok in zip(pts, shown)],
             "skipped": [thin(p) or reason(p) for p in pts],
             "notes": notes_for(lang, row, name, pts),
             "passes": [p.get("passes", 0) for p in pts],
             "excluded": [(p.get("errors") or 0) + (p.get("nan") or 0) for p in pts],
             "queries": [queries_of(p) for p in pts],
         }
-        for key in ("setup_ms", "total_ms"):
+        for key in ("first_ms", "setup_ms", "total_ms"):
             if any(good(p.get(key)) for p in pts):
                 item[key] = [p[key] if good(p.get(key)) else None for p in pts]
         out.append(item)
@@ -203,7 +209,7 @@ def merge_dowhy(lang_meta, results, extra):
             for name, pts in sweep["engines"].items():
                 if name in target["engines"]:  # FastCIT: a reference in the same interpreter
                     reference.setdefault(row, {})[axis] = {
-                        "x": sweep["x"], "values": [p["median_ms"] if good(p.get("median_ms")) else None
+                        "x": sweep["x"], "values": [p["mean_ms"] if good(p.get("mean_ms")) else None
                                                     for p in pts]}
                 else:
                     target["engines"][name] = pts
@@ -269,8 +275,8 @@ def table(sweep, meta):
                 notes.append((MARKS[len(notes)], text))
             marks += next(m for m, t in notes if t == text)
         cells = []
-        for v, why, passes, excl, nq, x in zip(s["values"], s["skipped"], s["passes"], s["excluded"],
-                                               s["queries"], xs):
+        for v, sd, why, passes, excl, nq, x in zip(s["values"], s["sd"], s["skipped"], s["passes"], s["excluded"],
+                                                   s["queries"], xs):
             if v is None:
                 mark = SKIP_MARKS.get(why, FAILED)
                 used.add(mark)
@@ -278,7 +284,7 @@ def table(sweep, meta):
                     left.append((s["label"], why, None, x))
                 cells.append("—" + mark)
                 continue
-            cell = sfmt(v)
+            cell = sfmt(v) + (f" ± {sfmt(sd)}" if sd else "")
             if meta.get("passes") and passes < meta["passes"]:
                 cell += ONE_PASS
                 used.add(ONE_PASS)
@@ -295,7 +301,7 @@ def table(sweep, meta):
              MEMORY: "No result. The sweep does not run this test at this sample size. "
                      "The packages need too much memory there.",
              FAILED: "No result. Every query raised an error or returned NaN, or fewer than half of them gave a value.",
-             EXCLUDED: "Some queries raised an error or returned NaN. The median uses the other queries."}
+             EXCLUDED: "Some queries raised an error or returned NaN. The mean uses the other queries."}
     shown = {EXCLUDED: "\\*"}
     for mark, items in ((EXCLUDED, [t for t in left if t[2] is not None]), (FAILED, [t for t in left if t[2] is None])):
         if items:
@@ -308,10 +314,12 @@ def table(sweep, meta):
 
 def markdown(data):
     out = "# FastCIT sweep benchmark\n\n"
-    out += ("The tables give the median time of one test call, in milliseconds. Lower is better. "
+    out += ("The tables give the mean time of one test call, in milliseconds. Lower is better. "
             "Each test has one table for the sample size n and one for the conditioning-set size |Z|. "
             "Each column is one value of n or |Z|.\n\n")
-    out += ("Each cell is the median over the queries of a point. Each query keeps its fastest pass. "
+    out += ("Each cell is the mean over the calls of a point, with the standard deviation after ±. "
+            "Each package runs every query once. "
+            "The first call is the warm-up call, and the mean does not include it. "
             "An engine that passes the time budget skips the larger points. "
             "HSIC and KCI do not run above their memory limit. "
             "— means no result. Other marks are explained under each table.\n\n")

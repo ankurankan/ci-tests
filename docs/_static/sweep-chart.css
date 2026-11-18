@@ -141,6 +141,11 @@ html[data-theme="dark"] .sweep-chart {
     stroke-linecap: round;
 }
 
+.sweep-bar {
+    stroke: var(--c);
+    stroke-width: 1.5;
+}
+
 .sweep-dot {
     fill: var(--c);
     stroke: var(--pst-color-background);

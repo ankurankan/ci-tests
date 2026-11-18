@@ -338,6 +338,16 @@ Their points at 30 000 and 100 000 stay in the tables and the chart with the rea
 The conditioning-set size |Z| takes the values 0, 1, 2, 3, 4, 6 and 8.
 The |Z| sweep uses n = 1 000 for every test.
 HSIC has no |Z| sweep.
+
+Each package runs the queries of a point one time.
+A point has 20 queries (HSIC and KCI: 10).
+The first call is the warm-up call.
+It also does the one-time work of a package, for example the correlation matrix of FastCIT.
+The result of a point is the mean time of the other calls.
+The run files also give the standard deviation of these calls and the standard error of the mean.
+They keep the time of the setup (`setup_ms`) and of the first call (`first_ms`) apart from the result.
+A package that takes more than 60 s for a point skips the larger points.
+This method is not the method of the main benchmark, which uses the median of the best of five passes.
 A query with |Z| = 8 needs 10 distinct columns, so the mixed data have 12 columns and the nonlinear data have 12 columns.
 
 Install the packages as in the [Install](#install) section.
